@@ -1,4 +1,4 @@
-# FRI
+# Anatomy of a STARK, Part 3: FRI
 
 FRI stands for *Fast Reed-Solomon IOP of Proximity*, where IOP stands for *interactive oracle proof*. FRI is presented in the language of codewords: the prover sends codewords to the verifier who does not read them whole but who makes oracle-queries to read them in select locations. The codewords in this protocol are *Reed-Solomon codewords*, meaning that their values correspond to the evaluation of some low-degree polynomial in a list of points called the domain $D$. The length of this list is larger than the number of possibly nonzero coefficients in the polynomial by a factor called the *expansion factor* (also *blowup factor*), which is the reciprocal of the code's *rate* $\rho$.
 
