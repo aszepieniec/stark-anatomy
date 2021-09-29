@@ -5,7 +5,7 @@ from functools import reduce
 import os
 
 class Stark:
-    def __init__( self, field, expansion_factor, num_colinearity_checks, security_level, state_width, num_cycles, air_blowup_factor=2 ):
+    def __init__( self, field, expansion_factor, num_colinearity_checks, security_level, num_regisers, num_cycles, transition_constraints_blowup_factor=2 ):
         assert(len(bin(field.p)) - 2 >= security_level), "p must have at least as many bits as security level"
         assert(expansion_factor & (expansion_factor - 1) == 0), "expansion factor must be a power of 2"
         assert(expansion_factor >= 4), "expansion factor must be 4 or greater"
@@ -16,47 +16,47 @@ class Stark:
         self.num_colinearity_checks = num_colinearity_checks
         self.security_level = security_level
 
-        self.num_randomizers = 4*num_colinearity_checks + 1
+        self.num_randomizers = 4*num_colinearity_checks
 
-        self.state_width = state_width
-        self.trace_length = num_cycles
+        self.num_regisers = num_regisers
+        self.original_trace_length = num_cycles
         
-        randomized_trace_length = self.trace_length + self.num_randomizers
-        self.omicron_domain_length = 1 << len(bin(randomized_trace_length * air_blowup_factor)[2:])
-        fri_domain_length = self.omicron_domain_length * expansion_factor
+        randomized_trace_length = self.original_trace_length + self.num_randomizers
+        omicron_domain_length = 1 << len(bin(randomized_trace_length * transition_constraints_blowup_factor)[2:])
+        fri_domain_length = omicron_domain_length * expansion_factor
 
         self.generator = self.field.generator()
         self.omega = self.field.primitive_nth_root(fri_domain_length)
-        self.omicron = self.field.primitive_nth_root(self.omicron_domain_length)
-        self.omicron_domain = [self.omicron^i for i in range(self.omicron_domain_length)]
+        self.omicron = self.field.primitive_nth_root(omicron_domain_length)
+        self.omicron_domain = [self.omicron^i for i in range(omicron_domain_length)]
 
         self.fri = Fri(self.generator, self.omega, fri_domain_length, self.expansion_factor, self.num_colinearity_checks)
 
-    def composition_degree_bounds( self, air ):
-        point_degrees = [1] + [self.trace_length+self.num_randomizers-1] * 2*self.state_width
-        return [max( sum(r*l for r, l in zip(point_degrees, k)) for k, v in a.dictionary.items()) for a in air]
+    def composition_degree_bounds( self, transition_constraints ):
+        point_degrees = [1] + [self.original_trace_length+self.num_randomizers-1] * 2*self.num_regisers
+        return [max( sum(r*l for r, l in zip(point_degrees, k)) for k, v in a.dictionary.items()) for a in transition_constraints]
 
-    def transition_quotient_degree_bounds( self, air ):
-        return [d - (self.trace_length-1) for d in self.composition_degree_bounds(air)]
+    def transition_quotient_degree_bounds( self, transition_constraints ):
+        return [d - (self.original_trace_length-1) for d in self.composition_degree_bounds(transition_constraints)]
 
-    def max_degree( self, air ):
-        md = max(self.transition_quotient_degree_bounds(air))
+    def max_degree( self, transition_constraints ):
+        md = max(self.transition_quotient_degree_bounds(transition_constraints))
         return (1 << (len(bin(md)[2:]))) - 1
 
     def transition_zerofier( self ):
-        domain = self.omicron_domain[0:(self.trace_length-1)]
+        domain = self.omicron_domain[0:(self.original_trace_length-1)]
         return Polynomial.zerofier_domain(domain)
 
     def boundary_zerofiers( self, boundary ):
         zerofiers = []
-        for s in range(self.state_width):
+        for s in range(self.num_regisers):
             points = [self.omicron^c for c, r, v in boundary if r == s]
             zerofiers = zerofiers + [Polynomial.zerofier_domain(points)]
         return zerofiers
 
     def boundary_interpolants( self, boundary ):
         interpolants = []
-        for s in range(self.state_width):
+        for s in range(self.num_regisers):
             points = [(c,v) for c, r, v in boundary if r == s]
             domain = [self.omicron^c for c,v in points]
             values = [v for c,v in points]
@@ -66,25 +66,24 @@ class Stark:
     def sample_weights( self, number, randomness ):
         return [self.field.sample(blake2b(randomness + bytes(i)).digest()) for i in range(0, number)]
 
-    def prove( self, trace, air, boundary ):
+    def prove( self, trace, transition_constraints, boundary ):
         # create proof stream object
         proof_stream = ProofStream()
         
         # concatenate randomizers
         for k in range(self.num_randomizers):
-            trace = trace + [[self.field.sample(os.urandom(17)) for s in range(self.state_width)]]
+            trace = trace + [[self.field.sample(os.urandom(17)) for s in range(self.num_regisers)]]
 
         # interpolate
-        omicron_domain = [self.omicron^i for i in range(self.omicron_domain_length)]
         trace_domain = [self.omicron^i for i in range(len(trace))]
         trace_polynomials = []
-        for s in range(self.state_width):
+        for s in range(self.num_regisers):
             single_trace = [trace[c][s] for c in range(len(trace))]
             trace_polynomials = trace_polynomials + [Polynomial.interpolate_domain(trace_domain, single_trace)]
 
         # divide out boundary interpolants
         dense_trace_polynomials = []
-        for s in range(self.state_width):
+        for s in range(self.num_regisers):
             interpolant = self.boundary_interpolants(boundary)[s]
             zerofier = self.boundary_zerofiers(boundary)[s]
             quotient = (trace_polynomials[s] - interpolant) / zerofier
@@ -94,21 +93,21 @@ class Stark:
         fri_domain = self.fri.eval_domain()
         dense_trace_codewords = []
         dense_trace_Merkle_roots = []
-        for s in range(self.state_width):
+        for s in range(self.num_regisers):
             dense_trace_codewords = dense_trace_codewords + [dense_trace_polynomials[s].evaluate_domain(fri_domain)]
             merkle_root = Merkle.commit(dense_trace_codewords[s])
             proof_stream.push(merkle_root)
 
-        # apply air polynomials
+        # apply transition_constraints polynomials
         # funny story: Alan had a hard time finding the first polynomial in this list
         point = [Polynomial([self.field.zero(), self.field.one()])] + trace_polynomials + [tp.scale(self.omicron) for tp in trace_polynomials]
-        transition_polynomials = [a.evaluate_symbolic(point) for a in air]
+        transition_polynomials = [a.evaluate_symbolic(point) for a in transition_constraints]
 
         # divide out zerofier
         transition_quotients = [tp / self.transition_zerofier() for tp in transition_polynomials]
 
         # commit to randomizer polynomial
-        randomizer_polynomial = Polynomial([self.field.sample(os.urandom(17)) for i in range(self.max_degree(air)+1)])
+        randomizer_polynomial = Polynomial([self.field.sample(os.urandom(17)) for i in range(self.max_degree(transition_constraints)+1)])
         randomizer_codeword = randomizer_polynomial.evaluate_domain(fri_domain) 
         randomizer_root = Merkle.commit(randomizer_codeword)
         proof_stream.push(randomizer_root)
@@ -116,14 +115,14 @@ class Stark:
         # get weights for linear combination
         weights = self.sample_weights(1+2*len(transition_quotients), proof_stream.prover_fiat_shamir())
 
-        assert([tq.degree() for tq in transition_quotients] == self.transition_quotient_degree_bounds(air)), "transition quotient degrees do not match with expectation"
+        assert([tq.degree() for tq in transition_quotients] == self.transition_quotient_degree_bounds(transition_constraints)), "transition quotient degrees do not match with expectation"
 
         # compute composition polynomial
         x = Polynomial([self.field.zero(), self.field.one()])
         terms = []
         for i in range(len(transition_quotients)):
             terms += [transition_quotients[i]]
-            shift = self.max_degree(air) - self.transition_quotient_degree_bounds(air)[i]
+            shift = self.max_degree(transition_constraints) - self.transition_quotient_degree_bounds(transition_constraints)[i]
             terms += [(x^shift) * transition_quotients[i]]
         terms += [randomizer_polynomial]
 
@@ -155,7 +154,7 @@ class Stark:
         # the final proof is just the serialized stream
         return proof_stream.serialize()
 
-    def verify( self, proof, air, boundary ):
+    def verify( self, proof, transition_constraints, boundary ):
         H = blake2b
 
         # deserialize
@@ -163,14 +162,14 @@ class Stark:
 
         # get Merkle roots of dense trace codewords
         dense_trace_roots = []
-        for s in range(self.state_width):
+        for s in range(self.num_regisers):
             dense_trace_roots = dense_trace_roots + [proof_stream.pull()]
 
         # get Merkle root of randomizer polynomial
         randomizer_root = proof_stream.pull()
 
         # get weights for linear combination
-        weights = self.sample_weights(1+2*len(air), proof_stream.verifier_fiat_shamir())
+        weights = self.sample_weights(1+2*len(transition_constraints), proof_stream.verifier_fiat_shamir())
 
         # verify low degree of composition polynomial
         polynomial_values = []
@@ -209,9 +208,9 @@ class Stark:
             domain_current_index = self.generator * (self.omega^index)
             next_index = (index + self.expansion_factor) % self.fri.domain_length
             domain_next_index = self.generator * (self.omega^next_index)
-            previous_trace = [self.field.zero() for s in range(self.state_width)]
-            next_trace = [self.field.zero() for s in range(self.state_width)]
-            for s in range(self.state_width):
+            previous_trace = [self.field.zero() for s in range(self.num_regisers)]
+            next_trace = [self.field.zero() for s in range(self.num_regisers)]
+            for s in range(self.num_regisers):
                 zerofier = self.boundary_zerofiers(boundary)[s]
                 interpolant = self.boundary_interpolants(boundary)[s]
 
@@ -219,16 +218,16 @@ class Stark:
                 next_trace[s] = leafs[s][next_index] * zerofier.evaluate(domain_next_index) + interpolant.evaluate(domain_next_index)
 
             point = [domain_current_index] + previous_trace + next_trace
-            air_values = [air[s].evaluate(point) for s in range(len(air))]
+            transition_constraints_values = [transition_constraints[s].evaluate(point) for s in range(len(transition_constraints))]
 
             # compute linear combination
             counter = 0
             terms = []
-            for s in range(len(air_values)):
-                av = air_values[s]
+            for s in range(len(transition_constraints_values)):
+                av = transition_constraints_values[s]
                 quotient = av / self.transition_zerofier().evaluate(domain_current_index)
                 terms += [quotient]
-                shift = self.max_degree(air) - self.transition_quotient_degree_bounds(air)[s]
+                shift = self.max_degree(transition_constraints) - self.transition_quotient_degree_bounds(transition_constraints)[s]
                 terms += [quotient * (domain_current_index^shift)]
             terms += [randomizer[index]]
             licombo = reduce(lambda a, b : a+b, [terms[j] * weights[j] for j in range(len(terms))], self.field.zero())
