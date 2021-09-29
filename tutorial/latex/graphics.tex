@@ -307,4 +307,68 @@
 \end{tikzpicture}
 \end{frame}
 
+\begin{frame}{}
+\centering
+\begin{tikzpicture}
+\node[color=red!50!black] (execution trace) at (0,0) {\begin{tabular}{c}
+execution \\
+trace
+\end{tabular}};
+
+\node[color=red!50!black, scale=0.9] (boundary constraints) at (-3, 0) {\begin{tabular}{c}
+\textsc{Boundary} \\
+\textsc{Constraints}
+\end{tabular}};
+
+\node[color=red!50!black, scale=0.9] (transition constraints) at (3, 0) {\begin{tabular}{c}
+\textsc{Transition} \\
+\textsc{Constraints}
+\end{tabular}};
+
+\node[color=blue!50!black] (trace polynomials) at (0, -3) {\begin{tabular}{c}
+trace \\
+polynomials
+\end{tabular}};
+
+\draw[->] (execution trace) -- (trace polynomials) node[above, midway, sloped, color=gray, scale=0.75] {\textit{interpolation}};
+
+\node[color=blue!50!black] (dense trace polynomials) at (-3 ,-5) {\begin{tabular}{c}
+dense trace \\
+polynomials
+\end{tabular}};
+\node[color=blue!50!black] (composition polynomials) at (3 ,-5) {\begin{tabular}{c}
+composition \\
+polynomials
+\end{tabular}};
+
+\draw[->] (boundary constraints) -- (dense trace polynomials) node[below, midway, sloped, color=gray, scale=0.75] {\textit{interpolate and subtract}};
+\draw[<->] (trace polynomials) -- (-3, -3) {};
+
+\draw[->] (transition constraints) -- (composition polynomials) node[above, midway, sloped, color=gray, scale=0.75] {\textit{symbolic evaluation}};
+\draw[->] (trace polynomials) -- (3, -3) {};
+
+\node[draw, color=green!50!black] (boundary quotients) at (-3, -7.5) {\textcolor{blue!50!black}{\begin{tabular}{c}
+boundary \\
+quotients
+\end{tabular}}};
+
+\node[draw, color=green!50!black] (transition quotients) at (3, -7.5) {\textcolor{blue!50!black}{\begin{tabular}{c}
+transition \\
+quotients
+\end{tabular}}};
+
+\draw[<->] (dense trace polynomials) -- (boundary quotients) node[midway, right, color=gray, scale=0.75] {\begin{tabular}{l}
+multiply or \\
+divide by \\
+zerofier
+\end{tabular}};
+
+\draw[<->] (composition polynomials) -- (transition quotients) node[midway, right, color=gray, scale=0.75] {\begin{tabular}{l}
+multiply or \\
+divide by \\
+zerofier
+\end{tabular}};
+\end{tikzpicture}
+\end{frame}
+
 \end{document}
