@@ -65,4 +65,35 @@ To obtain the composition polynomials, the prover evaluates the transition const
 
 The use of the plural on the right hand side is slightly misleading. After the boundary quotients have been committed to by sending their Merkle roots to the verifier, the prover obtains from the verifier random weights with which to compress the transition constraints to a single linear combination. As a result of this compression, there is one transition constraint, one composition polynomial, and one transition quotient. Nevertheless, this compression may be omitted without affecting security; it merely requires more work on the part of both the prover and the verifier.
 
+To summarize, this workflow generates two recipes: one for the prover and one for the verifier. They are presented here in abstract terms and in interactive form.
+
+Prover:
+ - Interpolate the execution trace to obtain the trace polynomials.
+ - Interpolate the boundary points to obtain the boundary interpolants, and compute the boundary zerofiers along the way.
+ - Subtract the boundary interpolants from the trace polynomials, giving rise to the dense trace polynomials.
+ - Divide out the boundary zerofiers from the dense trace polynomials.
+ - Commit to the dense trace polynomials.
+ - Get $r$ random coefficients from the verifier.
+ - Compress the $r$ transition constraints into one master constraint that is the weighted sum.
+ - Symbolically evaluate the master constraint in the trace polynomials, thus generating the composition polynomial.
+ - Divide out the transition zerofier to get the transition quotient.
+ - Commit to the transition zerofier.
+ - Run FRI on all committed polynomials.
+ - Supply the Merkle leafs and authentication paths that are requested by the verifier.
+
+Verifier:
+ - Read the commitments to the boundary quotients.
+ - Supply the random coefficients for the master transition constraint.
+ - Read the commitment to the transition quotient.
+ - Run the FRI verifier.
+ - Verify the link between boundary quotients and transition quotient. To do this:
+   - For all points of the transition quotient codeword that were queried in the first round of FRI do:
+     - Let the point be $(x, y)$.
+     - Query the matching points on the boundary quotient codewords. Note that there are two of them, $x$ and $\omicron \cdot x$.
+     - Multiply the y-coordinates of these points by the zerofiers' values in $x$ and $\omicron \cdot x$.
+     - Add the boundary interpolants' values.
+     - Evaluate the master transition constraint in this point.
+     - Divide by the value of the transition zerofier in $x$.
+     - Verify that the resulting value equals $y$.
+
 [^1]: It is worth ensuring that the trace evaluation domain is disjoint from the FRI evaluation domain, for example by using the coset-trick. However, if partially overlapping subgroups are used for both domains, then $\omega^{1 / \rho} = \omicron$ and $\omega$ generates the larger domain whereas $\omicron$ generates the smaller one.
