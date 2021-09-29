@@ -1,4 +1,4 @@
-# Anatomy of a STARK, Part 4: the STARK Polynomial IOP
+# Anatomy of a STARK, Part 4: The STARK Polynomial IOP
 
 This part of the tutorial deals with the information-theoretic backbone of the STARK proof system, which you might call the STARK Polynomial IOP. 
 Recall that the compilation pipeline of SNARKs involves intermediate stages, the first two of which are the *arithmetic constraint system* and the *Polynomial IOP*. This tutorial describes the properties of the arithmetic constraint system but a discussion about the *arithmetization* step, which transforms the initial computation into an arithmetic constraint system, is out of scope. However, *interpolation* step, which transforms this arithmetic constraint system into a Polynomial IOP, is discussed at length. The final Polynomial IOP can be compiled into a concrete proof system using the FRI-based compiler described in [[part 3|fri.md]].
@@ -89,11 +89,114 @@ Verifier:
  - Verify the link between boundary quotients and transition quotient. To do this:
    - For all points of the transition quotient codeword that were queried in the first round of FRI do:
      - Let the point be $(x, y)$.
-     - Query the matching points on the boundary quotient codewords. Note that there are two of them, $x$ and $\omicron \cdot x$.
+     - Query the matching points on the boundary quotient codewords. Note that there are two of them, $x$ and $\omicron \cdot x$, indicating points "one cycle apart".
      - Multiply the y-coordinates of these points by the zerofiers' values in $x$ and $\omicron \cdot x$.
      - Add the boundary interpolants' values.
      - Evaluate the master transition constraint in this point.
      - Divide by the value of the transition zerofier in $x$.
      - Verify that the resulting value equals $y$.
 
-[^1]: It is worth ensuring that the trace evaluation domain is disjoint from the FRI evaluation domain, for example by using the coset-trick. However, if partially overlapping subgroups are used for both domains, then $\omega^{1 / \rho} = \omicron$ and $\omega$ generates the larger domain whereas $\omicron$ generates the smaller one.
+## Adding Zero-Knowledge
+
+Formally, an interactive proof system is *zero-knowledge* if the distribution of transcripts arising from authentic executions of the protocol is independent of the witness and can be sampled efficiently with public information only. In practice, this means that the prover randomizes the data structures and proof arithmetic using randomness that also remains secret. The transcript is independent of the witness because *any* transcript can be explained by the right choice of randomizers.
+
+With respect to randomizing the STARK proof system, it is worth separating the mechanism into two parts and randomize them separately.
+ 1. The FRI bounded degree proof. This component is randomized by adding a randomizer codeword to the nonlinear combination. This randomizer codeword corresponds to a polynomial of maximal degree whose coefficients are drawn uniformly at random.
+ 2. The linking part that establishes that the boundary quotients are linked to the transition quotient(s). To randomize this, the execution trace for every register is extended with $4s$ uniformly random field elements. The number $4s$ comes from the number $s$ of colinearity checks in the FRI protocol: every colinearity check induces two queries in the initial codeword. The two values of the transition quotient codeword need to be linked two four values of the boundary quotient codewords.
+
+## Implementation
+
+Like the FRI module, the STARK module starts with an initializer function that sets the class's fields to the initialization arguments or values inferred from them.
+
+```python
+from functools import reduce
+import os
+
+class Stark:
+    def __init__( self, field, expansion_factor, num_colinearity_checks, security_level, num_regisers, num_cycles, transition_constraints_blowup_factor=2 ):
+        assert(len(bin(field.p)) - 2 >= security_level), "p must have at least as many bits as security level"
+        assert(expansion_factor & (expansion_factor - 1) == 0), "expansion factor must be a power of 2"
+        assert(expansion_factor >= 4), "expansion factor must be 4 or greater"
+        assert(num_colinearity_checks * 2 >= security_level), "number of colinearity checks must be at least half of security level"
+
+        self.field = field
+        self.expansion_factor = expansion_factor
+        self.num_colinearity_checks = num_colinearity_checks
+        self.security_level = security_level
+
+        self.num_randomizers = 4*num_colinearity_checks
+
+        self.num_regisers = num_regisers
+        self.original_trace_length = num_cycles
+        
+        randomized_trace_length = self.original_trace_length + self.num_randomizers
+        omicron_domain_length = 1 << len(bin(randomized_trace_length * transition_constraints_blowup_factor)[2:])
+        fri_domain_length = omicron_domain_length * expansion_factor
+
+        self.generator = self.field.generator()
+        self.omega = self.field.primitive_nth_root(fri_domain_length)
+        self.omicron = self.field.primitive_nth_root(omicron_domain_length)
+        self.omicron_domain = [self.omicron^i for i in range(omicron_domain_length)]
+
+        self.fri = Fri(self.generator, self.omega, fri_domain_length, self.expansion_factor, self.num_colinearity_checks)
+```
+
+The code makes a distinction between the *original trace length*, which is one greater than the number of cycles, and the *randomized trace length* which the previous variable with $4s$ randomizers extra. A third related variable is the `omicron_domain`, which is the list of points in the subgroup of order $2^k$ where $k$ is the smallest integer such that this domain is still larger than or equal to the randomized trace length.
+
+Next up are the helper functions. First are the degree bounds calculators for a) composition polynomials; b) transition quotient polynomials; and c) the nonlinear random combination of polynomials that goes into FRI. This last number is one less than the next power of two.
+
+```python
+    def composition_degree_bounds( self, transition_constraints ):
+        point_degrees = [1] + [self.original_trace_length+self.num_randomizers-1] * 2*self.num_regisers
+        return [max( sum(r*l for r, l in zip(point_degrees, k)) for k, v in a.dictionary.items()) for a in transition_constraints]
+
+    def transition_quotient_degree_bounds( self, transition_constraints ):
+        return [d - (self.original_trace_length-1) for d in self.composition_degree_bounds(transition_constraints)]
+
+    def max_degree( self, transition_constraints ):
+        md = max(self.transition_quotient_degree_bounds(transition_constraints))
+        return (1 << (len(bin(md)[2:]))) - 1
+```
+
+Note that this code is not compressing the many transition constraints into one. As a result, there are many composition polynomials and many transition quotients.
+
+Up next are zerofier polynomials, which come in two categories: boundary zerofiers and transition zerofiers.
+
+```python
+    def transition_zerofier( self ):
+        domain = self.omicron_domain[0:(self.original_trace_length-1)]
+        return Polynomial.zerofier_domain(domain)
+
+    def boundary_zerofiers( self, boundary ):
+        zerofiers = []
+        for s in range(self.num_regisers):
+            points = [self.omicron^c for c, r, v in boundary if r == s]
+            zerofiers = zerofiers + [Polynomial.zerofier_domain(points)]
+        return zerofiers
+```
+
+The next function computes polynomials that interpolate through the (location,value)-pairs of the boundary conditions.
+
+```python
+    def boundary_interpolants( self, boundary ):
+        interpolants = []
+        for s in range(self.num_regisers):
+            points = [(c,v) for c, r, v in boundary if r == s]
+            domain = [self.omicron^c for c,v in points]
+            values = [v for c,v in points]
+            interpolants = interpolants + [Polynomial.interpolate_domain(domain, values)]
+        return interpolants
+```
+
+The last helper function is used by prover and verifier when they want to transform a seed, obtained from the Fiat-Shamir transform, into a list of field elements. The resulting field elements are used as weights in the nonlinear combination of polynomials before starting FRI.
+
+```python
+    def sample_weights( self, number, randomness ):
+        return [self.field.sample(blake2b(randomness + bytes(i)).digest()) for i in range(0, number)]
+```
+
+### Prove
+
+### Verify
+
+[^1]: It is worth ensuring that the trace evaluation domain is disjoint from the FRI evaluation domain, for example by using the coset-trick. However, if overlapping subgroups are used for both domains, then $\omega^{1 / \rho} = \omicron$ and $\omega$ generates the larger domain whereas $\omicron$ generates the smaller one.
