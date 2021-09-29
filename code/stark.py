@@ -26,11 +26,8 @@ class Stark:
         fri_domain_length = self.omicron_domain_length * expansion_factor
 
         self.generator = self.field.generator()
-        root = self.field.primitive_nth_root(fri_domain_length)
-        self.omega = root
-        for k in range(len(bin(self.expansion_factor)[2:])-1):
-            root = root^2
-        self.omicron = root
+        self.omega = self.field.primitive_nth_root(fri_domain_length)
+        self.omicron = self.field.primitive_nth_root(self.omicron_domain_length)
         self.omicron_domain = [self.omicron^i for i in range(self.omicron_domain_length)]
 
         self.fri = Fri(self.generator, self.omega, fri_domain_length, self.expansion_factor, self.num_colinearity_checks)
