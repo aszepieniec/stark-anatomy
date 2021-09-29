@@ -8,7 +8,8 @@ class Stark:
     def __init__( self, field, expansion_factor, num_colinearity_checks, security_level, state_width, num_cycles, air_blowup_factor=2 ):
         assert(len(bin(field.p)) - 2 >= security_level), "p must have at least as many bits as security level"
         assert(expansion_factor & (expansion_factor - 1) == 0), "expansion factor must be a power of 2"
-        assert(num_colinearity_checks * (len(bin(expansion_factor))-2) >= security_level), "number of colinearity checks must be at least security level over log of expansion factor"
+        assert(expansion_factor >= 4), "expansion factor must be 4 or greater"
+        assert(num_colinearity_checks * 2 >= security_level), "number of colinearity checks must be at least half of security level"
 
         self.field = field
         self.expansion_factor = expansion_factor
@@ -34,15 +35,15 @@ class Stark:
 
         self.fri = Fri(self.generator, self.omega, fri_domain_length, self.expansion_factor, self.num_colinearity_checks)
 
-    def transition_degrees( self, air ):
+    def composition_degree_bounds( self, air ):
         point_degrees = [1] + [self.trace_length+self.num_randomizers-1] * 2*self.state_width
         return [max( sum(r*l for r, l in zip(point_degrees, k)) for k, v in a.dictionary.items()) for a in air]
 
-    def quotient_degrees( self, air ):
-        return [d - (self.trace_length-1) for d in self.transition_degrees(air)]
+    def transition_quotient_degree_bounds( self, air ):
+        return [d - (self.trace_length-1) for d in self.composition_degree_bounds(air)]
 
     def max_degree( self, air ):
-        md = max(self.quotient_degrees(air))
+        md = max(self.transition_quotient_degree_bounds(air))
         return (1 << (len(bin(md)[2:]))) - 1
 
     def transition_zerofier( self ):
@@ -118,14 +119,14 @@ class Stark:
         # get weights for linear combination
         weights = self.sample_weights(1+2*len(transition_quotients), proof_stream.prover_fiat_shamir())
 
-        assert([tq.degree() for tq in transition_quotients] == self.quotient_degrees(air)), "transition quotient degrees do not match with expectation"
+        assert([tq.degree() for tq in transition_quotients] == self.transition_quotient_degree_bounds(air)), "transition quotient degrees do not match with expectation"
 
         # compute composition polynomial
         x = Polynomial([self.field.zero(), self.field.one()])
         terms = []
         for i in range(len(transition_quotients)):
             terms += [transition_quotients[i]]
-            shift = self.max_degree(air) - self.quotient_degrees(air)[i]
+            shift = self.max_degree(air) - self.transition_quotient_degree_bounds(air)[i]
             terms += [(x^shift) * transition_quotients[i]]
         terms += [randomizer_polynomial]
 
@@ -230,7 +231,7 @@ class Stark:
                 av = air_values[s]
                 quotient = av / self.transition_zerofier().evaluate(domain_current_index)
                 terms += [quotient]
-                shift = self.max_degree(air) - self.quotient_degrees(air)[s]
+                shift = self.max_degree(air) - self.transition_quotient_degree_bounds(air)[s]
                 terms += [quotient * (domain_current_index^shift)]
             terms += [randomizer[index]]
             licombo = reduce(lambda a, b : a+b, [terms[j] * weights[j] for j in range(len(terms))], self.field.zero())

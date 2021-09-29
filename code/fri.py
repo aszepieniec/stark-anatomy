@@ -22,7 +22,6 @@ class Fri:
         while codeword_length > self.expansion_factor and 2*self.num_colinearity_tests < codeword_length:
             codeword_length /= 2
             num_rounds += 1
-        print("number of rounds:", num_rounds)
         return num_rounds
 
     def sample_index( byte_array, size ):
