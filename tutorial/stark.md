@@ -104,6 +104,8 @@ With respect to randomizing the STARK proof system, it is worth separating the m
  1. The FRI bounded degree proof. This component is randomized by adding a randomizer codeword to the nonlinear combination. This randomizer codeword corresponds to a polynomial of maximal degree whose coefficients are drawn uniformly at random.
  2. The linking part that establishes that the boundary quotients are linked to the transition quotient(s). To randomize this, the execution trace for every register is extended with $4s$ uniformly random field elements. The number $4s$ comes from the number $s$ of colinearity checks in the FRI protocol: every colinearity check induces two queries in the initial codeword. The two values of the transition quotient codeword need to be linked two four values of the boundary quotient codewords.
 
+It is important to guarantee that none of the x-coordinates that are queried as part of FRI correspond to x-coordinates used for interpolating the execution trace. This is one of the reasons why coset-FRI comes in handy. Nevertheless, other solutions can address this problem.
+
 ## Implementation
 
 Like the FRI module, the STARK module starts with an initializer function that sets the class's fields to the initialization arguments or values inferred from them.
@@ -113,7 +115,7 @@ from functools import reduce
 import os
 
 class Stark:
-    def __init__( self, field, expansion_factor, num_colinearity_checks, security_level, num_regisers, num_cycles, transition_constraints_blowup_factor=2 ):
+    def __init__( self, field, expansion_factor, num_colinearity_checks, security_level, num_registers, num_cycles, transition_constraints_blowup_factor=2 ):
         assert(len(bin(field.p)) - 2 >= security_level), "p must have at least as many bits as security level"
         assert(expansion_factor & (expansion_factor - 1) == 0), "expansion factor must be a power of 2"
         assert(expansion_factor >= 4), "expansion factor must be 4 or greater"
@@ -126,7 +128,7 @@ class Stark:
 
         self.num_randomizers = 4*num_colinearity_checks
 
-        self.num_regisers = num_regisers
+        self.num_registers = num_registers
         self.original_trace_length = num_cycles
         
         randomized_trace_length = self.original_trace_length + self.num_randomizers
@@ -175,7 +177,7 @@ Up next are zerofier polynomials, which come in two categories: boundary zerofie
         return zerofiers
 ```
 
-The next function computes polynomials that interpolate through the (location,value)-pairs of the boundary conditions.
+The next function computes polynomials that interpolate through the (location,value)-pairs of the boundary conditions. This function also enables a boundary counterpart to the transition quotient degree bounds calculator.
 
 ```python
     def boundary_interpolants( self, boundary ):
@@ -186,6 +188,10 @@ The next function computes polynomials that interpolate through the (location,va
             values = [v for c,v in points]
             interpolants = interpolants + [Polynomial.interpolate_domain(domain, values)]
         return interpolants
+
+    def boundary_quotient_degree_bounds( self, randomized_trace_length, boundary ):
+        randomized_trace_degree = randomized_trace_length - 1
+        return [randomized_trace_degree - bi.degree() for bi in self.boundary_interpolants(boundary)]
 ```
 
 The last helper function is used by prover and verifier when they want to transform a seed, obtained from the Fiat-Shamir transform, into a list of field elements. The resulting field elements are used as weights in the nonlinear combination of polynomials before starting FRI.
@@ -197,6 +203,204 @@ The last helper function is used by prover and verifier when they want to transf
 
 ### Prove
 
+Next up is the prover. The big difference with respect to the explanation above is that there is no compression of transition constraints into one master constraint. This task is left as an exercise to the reader.
+
+Another difference is that the transition constraints have $2\mathsf{w}+1$ variables rather than $2\mathsf{w}$. The extra variable takes the value of the evaluation domain over which the execution trace is interpolated. This feature anticipates constraints that depend on the cycle, for instance to evaluate a hash function that uses round constants that are different in each round.
+
+```python
+    def prove( self, trace, transition_constraints, boundary ):
+        # create proof stream object
+        proof_stream = ProofStream()
+        
+        # concatenate randomizers
+        for k in range(self.num_randomizers):
+            trace = trace + [[self.field.sample(os.urandom(17)) for s in range(self.num_registers)]]
+
+        # interpolate
+        trace_domain = [self.omicron^i for i in range(len(trace))]
+        trace_polynomials = []
+        for s in range(self.num_registers):
+            single_trace = [trace[c][s] for c in range(len(trace))]
+            trace_polynomials = trace_polynomials + [Polynomial.interpolate_domain(trace_domain, single_trace)]
+
+        # subtract boundary interpolants and divide out boundary zerofiers
+        boundary_quotients = []
+        for s in range(self.num_registers):
+            interpolant = self.boundary_interpolants(boundary)[s]
+            zerofier = self.boundary_zerofiers(boundary)[s]
+            quotient = (trace_polynomials[s] - interpolant) / zerofier
+            boundary_quotients += [quotient]
+
+        # commit to boundary quotients
+        fri_domain = self.fri.eval_domain()
+        boundary_quotient_codewords = []
+        boundary_quotient_Merkle_roots = []
+        for s in range(self.num_registers):
+            boundary_quotient_codewords = boundary_quotient_codewords + [boundary_quotients[s].evaluate_domain(fri_domain)]
+            merkle_root = Merkle.commit(boundary_quotient_codewords[s])
+            proof_stream.push(merkle_root)
+
+        # symbolically evaluate transition constraints
+        point = [Polynomial([self.field.zero(), self.field.one()])] + trace_polynomials + [tp.scale(self.omicron) for tp in trace_polynomials]
+        transition_polynomials = [a.evaluate_symbolic(point) for a in transition_constraints]
+
+        # divide out zerofier
+        transition_quotients = [tp / self.transition_zerofier() for tp in transition_polynomials]
+
+        # commit to randomizer polynomial
+        randomizer_polynomial = Polynomial([self.field.sample(os.urandom(17)) for i in range(self.max_degree(transition_constraints)+1)])
+        randomizer_codeword = randomizer_polynomial.evaluate_domain(fri_domain) 
+        randomizer_root = Merkle.commit(randomizer_codeword)
+        proof_stream.push(randomizer_root)
+
+        # get weights for nonlinear combination
+        #  - 1 randomizer
+        #  - 2 for every transition quotient
+        #  - 2 for every boundary quotient
+        weights = self.sample_weights(1 + 2*len(transition_quotients) + 2*len(boundary_quotients), proof_stream.prover_fiat_shamir())
+
+        assert([tq.degree() for tq in transition_quotients] == self.transition_quotient_degree_bounds(transition_constraints)), "transition quotient degrees do not match with expectation"
+
+        # compute terms of nonlinear combination polynomial
+        x = Polynomial([self.field.zero(), self.field.one()])
+        terms = []
+        terms += [randomizer_polynomial]
+        for i in range(len(transition_quotients)):
+            terms += [transition_quotients[i]]
+            shift = self.max_degree(transition_constraints) - self.transition_quotient_degree_bounds(transition_constraints)[i]
+            terms += [(x^shift) * transition_quotients[i]]
+        for i in range(self.num_registers):
+            terms += [boundary_quotients[i]]
+            shift = self.max_degree(transition_constraints) - self.boundary_quotient_degree_bounds(len(trace), boundary)[i]
+            terms += [(x^shift) * boundary_quotients[i]]
+
+        # take weighted sum
+        # combination = sum(weights[i] * terms[i] for all i)
+        combination = reduce(lambda a, b : a+b, [Polynomial([weights[i]]) * terms[i] for i in range(len(terms))], Polynomial([]))
+
+        # compute matching codeword
+        combined_codeword = combination.evaluate_domain(fri_domain)
+
+        # prove low degree of combination polynomial
+        indices = self.fri.prove(combined_codeword, proof_stream)
+        indices.sort()
+        duplicated_indices = [i for i in indices] + [(i + self.expansion_factor) % self.fri.domain_length for i in indices]
+
+        # open indicated positions in the boundary quotient codewords
+        for bqc in boundary_quotient_codewords:
+            for i in duplicated_indices:
+                proof_stream.push(bqc[i])
+                path = Merkle.open(i, bqc)
+                proof_stream.push(path)
+
+        # ... as well as in the randomizer
+        for i in indices:
+            proof_stream.push(randomizer_codeword[i])
+            path = Merkle.open(i, randomizer_codeword)
+            proof_stream.push(path)
+
+        # the final proof is just the serialized stream
+        return proof_stream.serialize()
+```
+
 ### Verify
+
+Last is the verifier. It comes with the same caveat and exercise.
+
+```python
+    def verify( self, proof, transition_constraints, boundary ):
+        H = blake2b
+
+        # infer trace length from boundary conditions
+        original_trace_length = 1 + max(c for c, r, v in boundary)
+        randomized_trace_length = original_trace_length + self.num_randomizers
+
+        # deserialize
+        proof_stream = ProofStream.deserialize(proof)
+
+        # get Merkle roots of boundary quotient codewords
+        boundary_quotient_roots = []
+        for s in range(self.num_registers):
+            boundary_quotient_roots = boundary_quotient_roots + [proof_stream.pull()]
+
+        # get Merkle root of randomizer polynomial
+        randomizer_root = proof_stream.pull()
+
+        # get weights for nonlinear combination
+        weights = self.sample_weights(1 + 2*len(transition_constraints) + 2*len(self.boundary_interpolants(boundary)), proof_stream.verifier_fiat_shamir())
+
+        # verify low degree of combination polynomial
+        polynomial_values = []
+        verifier_accepts = self.fri.verify(proof_stream, polynomial_values)
+        polynomial_values.sort(key=lambda iv : iv[0])
+        if not verifier_accepts:
+            return False
+
+        indices = [i for i,v in polynomial_values]
+        values = [v for i,v in polynomial_values]
+
+        # read and verify leafs, which are elements of boundary quotient codewords
+        duplicated_indices = [i for i in indices] + [(i + self.expansion_factor) % self.fri.domain_length for i in indices]
+        leafs = []
+        for r in range(len(boundary_quotient_roots)):
+            leafs = leafs + [dict()]
+            for i in duplicated_indices:
+                leafs[r][i] = proof_stream.pull()
+                path = proof_stream.pull()
+                verifier_accepts = verifier_accepts and Merkle.verify(boundary_quotient_roots[r], i, path, leafs[r][i])
+                if not verifier_accepts:
+                    return False
+
+        # read and verify randomizer leafs
+        randomizer = dict()
+        for i in indices:
+            randomizer[i] = proof_stream.pull()
+            path = proof_stream.pull()
+            verifier_accepts = verifier_accepts and Merkle.verify(randomizer_root, i, path, randomizer[i])
+
+        # verify leafs of combination polynomial
+        for i in range(len(indices)):
+            current_index = indices[i] # do need i
+
+            # get trace values by applying a correction to the boundary quotient values (which are the leafs)
+            domain_current_index = self.generator * (self.omega^current_index)
+            next_index = (current_index + self.expansion_factor) % self.fri.domain_length
+            domain_next_index = self.generator * (self.omega^next_index)
+            current_trace = [self.field.zero() for s in range(self.num_registers)]
+            next_trace = [self.field.zero() for s in range(self.num_registers)]
+            for s in range(self.num_registers):
+                zerofier = self.boundary_zerofiers(boundary)[s]
+                interpolant = self.boundary_interpolants(boundary)[s]
+
+                current_trace[s] = leafs[s][current_index] * zerofier.evaluate(domain_current_index) + interpolant.evaluate(domain_current_index)
+                next_trace[s] = leafs[s][next_index] * zerofier.evaluate(domain_next_index) + interpolant.evaluate(domain_next_index)
+
+            point = [domain_current_index] + current_trace + next_trace
+            transition_constraints_values = [transition_constraints[s].evaluate(point) for s in range(len(transition_constraints))]
+
+            # compute nonlinear combination
+            counter = 0
+            terms = []
+            terms += [randomizer[current_index]]
+            for s in range(len(transition_constraints_values)):
+                tcv = transition_constraints_values[s]
+                quotient = tcv / self.transition_zerofier().evaluate(domain_current_index)
+                terms += [quotient]
+                shift = self.max_degree(transition_constraints) - self.transition_quotient_degree_bounds(transition_constraints)[s]
+                terms += [quotient * (domain_current_index^shift)]
+            for s in range(self.num_registers):
+                bqv = leafs[s][current_index] # boundary quotient value
+                terms += [bqv]
+                shift = self.max_degree(transition_constraints) - self.boundary_quotient_degree_bounds(randomized_trace_length, boundary)[s]
+                terms += [bqv * (domain_current_index^shift)]
+            combination = reduce(lambda a, b : a+b, [terms[j] * weights[j] for j in range(len(terms))], self.field.zero())
+
+            # verify against combination polynomial value
+            verifier_accepts = verifier_accepts and (combination == values[i])
+            if not verifier_accepts:
+                return False
+
+        return verifier_accepts
+```
 
 [^1]: It is worth ensuring that the trace evaluation domain is disjoint from the FRI evaluation domain, for example by using the coset-trick. However, if overlapping subgroups are used for both domains, then $\omega^{1 / \rho} = \omicron$ and $\omega$ generates the larger domain whereas $\omicron$ generates the smaller one.
