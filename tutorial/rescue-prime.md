@@ -193,6 +193,130 @@ class RescuePrime:
 
 ### Rescue-Prime AIR
 
+The transition constraints for a single round of the Rescue-XLIX permutation are obtained expressing the state values in the middle of the round in terms of the state values at the beginning, and again in terms of the state values at the end, and then equating both expressions. Specifically, let $\boldsymbol{s}_i$ denote the state values at the beginning of round $i$, let $\boldsymbol{c}_{2i}$ and $\boldsymbol{c}_{2i+1}$ be round constants, let $M$ be the MDS matrix, and let superscript denote element-wise powering. Then the transition of a single round is captured by the equation
+$$ M (\boldsymbol{s}_i^\alpha) + \boldsymbol{c}_{2i} = \left(M^{-1} (\boldsymbol{s}_{i+1} - \boldsymbol{c}_{2i+1})\right)^\alpha \enspace .$$
+
+To be used in a STARK, transition constraints cannot depend on the round. In other words, what is needed is a single equation that describes all rounds, not just the $i$th round. Let $\boldsymbol{X}$ denote the vector of variables representing the current state (beginning of the round), and $\boldsymbol{Y}$ denote the vector of variables represnting the next state (at the end of the round). Furthermore, let $\mathbf{f}_{\boldsymbol{c}_{2i}}(W)$ denote the vector of $m$ polynomials that take the value $\boldsymbol{c}_{2i}$ on $\omicron^i$, and analogously for $\mathbf{f}_{\boldsymbol{c}_{2i+1}}(W)$. Suppose without loss of generality that the execution trace will be interpolated on the domain $\{\omicron^i | 0 \leq i \leq T\}$ for some $T$. Then the above family of arithmetic transition constraints gives rise to the following equation capturing the same transition conditions.
+$$ M(\boldsymbol{X}^\alpha) + \mathbf{f}_{\boldsymbol{c}_{2i}}(W) = \left(M^{-1}(\boldsymbol{Y} - \mathbf{f}_{\boldsymbol{c}_{2i+1}}(W))\right)^\alpha $$
+
+The transition constraint polynomial is obtained by moving all terms to the left hand side and dropping the equation to zero. Note that there are $2m+1$ variables, corresponding to $m = \mathsf{w}$ registers.
+
+```python
+    def round_constants_polynomials( self, omicron ):
+        first_step_constants = []
+        for i in range(self.m):
+            domain = [omicron^r for r in range(0, self.N)]
+            values = [self.round_constants[2*r*self.m+i] for r in range(0, self.N)]
+            univariate = Polynomial.interpolate_domain(domain, values)
+            multivariate = MPolynomial.lift(univariate, 0)
+            first_step_constants += [multivariate]
+        second_step_constants = []
+        for i in range(self.m):
+            domain = [omicron^r for r in range(0, self.N)]
+            values = [self.field.zero()] * self.N
+            #for r in range(self.N):
+            #    print("len(round_constants):", len(self.round_constants), " but grabbing index:", 2*r*self.m+self.m+i, "for r=", r, "for m=", self.m, "for i=", i)
+            #    values[r] = self.round_constants[2*r*self.m + self.m + i]
+            values = [self.round_constants[2*r*self.m+self.m+i] for r in range(self.N)]
+            univariate = Polynomial.interpolate_domain(domain, values)
+            multivariate = MPolynomial.lift(univariate, 0)
+            second_step_constants += [multivariate]
+
+        return first_step_constants, second_step_constants
+
+    def transition_constraints( self, omicron ):
+        # get polynomials that interpolate through the round constants
+        first_step_constants, second_step_constants = self.round_constants_polynomials(omicron)
+
+        # arithmetize one round of Rescue-Prime
+        variables = MPolynomial.variables(1 + 2*self.m, self.field)
+        cycle_index = variables[0]
+        previous_state = variables[1:(1+self.m)]
+        next_state = variables[(1+self.m):(1+2*self.m)]
+        air = []
+        for i in range(self.m):
+            # compute left hand side symbolically
+            # lhs = sum(MPolynomial.constant(self.MDS[i][k]) * (previous_state[k]^self.alpha) for k in range(self.m)) + first_step_constants[i]
+            lhs = MPolynomial.constant(self.field.zero())
+            for k in range(self.m):
+                lhs = lhs + MPolynomial.constant(self.MDS[i][k]) * (previous_state[k]^self.alpha)
+            lhs = lhs + first_step_constants[i]
+
+            # compute right hand side symbolically
+            # rhs = sum(MPolynomial.constant(self.MDSinv[i][k]) * (next_state[k] - second_step_constants[k]) for k in range(self.m))^self.alpha
+            rhs = MPolynomial.constant(self.field.zero())
+            for k in range(self.m):
+                rhs = rhs + MPolynomial.constant(self.MDSinv[i][k]) * (next_state[k] - second_step_constants[k])
+            rhs = rhs^self.alpha
+
+            # equate left and right hand sides
+            air += [lhs-rhs]
+
+        return air
+```
+
+The boundary constraints are a lot simpler. At the beginning, the first state element is the unknown secret and the second state element is zero because the sponge construction defines it so. At the end (after all $N$ rounds or $T$ cycles), the first state element is the one element of known hash digest $[h]$, and the second state element is unconstrained. Note that this second state element must be kept secret to be secure -- otherwise the attacker and invert the permutation. This description gives rise to the following set $\mathcal{B}$ of triples $(c, r, e) \in \mathbb{Z}_{T+1} \times \mathbb{Z}_\mathsf{w} \times \mathbb{F}$:
+ - $(0, 1, 0)$
+ - $(T, 0, h)$.
+
+```python
+    def boundary_constraints( self, output_element ):
+        constraints = []
+
+        # at start, capacity is zero
+        constraints += [(0, 1, self.field.zero())]
+
+        # at end, rate part is the given output element
+        constraints += [(self.N, 0, output_element)]
+
+        return constraints
+```
+
+The piece of the arithmetization is the witness, which for STARKs is the execution trace. In the case of this particular computation, the trace is the collection of states after every round, in addition to the state at the very beginning.
+
+```python
+    def trace( self, input_element ):
+        trace = []
+
+        # absorb
+        state = [input_element] + [self.field.zero()] * (self.m - 1)
+
+        # explicit copy to record state into trace
+        trace += [[s for s in state]]
+
+        # permutation
+        for r in range(self.N):
+            
+            # forward half-round
+            # S-box
+            for i in range(self.m):
+                state[i] = state[i]^self.alpha
+            # matrix
+            temp = [self.field.zero() for i in range(self.m)]
+            for i in range(self.m):
+                for j in range(self.m):
+                    temp[i] = temp[i] + self.MDS[i][j] * state[j]
+            # constants
+            state = [temp[i] + self.round_constants[2*r*self.m+i] for i in range(self.m)]
+
+            # backward half-round
+            # S-box
+            for i in range(self.m):
+                state[i] = state[i]^self.alphainv
+            # matrix
+            temp = [self.field.zero() for i in range(self.m)]
+            for i in range(self.m):
+                for j in range(self.m):
+                    temp[i] = temp[i] + self.MDS[i][j] * state[j]
+            # constants
+            state = [temp[i] + self.round_constants[2*r*self.m+self.m+i] for i in range(self.m)]
+            
+            # record state at this point, with explicit copy
+            trace += [[s for s in state]]
+
+        return trace
+```
+
 ## Rescue-Prime STARK
 
-### Signature
+### Signature Scheme
