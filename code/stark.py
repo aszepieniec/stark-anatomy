@@ -70,9 +70,10 @@ class Stark:
     def sample_weights( self, number, randomness ):
         return [self.field.sample(blake2b(randomness + bytes(i)).digest()) for i in range(0, number)]
 
-    def prove( self, trace, transition_constraints, boundary ):
-        # create proof stream object
-        proof_stream = ProofStream()
+    def prove( self, trace, transition_constraints, boundary, proof_stream=None ):
+        # create proof stream object if necessary
+        if proof_stream == None:
+            proof_stream = ProofStream()
         
         # concatenate randomizers
         for k in range(self.num_randomizers):
@@ -164,15 +165,17 @@ class Stark:
         # the final proof is just the serialized stream
         return proof_stream.serialize()
 
-    def verify( self, proof, transition_constraints, boundary ):
+    def verify( self, proof, transition_constraints, boundary, proof_stream=None ):
         H = blake2b
 
         # infer trace length from boundary conditions
         original_trace_length = 1 + max(c for c, r, v in boundary)
         randomized_trace_length = original_trace_length + self.num_randomizers
 
-        # deserialize
-        proof_stream = ProofStream.deserialize(proof)
+        # deserialize with right proof stream
+        if proof_stream == None:
+            proof_stream = ProofStream()
+        proof_stream = proof_stream.deserialize(proof)
 
         # get Merkle roots of boundary quotient codewords
         boundary_quotient_roots = []
