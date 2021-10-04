@@ -1,11 +1,12 @@
 from rescue_prime import *
 from stark import *
-from haslib import blake2s
+from hashlib import blake2s
 import os
 import pickle as pickle
 
 class SignatureProofStream(ProofStream):
     def __init__( self, document ):
+        ProofStream.__init__(self)
         self.document = document
         self.prefix = blake2s(bytes(document)).digest()
 
@@ -20,42 +21,42 @@ class SignatureProofStream(ProofStream):
         sps.objects = pickle.loads(bb)
         return sps
 
-class RPSS:
+class RPSSS:
     def __init__( self ):
         self.field = Field.main()
         expansion_factor = 4
-        num_colinearity_checks = 2
-        security_level = 2
+        num_colinearity_checks = 64
+        security_level = 2 * num_colinearity_checks
 
         self.rp = RescuePrime()
         num_cycles = self.rp.N+1
         state_width = self.rp.m
 
-        self.stark = Stark(field, expansion_factor, num_colinearity_checks, security_level, state_width, num_cycles)
+        self.stark = Stark(self.field, expansion_factor, num_colinearity_checks, security_level, state_width, num_cycles, transition_constraints_degree=3)
 
     def stark_prove( self, input_element, proof_stream ):
-        output_element = rp.hash(input_element)
+        output_element = self.rp.hash(input_element)
 
         trace = self.rp.trace(input_element)
         transition_constraints = self.rp.transition_constraints(self.stark.omicron)
-        boundary_constraints = rp.boundary_constraints(output_element)
+        boundary_constraints = self.rp.boundary_constraints(output_element)
         proof = self.stark.prove(trace, transition_constraints, boundary_constraints, proof_stream)
  
-	return proof
+        return proof
 
     def stark_verify( self, output_element, stark_proof, proof_stream ):
         boundary_constraints = self.rp.boundary_constraints(output_element)
         transition_constraints = self.rp.transition_constraints(self.stark.omicron)
-        return self.stark.verify(proof, transition_constraints, boundary_constraints, proof_stream)
+        return self.stark.verify(stark_proof, transition_constraints, boundary_constraints, proof_stream)
 
     def keygen( self ):
         sk = self.field.sample(os.urandom(17))
-        pk = rp.hash(sk)
+        pk = self.rp.hash(sk)
         return sk, pk
 
     def sign( self, sk, document ):
         sps = SignatureProofStream(document)
-        signature = self.prove(sk, sps)
+        signature = self.stark_prove(sk, sps)
         return signature
 
     def verify( self, pk, document, signature ):

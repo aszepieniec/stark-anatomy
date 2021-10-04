@@ -19,7 +19,7 @@ class Fri:
     def num_rounds( self ):
         codeword_length = self.domain_length
         num_rounds = 0
-        while codeword_length > self.expansion_factor and 2*self.num_colinearity_tests < codeword_length:
+        while codeword_length > self.expansion_factor and self.num_colinearity_tests < codeword_length:
             codeword_length /= 2
             num_rounds += 1
         return num_rounds
@@ -62,6 +62,8 @@ class Fri:
 
         # for each round
         for r in range(self.num_rounds()):
+            # make sure omega has the right order
+            assert(omega^(len(codeword) - 1) == omega.inverse()), "error in commit: omega does not have the right order!"
 
             # compute and send Merkle root
             root = Merkle.commit(codeword)
@@ -153,8 +155,15 @@ class Fri:
         for r in range(self.num_rounds()-1):
             last_omega = last_omega^2
             last_offset = last_offset^2
+
+        # assert that last_omega has the right order
+        assert(last_omega.inverse() == last_omega^(len(last_codeword)-1)), "omega does not have right order"
+
         last_domain = [last_offset * (last_omega^i) for i in range(len(last_codeword))]
+
         poly = Polynomial.interpolate_domain(last_domain, last_codeword)
+        # verify by  evaluating
+        assert(poly.evaluate_domain(last_domain) == last_codeword), "re-evaluated codeword does not match original!"
         if poly.degree() > degree:
             print("last codeword does not correspond to polynomial of low enough degree")
             print("observed degree:", poly.degree())

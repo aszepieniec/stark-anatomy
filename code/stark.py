@@ -5,7 +5,7 @@ from functools import reduce
 import os
 
 class Stark:
-    def __init__( self, field, expansion_factor, num_colinearity_checks, security_level, num_registers, num_cycles, transition_constraints_blowup_factor=2 ):
+    def __init__( self, field, expansion_factor, num_colinearity_checks, security_level, num_registers, num_cycles, transition_constraints_degree=2 ):
         assert(len(bin(field.p)) - 2 >= security_level), "p must have at least as many bits as security level"
         assert(expansion_factor & (expansion_factor - 1) == 0), "expansion factor must be a power of 2"
         assert(expansion_factor >= 4), "expansion factor must be 4 or greater"
@@ -22,7 +22,7 @@ class Stark:
         self.original_trace_length = num_cycles
         
         randomized_trace_length = self.original_trace_length + self.num_randomizers
-        omicron_domain_length = 1 << len(bin(randomized_trace_length * transition_constraints_blowup_factor)[2:])
+        omicron_domain_length = 1 << len(bin(randomized_trace_length * transition_constraints_degree)[2:])
         fri_domain_length = omicron_domain_length * expansion_factor
 
         self.generator = self.field.generator()
@@ -126,15 +126,16 @@ class Stark:
 
         # compute terms of nonlinear combination polynomial
         x = Polynomial([self.field.zero(), self.field.one()])
+        max_degree = self.max_degree(transition_constraints)
         terms = []
         terms += [randomizer_polynomial]
         for i in range(len(transition_quotients)):
             terms += [transition_quotients[i]]
-            shift = self.max_degree(transition_constraints) - self.transition_quotient_degree_bounds(transition_constraints)[i]
+            shift = max_degree - self.transition_quotient_degree_bounds(transition_constraints)[i]
             terms += [(x^shift) * transition_quotients[i]]
         for i in range(self.num_registers):
             terms += [boundary_quotients[i]]
-            shift = self.max_degree(transition_constraints) - self.boundary_quotient_degree_bounds(len(trace), boundary)[i]
+            shift = max_degree - self.boundary_quotient_degree_bounds(len(trace), boundary)[i]
             terms += [(x^shift) * boundary_quotients[i]]
 
         # take weighted sum

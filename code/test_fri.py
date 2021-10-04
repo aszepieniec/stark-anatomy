@@ -4,8 +4,8 @@ from fri import *
 def test_fri( ):
     field = Field.main()
     degree = 15
-    expansion_factor = 8
-    num_colinearity_tests = 11
+    expansion_factor = 4
+    num_colinearity_tests = 21
 
     initial_codeword_length = (degree + 1) * expansion_factor
     log_codeword_length = 0

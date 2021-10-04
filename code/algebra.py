@@ -86,7 +86,7 @@ class Field:
 
     def inverse( self, operand ):
         a, b, g = xgcd(operand.value, self.p)
-        return FieldElement(a, self)
+        return FieldElement(((a % self.p) + self.p) % self.p, self)
 
     def divide( self, left, right ):
         assert(not right.is_zero()), "divide by zero"
