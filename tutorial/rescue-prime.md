@@ -317,6 +317,104 @@ The piece of the arithmetization is the witness, which for STARKs is the executi
         return trace
 ```
 
-## Rescue-Prime STARK
+## STARK-based Signatures
+
+A non-interactive zero-knowldge proof system can be transformed into a signature scheme. The catch is that it must be capable of proving knowledge of a solution to a cryptographically hard problem. STARKs can be used to prove arbitrarily complex computational statements. However, the whole point of Rescue-Prime is that it generates cryptographically hard problem instances in a STARK-friendly way -- concretely, with a compact AIR. So let's transform a STARK for Rescue-Prime into a signature scheme.
+
+### Rescue-Prime STARK
+
+Producing a prover and verifier for STARK for Rescue-Prime consists of little more than linking together existing code snippets.
+
+```python
+
+class RPSSS:
+    def __init__( self ):
+        self.field = Field.main()
+        expansion_factor = 4
+        num_colinearity_checks = 64
+        security_level = 2 * num_colinearity_checks
+
+        self.rp = RescuePrime()
+        num_cycles = self.rp.N+1
+        state_width = self.rp.m
+
+        self.stark = Stark(self.field, expansion_factor, num_colinearity_checks, security_level, state_width, num_cycles, transition_constraints_degree=3)
+
+    def stark_prove( self, input_element, proof_stream ):
+        output_element = self.rp.hash(input_element)
+
+        trace = self.rp.trace(input_element)
+        transition_constraints = self.rp.transition_constraints(self.stark.omicron)
+        boundary_constraints = self.rp.boundary_constraints(output_element)
+        proof = self.stark.prove(trace, transition_constraints, boundary_constraints, proof_stream)
+ 
+        return proof
+
+    def stark_verify( self, output_element, stark_proof, proof_stream ):
+        boundary_constraints = self.rp.boundary_constraints(output_element)
+        transition_constraints = self.rp.transition_constraints(self.stark.omicron)
+        return self.stark.verify(stark_proof, transition_constraints, boundary_constraints, proof_stream)
+```
+
+Note the explicit argument concerning the proof stream. This needs to be a special object that simulates a *message-dependent* Fiat-Shamir transform, as opposed to a regular one.
+
+### Message-Dependent Fiat-Shamir
+
+In order to transform a zero-knowledge proof system into a signature scheme, a non-interactive proof must be tied to the document that is being signed. Traditionally, the way to do this via Fiat-Shamir is to define the verifier's pseudorandom response as the hash digest of the document concatenated with the entire protocol transcript up until the point where its output is required.
+
+In terms of implementation, this requires a new proof stream object -- one that is aware of the document for which the signature is to be generated or verified. The next class achieves just this.
+
+```python
+
+class SignatureProofStream(ProofStream):
+    def __init__( self, document ):
+        ProofStream.__init__(self)
+        self.document = document
+        self.prefix = blake2s(bytes(document)).digest()
+
+    def prover_fiat_shamir( self, num_bytes=32 ):
+        return shake_256(self.prefix + self.serialize()).digest(num_bytes)
+
+    def verifier_fiat_shamir( self, num_bytes=32 ):
+        return shake_256(self.prefix + pickle.dumps(self.objects[:self.read_index])).digest(num_bytes)
+
+    def deserialize( self, bb ):
+        sps = SignatureProofStream(self.document)
+        sps.objects = pickle.loads(bb)
+        return sps
+```
 
 ### Signature Scheme
+
+At this point it is possible to define the key generation, signature generation, and signature verification functions that make up a signature scheme. Note that these functions are members of the Rescue-Prime STARK Signature Scheme (`RPSSS`) class whose definition started earlier.
+
+```python
+# class RPSSS:
+    def keygen( self ):
+        sk = self.field.sample(os.urandom(17))
+        pk = self.rp.hash(sk)
+        return sk, pk
+
+    def sign( self, sk, document ):
+        sps = SignatureProofStream(document)
+        signature = self.stark_prove(sk, sps)
+        return signature
+
+    def verify( self, pk, document, signature ):
+        sps = SignatureProofStream(document)
+        return self.stark_verify(pk, signature, sps)
+```
+
+This code defines a *provably secure*[^1], *post-quantum* signature scheme that (almost) achieves a 128 bit security level. While this description sounds flattering, the scheme's performance metrics are much less so:
+ - secret key size: 16 bytes (yay!)
+ - public key size: 16 bytes (yay!)
+ - signature size: **~146 kB**
+ - keygen time: 0.01 seconds (acceptable)
+ - signing time: **151 seconds**
+ - verification time: **7 seconds**
+
+There might be a few optimizations available that can reduce the proof's size, such as mering common paths when opening a batch of Merkle leafs. However, these optimizations distract from the purpose of this tutorial, which is to highlight and explain the mathematics involved.
+
+In terms of speed, a lot of the poor performance is due to using python instead of a language that is closer to the hardware such as C or rust. Python was chosen for the same reason -- to highlight and explain the maths. But the biggest performance gain in terms of speed is going to come from switching to faster algorithms for key operations. This is the topic of the next part of the tutorial.
+
+[^1]: More specifically, in the random oracle model, a successful signature-forger gives rise to an adversary who breaks the one-wayness of Rescue-Prime with polynomially related running time and success probability.
