@@ -115,7 +115,7 @@ from functools import reduce
 import os
 
 class Stark:
-    def __init__( self, field, expansion_factor, num_colinearity_checks, security_level, num_registers, num_cycles, transition_constraints_blowup_factor=2 ):
+    def __init__( self, field, expansion_factor, num_colinearity_checks, security_level, num_registers, num_cycles, transition_constraints_degree=2 ):
         assert(len(bin(field.p)) - 2 >= security_level), "p must have at least as many bits as security level"
         assert(expansion_factor & (expansion_factor - 1) == 0), "expansion factor must be a power of 2"
         assert(expansion_factor >= 4), "expansion factor must be 4 or greater"
@@ -132,7 +132,7 @@ class Stark:
         self.original_trace_length = num_cycles
         
         randomized_trace_length = self.original_trace_length + self.num_randomizers
-        omicron_domain_length = 1 << len(bin(randomized_trace_length * transition_constraints_blowup_factor)[2:])
+        omicron_domain_length = 1 << len(bin(randomized_trace_length * transition_constraints_degree)[2:])
         fri_domain_length = omicron_domain_length * expansion_factor
 
         self.generator = self.field.generator()
@@ -208,9 +208,10 @@ Next up is the prover. The big difference with respect to the explanation above 
 Another difference is that the transition constraints have $2\mathsf{w}+1$ variables rather than $2\mathsf{w}$. The extra variable takes the value of the evaluation domain over which the execution trace is interpolated. This feature anticipates constraints that depend on the cycle, for instance to evaluate a hash function that uses round constants that are different in each round.
 
 ```python
-    def prove( self, trace, transition_constraints, boundary ):
-        # create proof stream object
-        proof_stream = ProofStream()
+    def prove( self, trace, transition_constraints, boundary, proof_stream=None ):
+        # create proof stream object if necessary
+        if proof_stream == None:
+            proof_stream = ProofStream()
         
         # concatenate randomizers
         for k in range(self.num_randomizers):
@@ -308,15 +309,17 @@ Another difference is that the transition constraints have $2\mathsf{w}+1$ varia
 Last is the verifier. It comes with the same caveat and exercise.
 
 ```python
-    def verify( self, proof, transition_constraints, boundary ):
+    def verify( self, proof, transition_constraints, boundary, proof_stream=None ):
         H = blake2b
 
         # infer trace length from boundary conditions
         original_trace_length = 1 + max(c for c, r, v in boundary)
         randomized_trace_length = original_trace_length + self.num_randomizers
 
-        # deserialize
-        proof_stream = ProofStream.deserialize(proof)
+        # deserialize with right proof stream
+        if proof_stream == None:
+            proof_stream = ProofStream()
+        proof_stream = proof_stream.deserialize(proof)
 
         # get Merkle roots of boundary quotient codewords
         boundary_quotient_roots = []
