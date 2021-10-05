@@ -50,25 +50,6 @@ def test_multiply( ):
 
         assert(fast_product == slow_product), "fast product does not equal slow product"
 
-def test_zerofier( ):
-    field = Field.main()
-
-    logn = 12
-    n = 1 << logn
-    primitive_root = field.primitive_nth_root(n)
-
-    for trial in range(20):
-        rand1 = int(os.urandom(1)[0]) % n
-        rand2 = int(os.urandom(1)[0]) % n
-        zeros_start = min(rand1, rand2)
-        zeros_stop = max(rand1, rand2)
-        if zeros_start == zeros_stop:
-            continue
-        zerofier_codeword = fast_zerofier_codeword(primitive_root, n, zeros_start, zeros_stop)
-        assert(zerofier_codeword[zeros_start:zeros_stop] == [field.zero()] * (zeros_stop - zeros_start)), "zero points are not zero in zerofier codeword"
-        assert(z != field.zero() for z in zerofier_codeword[:zeros_start]), "zerofier codeword has zeros before zeros start"
-        assert(z != field.zero() for z in zerofier_codeword[zeros_stop:]), "zerofier codeword has zeros after zeros stop"
-
 def test_interpolate( ):
     field = Field.main()
 
@@ -81,11 +62,12 @@ def test_interpolate( ):
         if N == 0:
             continue
         print("N:", N)
-        values = [field.sample(os.urandom(1)) for i in range(N)]
-        poly = fast_interpolate(primitive_root, n, values)
+        values = [field.sample(os.urandom(17)) for i in range(N)]
+        domain = [field.sample(os.urandom(17)) for i in range(N)]
+        poly = fast_interpolate(domain, values, primitive_root, n)
         print("poly degree:", poly.degree())
-        values_again = fast_evaluate(poly, primitive_root, n)[0:N]
-        values_again = poly.evaluate_domain([primitive_root^i for i in range(N)])
+        values_again = fast_evaluate(poly, domain, primitive_root, n)[0:N]
+        #values_again = poly.evaluate_domain(domain)
 
         if values != values_again:
             print("fast interpolation and evaluation are not inverses")
