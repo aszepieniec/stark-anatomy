@@ -1,4 +1,4 @@
-# Anatomy of a STARK, Part 4: A Rescue-Prime STARK
+# Anatomy of a STARK, Part 5: A Rescue-Prime STARK
 
 This part of the tutorial puts the tools developed in the previous parts together to build a concretely useful STARK proof system. This application produces a STARK proof of correct evaluation of the Rescue-Prime hash function on a secret input with a known output. It is concretely useful because the resulting non-interactive proof doubles as a post-quantum signature scheme.
 
