@@ -37,23 +37,23 @@ Translating the conditions for true computational integrity claims to the trace 
  - all boundary constraints are satisfied: $\forall (i, w, e) \in \mathcal{B} \, . \, t_w(\omicron^i) = e$; and
  - for all cycles, all transition constraints are satisfied: $\forall i \in \mathbb{Z}_T \, . \, \forall j \in \mathbb{Z}_r \, . \, p_j( t_0(\omicron^i), \ldots, t_{\mathsf{w}-1}(\omicron^i), t_0(\omicron^{i+1}), \ldots, t_{\mathsf{w}-1}(\omicron^{i+1})) = 0$.
 
-The last expression looks complicated. However, observe that the left hand side of the equation corresponds to the univariate polynomial $p_j(t_0(X)), \ldots, t_{\mathsf{w}-1}(X), t_0(\omicron \cdot X), \ldots, t_{\mathsf{w}-1}(\omicron \cdot X))$. The entire expression simply says that all $r$ of these *composition polynomials* evaluate to 0 in $\{ \omicron^i | i \in \mathbb{Z}_T\}$.
+The last expression looks complicated. However, observe that the left hand side of the equation corresponds to the univariate polynomial $p_j(t_0(X)), \ldots, t_{\mathsf{w}-1}(X), t_0(\omicron \cdot X), \ldots, t_{\mathsf{w}-1}(\omicron \cdot X))$. The entire expression simply says that all $r$ of these *transition polynomials* evaluate to 0 in $\{ \omicron^i | i \in \mathbb{Z}_T\}$.
 
 This observation gives rise to the following high-level Polynomial IOP:
  1. The prover commits to the trace polynomials $\boldsymbol{t}(X)$.
  2. The verifier checks that $t_w(X)$ evaluates to $e$ in $\omicron^i$ for all $(i, w, e) \in \mathcal{B}$.
- 3. The prover commits to the composition polynomials $\mathbf{c}(X) = \mathbf{p}(t_0(X)), \ldots, t_{\mathsf{w}-1}(X), t_0(\omicron \cdot X), \ldots, t_{\mathsf{w}-1}(\omicron \cdot X))$.
+ 3. The prover commits to the transition polynomials $\mathbf{c}(X) = \mathbf{p}(t_0(X)), \ldots, t_{\mathsf{w}-1}(X), t_0(\omicron \cdot X), \ldots, t_{\mathsf{w}-1}(\omicron \cdot X))$.
  4. The verifier checks that $\mathbf{c}(X)$ and $\boldsymbol{t}(X)$ are correctly related by:
    4.1. choosing a random point $z \in \mathbb{F}_p \backslash \{0\}$,
    4.2. querying the values of $\boldsymbol{t}(X)$ in $z$ and $\omicron \cdot z$,
    4.3. evaluating the transition verification polynomials $\mathbf{p}(X_1, \ldots, X_{\mathsf{w}-1}, Y_0, \ldots, Y_{\mathsf{w}-1})$ in these $2\mathsf{w}$ points, and
    4.4 querying the values of $\mathbf{c}(X)$ in $z$,
    4.5 checking that the values obtained in the previous two steps match;
- 5. The verifier checks that the composition polynomials $\mathbf{c}(X)$ evaluate to zero in $\{ \omicron^i | i \in \mathbb{Z}_T\}$.
+ 5. The verifier checks that the transition polynomials $\mathbf{c}(X)$ evaluate to zero in $\{ \omicron^i | i \in \mathbb{Z}_T\}$.
 
-In fact, the commitment of the composition polynomials can be omitted. Instead, the verifier uses the evaluation of $\boldsymbol{t}(X)$ in $z$ and $\omicron \cdot z$ to compute the value of $\mathbf{c}(X)$ in the one point needed to verify that $\mathbf{c}(X)$ evaluates to 0 in $\{ \omicron^i | i \in \mathbb{Z}_T\}$.
+In fact, the commitment of the transition polynomials can be omitted. Instead, the verifier uses the evaluation of $\boldsymbol{t}(X)$ in $z$ and $\omicron \cdot z$ to compute the value of $\mathbf{c}(X)$ in the one point needed to verify that $\mathbf{c}(X)$ evaluates to 0 in $\{ \omicron^i | i \in \mathbb{Z}_T\}$.
 
-There is another layer of redundancy, but it is only apparent after the evaluation checks are unrolled. The FRI compiler simulates an evaluation check by a) subtracting the y-coordinate, b) dividing out the zerofier, which is the minimal polynomial that vanishes at the x-coordinate, and c) proving that the resulting quotient has a bounded degree. This procedure happens twice for the STARK polynomials -- first: applied to the trace polynomials to show satisfaction of the boundary constraints, and second: applied to the composition polynomials to show that the transition constraints are satisfied. We call the resulting lists of quotient polynomials the *boundary quotients* and the *transition quotients* respectively.
+There is another layer of redundancy, but it is only apparent after the evaluation checks are unrolled. The FRI compiler simulates an evaluation check by a) subtracting the y-coordinate, b) dividing out the zerofier, which is the minimal polynomial that vanishes at the x-coordinate, and c) proving that the resulting quotient has a bounded degree. This procedure happens twice for the STARK polynomials -- first: applied to the trace polynomials to show satisfaction of the boundary constraints, and second: applied to the transition polynomials to show that the transition constraints are satisfied. We call the resulting lists of quotient polynomials the *boundary quotients* and the *transition quotients* respectively.
 
 The redundancy comes from the fact that the trace polynomials relate to both quotients. It can therefore be eliminated by merging the equations they are involved in. The next diagram illustrates this elimination in the context of the STARK Polynomial IOP workflow. The green box indicates that the polynomials are committed to through the familiar evaluation and Merkle root procedure and are provided as input to FRI.
 
@@ -61,9 +61,9 @@ The redundancy comes from the fact that the trace polynomials relate to both quo
 
 At the top of this diagram in red are the objects associated with the arithmetic constraint system, with the constraints written in small caps font to indicate that they are known to the verifier. The prover interpolates the execution trace to obtain the trace polynomials, but it is not necessary to commit to these polynomials. Instead, the prover interpolates the boundary points and subtracts the resulting interpolants from the trace polynomials. This procedure produces the *dense trace polynomials*, for lack of a better name. To obtain the boundary quotients from the dense trace polynomials, the prover divides out the zerofier. Note that the boundary quotients and trace polynomials are equivalent in the following sense: if the verifier knows a value in a given point of one, he can compute the matching value of the other using only public information.
 
-To obtain the composition polynomials, the prover evaluates the transition constraints (recall, these are given as multivariate polynomials) symbolically in the trace polynomials. To get the transition quotients from the composition polynomials, divide out the zerofier. Assume for the time being that the verifier is capable of evaluating this zerofier efficiently. Note that the transition quotients and the trace polynomials are not equivalent -- the verifier cannot necessarily undo the symbolic evaluation. However, this non-equivalence does not matter. What the verifier needs to verify is that the boundary quotients and the transition quotients are linked. Traveling from the boundary quotients to the transition quotients, and performing the indicated arithmetic along the way, establishes this link. The remaining part of the entire computational integrity claim is the bounded degree of the quotient polynomials, and this is exactly what FRI already solves.
+To obtain the transition polynomials, the prover evaluates the transition constraints (recall, these are given as multivariate polynomials) symbolically in the trace polynomials. To get the transition quotients from the transition polynomials, divide out the zerofier. Assume for the time being that the verifier is capable of evaluating this zerofier efficiently. Note that the transition quotients and the trace polynomials are not equivalent -- the verifier cannot necessarily undo the symbolic evaluation. However, this non-equivalence does not matter. What the verifier needs to verify is that the boundary quotients and the transition quotients are linked. Traveling from the boundary quotients to the transition quotients, and performing the indicated arithmetic along the way, establishes this link. The remaining part of the entire computational integrity claim is the bounded degree of the quotient polynomials, and this is exactly what FRI already solves.
 
-The use of the plural on the right hand side is slightly misleading. After the boundary quotients have been committed to by sending their Merkle roots to the verifier, the prover obtains from the verifier random weights with which to compress the transition constraints to a single linear combination. As a result of this compression, there is one transition constraint, one composition polynomial, and one transition quotient. Nevertheless, this compression may be omitted without affecting security; it merely requires more work on the part of both the prover and the verifier.
+The use of the plural on the right hand side is slightly misleading. After the boundary quotients have been committed to by sending their Merkle roots to the verifier, the prover obtains from the verifier random weights with which to compress the transition constraints to a single linear combination. As a result of this compression, there is one transition constraint, one transition polynomial, and one transition quotient. Nevertheless, this compression may be omitted without affecting security; it merely requires more work on the part of both the prover and the verifier.
 
 To summarize, this workflow generates two recipes: one for the prover and one for the verifier. They are presented here in abstract terms and in interactive form.
 
@@ -75,7 +75,7 @@ Prover:
  - Commit to the dense trace polynomials.
  - Get $r$ random coefficients from the verifier.
  - Compress the $r$ transition constraints into one master constraint that is the weighted sum.
- - Symbolically evaluate the master constraint in the trace polynomials, thus generating the composition polynomial.
+ - Symbolically evaluate the master constraint in the trace polynomials, thus generating the transition polynomial.
  - Divide out the transition zerofier to get the transition quotient.
  - Commit to the transition zerofier.
  - Run FRI on all committed polynomials.
@@ -145,22 +145,22 @@ class Stark:
 
 The code makes a distinction between the *original trace length*, which is one greater than the number of cycles, and the *randomized trace length* which the previous variable with $4s$ randomizers extra. A third related variable is the `omicron_domain`, which is the list of points in the subgroup of order $2^k$ where $k$ is the smallest integer such that this domain is still larger than or equal to the randomized trace length.
 
-Next up are the helper functions. First are the degree bounds calculators for a) composition polynomials; b) transition quotient polynomials; and c) the nonlinear random combination of polynomials that goes into FRI. This last number is one less than the next power of two.
+Next up are the helper functions. First are the degree bounds calculators for a) transition polynomials; b) transition quotient polynomials; and c) the nonlinear random combination of polynomials that goes into FRI. This last number is one less than the next power of two.
 
 ```python
-    def composition_degree_bounds( self, transition_constraints ):
+    def transition_degree_bounds( self, transition_constraints ):
         point_degrees = [1] + [self.original_trace_length+self.num_randomizers-1] * 2*self.num_regisers
         return [max( sum(r*l for r, l in zip(point_degrees, k)) for k, v in a.dictionary.items()) for a in transition_constraints]
 
     def transition_quotient_degree_bounds( self, transition_constraints ):
-        return [d - (self.original_trace_length-1) for d in self.composition_degree_bounds(transition_constraints)]
+        return [d - (self.original_trace_length-1) for d in self.transition_degree_bounds(transition_constraints)]
 
     def max_degree( self, transition_constraints ):
         md = max(self.transition_quotient_degree_bounds(transition_constraints))
         return (1 << (len(bin(md)[2:]))) - 1
 ```
 
-Note that this code is not compressing the many transition constraints into one. As a result, there are many composition polynomials and many transition quotients.
+Note that this code is not compressing the many transition constraints into one. As a result, there are many transition polynomials and many transition quotients.
 
 Up next are zerofier polynomials, which come in two categories: boundary zerofiers and transition zerofiers.
 
