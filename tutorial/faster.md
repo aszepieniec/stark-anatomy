@@ -218,13 +218,26 @@ It is tempting to pad the trace until its length is the next power of 2. Clearly
    - over a distinct domain it evaluates to the uniformly random randomizers.
  - If the randomizers are appended before padding, then the transition constraints must by compatible with this operation, or else the composition polynomials will not evaluate to zero in the entire power-of-two subgroup. This option requires changing the AIR.
 
-I am not sure which of the options is the standard solution. Both strike me as hacky workarounds for a problem in need of a more elegant solution. Preprocessing offers this solution, and serves a dual didactical purpose particularly relevant for this tutorial.
+I am not sure which of the options is the standard solution. Both strike me as hacky workarounds for a problem in need of a more elegant solution. Preprocessing offers this solution, obviates padding, and serves a dual didactical purpose particularly relevant for this tutorial.
 
 ### Preprocessing
 
 Where a standard Polynomial IOP consists of two parties, the prover and the verifier, a *Preprocessing Polynomial IOP* consists if three: a prover, a verifier, and an *indexer*. (The indexer is sometimes also called the *preprocessor* or the *helper*.)
 
-The role of the indexer is to perform computations that help the verifier (not to mention prover) but that are too expensive for the verifier to perform directly. The catch is that the indexer does not receive the same input as the verifier does. The indexer's input (the *index*) is information about the computation that can be computed ahead of time, before specific data is known. For example, the index could be the number of cycles that the computation is supposed to take, along with the transition constraints. The specific information about the computation, or *instance*, would be the boundary constraints.
+The role of the indexer is to perform computations that help the verifier (not to mention prover) but that are too expensive for the verifier to perform directly. The catch is that the indexer does not receive the same input as the verifier does. The indexer's input (the *index*) is information about the computation that can be computed ahead of time, before specific data is known. For example, the index could be the number of cycles that the computation is supposed to take, along with the transition constraints. The specific information about the computation, or *instance*, would be the boundary constraints. The verifier's input is the instance as well as the indexer's output (which itself may include the index). The point is that from the verifier's point of view, the indexer's output is trusted.
 
 ![Information flow in a proof system with preprocessing.](graphics/preprocessing.svg)
 
+Concretely, the indexer's output to the verifier will be a commitment to the zerofier $Z(X) = \prod_{i=0}^{T-1} (X-\omicron^i)$ via the familiar Merkle root of Reed-Solomon codeword construction. Whenever the verifier needs the value of this zerofier in a point, the prover provides him with this leaf along with an authentication path. Note that the verifier does not need evaluate the zerofier in points outside the FRI domain. As a result, there is no need to prove that the zerofier has a low degree; it comes straight from the trusted indexer.
+
+### Variable Execution Times
+
+The solution described above works perfectly fine if the execution time $T$ is known beforehand. What to do, however, when the execution time is not known beforehand, and thus cannot be included in the index?
+
+Preprocessing still holds a solution, but at the cost of a slightly more expensive verifier. The indexer commits to each member of a family of zerofiers $\{Z_{2^k}(X)\}_k$ where $Z_{2^k}(X) = \prod_{i=0}^{2^k-1} (X - \omicron^i)$. Let $t = \lfloor \log_2 T \rfloor$ such that $Z_{2^t}(X)$ belongs to this family.
+
+The prover wishes to show that a certain transition polynomial $p(X)$ evaluates to zero on $\{\omicron^i\}_{i=0}^{T-1}$. Without preprocessing, he would commit to and prove the bounded degree of a quotient polynomial $q(X) = p(X) / Z_{T-1}(X)$, where $Z_{T-1}(X) = \prod_{i=0}^{T-1} (X - \omicron^i)$. With preprocessing, he must commit to and prove the bounded degree of two quotient polynomials:
+ 1. $q_l(X) = \frac{p(X) }{ Z_{2^t}(X)}$ and
+ 2. $q_r(X) = \frac{p(X) }{\omicron^{T-1-2^t} \cdot Z_{2^t}(\omicron^{2^t-T+1} \cdot X)}$.
+
+The denominator of the second polynomial is exactly the zerofier $\prod_{i=T-1-2^t}^{T-1} (X - \omicron^i)$. The transition polynomial is divisible by both zerofiers if and only if it is divisible by the union zerofier $\prod_{i=0}^{T-1} (X - \omicron^i)$.
