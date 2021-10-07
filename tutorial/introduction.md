@@ -33,7 +33,7 @@ With these sources available, why am I writing another tutorial?
 
 *The papers are inaccessible.* Sadly, the incentives in scientific publishing are set up to make scientific papers unreadable to a layperson audience. Tutorials such as this one are needed then, to make those papers accessible to a wider audience.
 
-*Sources are out of date.* Many of the techniques described in the various tutorials have since been improved upon. For instance, the EthSTARK documentation (the most recent document cited above) describes the derivation of a *composition polynomial* in order to reduce the number of invocations of the FRI subprotocol, as well as a *DEEP insertion technique* in order to reduce claims of correct evaluations to those of polynomials having bounded degrees. The tutorials do not mention these techniques because they pre-date them.
+*Sources are out of date.* Many of the techniques described in the various tutorials have since been improved upon. For instance, the EthSTARK documentation (the most recent document cited above) describes a *DEEP insertion technique* in order to reduce claims of correct evaluations to those of polynomials having bounded degrees. The tutorials do not mention this technique because they pre-date it.
 
 *I prefer my own style.* I disagree with a lot of the symbols and names and I wish people would use the correct ones, dammit. In particular, I like to focus on polynomials as the most fundamental objects of the proof system. In contrast, all the other sources describe the mechanics of the proof system in terms of operations on Reed-Solomon codewords instead.
 
