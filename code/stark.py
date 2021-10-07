@@ -32,12 +32,12 @@ class Stark:
 
         self.fri = Fri(self.generator, self.omega, fri_domain_length, self.expansion_factor, self.num_colinearity_checks)
 
-    def composition_degree_bounds( self, transition_constraints ):
+    def transition_degree_bounds( self, transition_constraints ):
         point_degrees = [1] + [self.original_trace_length+self.num_randomizers-1] * 2*self.num_registers
         return [max( sum(r*l for r, l in zip(point_degrees, k)) for k, v in a.dictionary.items()) for a in transition_constraints]
 
     def transition_quotient_degree_bounds( self, transition_constraints ):
-        return [d - (self.original_trace_length-1) for d in self.composition_degree_bounds(transition_constraints)]
+        return [d - (self.original_trace_length-1) for d in self.transition_degree_bounds(transition_constraints)]
 
     def max_degree( self, transition_constraints ):
         md = max(self.transition_quotient_degree_bounds(transition_constraints))
