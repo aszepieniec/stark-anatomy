@@ -1,6 +1,6 @@
 # Anatomy of a STARK, Part 6: Speeding Things Up
 
-The previous part of this tutorial posed the question whether maths-level improvement can reduce the running times of the STARK algorithms. Indeed they can! These computational algebra tricks are folklore and independent of the STARK machinery.
+The previous part of this tutorial posed the question whether maths-level improvement can reduce the running times of the STARK algorithms. Indeed they can! There are folklore computational algebra tricks are folklore that are independent of the STARK machinery, as well as some techniques specific to interactive proof systems.
 
 ## The Number Theoretic Transform and its Applications
 
