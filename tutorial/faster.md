@@ -208,16 +208,23 @@ def fast_interpolate( domain, values, primitive_root, root_order ):
     return left_interpolant * right_zerofier + right_interpolant * left_zerofier
 ```
 
-## Fast Trace Domains
+## Fast Zerofier Evaluation
 
-The STARK trace polynomials are traditionally defined as the interpolants that take the values of the execution trace on the domain $D = \{\omega^i\}_{i=0}^{2^k-1}$. This comes with one advantage and one disadvantage.
-
-The advantage is that the composition polynomials can be computed quickly. Specifically, the inputs to the transition constraints are regular trace polynomials and shifted trace polynomials. The polynomials of the latter group take the same values as those of the first group but on cycle later. These shifted trace polynomials can be computed rather quickly from the regular trace polynomial if $D = \{\omega^i\}_{i=0}^{2^k-1}$. Specifically, if $f(X)$ is a regular trace polynomial, then $f(\omega^{-1} \cdot X)$ is its shift by one cycle. The $i$th coefficient of $f(\omega^{-1} \cdot X)$ is simply $\omega^{-i}$ times the $i$th coefficient of $f(X)$.
-
-The disadvantage is that the trace length must be a power of 2. When this is the case, the composition polynomials will take the value 0 on all but one point of the power-of-two subgroup, and the matching zerofier has the form $\frac{X^{2^k} - 1}{X-1}$, which can be computed quickly by the verifier. If the trace is far from a power of two, say by a difference of $d$, then the verifier needs to evaluate a zerofier that has $d-1$ factors in the denominator. In other words, *the trace length must be a power of two in order for the verifier to be fast*.
+The STARK trace length must be a power of 2. When this is the case, the composition polynomials will take the value 0 on all but one point of the power-of-two subgroup, and the matching zerofier has the form $\frac{X^{2^k} - 1}{X-1}$, which can be computed quickly by the verifier. If the trace is far from a power of two, say by a difference of $d$, then the verifier needs to evaluate a zerofier that has $d-1$ factors in the denominator. In other words, *the trace length must be a power of two in order for the verifier to be fast*.
 
 It is tempting to pad the trace until its length is the next power of 2. Clearly this padding must be compatible with the transition constraints so that the composition polynomials still evaluate to zero on all (but one point) of the power-of-two subgroup. The natural solution is to use the apply the same transition function for a power of two number of cycles, and have the boundary conditions refer to the "output" whose cycle index is somewhere in the middle. However, this design decision introduces a problem when it comes to appending randomizers to the trace for the purpose of leaking zero knowledge.
- - If the randomizers are appended after padding the trace, then the randomized trace does not fit into the power-of-two subgroup. In this case the interpolant must either be computed over a domain that is not a power-of-two subgroup, or else over a *larger* power-of-two subgroup. Either option requires NTTs of twice the size.
+ - If the randomizers are appended after padding the trace, then the randomized trace does not fit into the power-of-two subgroup. In this case the interpolant must be computed such that:
+   - over the power-of-two subgroup it evaluates to the execution trace; and
+   - over a distinct domain it evaluates to the uniformly random randomizers.
  - If the randomizers are appended before padding, then the transition constraints must by compatible with this operation, or else the composition polynomials will not evaluate to zero in the entire power-of-two subgroup. This option requires changing the AIR.
 
-I am not sure which of the listed options is the official solution.
+I am not sure which of the options is the standard solution. Both strike me as hacky workarounds for a problem in need of a more elegant solution. Preprocessing offers this solution, and serves a dual didactical purpose particularly relevant for this tutorial.
+
+### Preprocessing
+
+Where a standard Polynomial IOP consists of two parties, the prover and the verifier, a *Preprocessing Polynomial IOP* consists if three: a prover, a verifier, and an *indexer*. (The indexer is sometimes also called the *preprocessor* or the *helper*.)
+
+The role of the indexer is to perform computations that help the verifier (not to mention prover) but that are too expensive for the verifier to perform directly. The catch is that the indexer does not receive the same input as the verifier does. The indexer's input (the *index*) is information about the computation that can be computed ahead of time, before specific data is known. For example, the index could be the number of cycles that the computation is supposed to take, along with the transition constraints. The specific information about the computation, or *instance*, would be the boundary constraints.
+
+![Information flow in a proof system with preprocessing.](graphics/preprocessing.svg)
+
