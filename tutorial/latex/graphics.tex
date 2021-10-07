@@ -371,4 +371,35 @@ zerofier
 \end{tikzpicture}
 \end{frame}
 
+\begin{frame}{}
+\centering
+\begin{tikzpicture}
+\node[color=red!50!black] (witness) at (-3, 0) {witness};
+\node[color=red!50!black] (index) at (0, 0) {index};
+\node[color=red!50!black] (instance) at (3, 0) {instance};
+
+\node[minimum height=2cm, minimum width=3cm, draw, rounded corners=0.125cm] (indexer box) at (0, -3) {};
+\node[anchor=north] (indexer label) at (indexer box.north) {\textsc{Indexer}};
+
+\node[minimum height=3cm, minimum width=3cm, draw, rounded corners=0.125cm] (prover box) at (-3, -7) {};
+\node[anchor=north] (prover label) at (prover box.north) {\textsc{Prover}};
+
+\node[minimum height=3cm, minimum width=3cm, draw, rounded corners=0.125cm] (verifier box) at (3, -7) {};
+\node[anchor=north] (verifier label) at (verifier box.north) {\textsc{Verifier}};
+
+\draw[->, rounded corners=0.5cm] ([xshift=-0.25cm] instance.south) -- (2.75, -1) -- (-2.5, -1) -- (-2.5, -5.5) {};
+\draw[-, color=white, line width=4] (index.south) -- (0, -1.5) {};
+\draw[->] (index.south) -- (0, -2) {};
+
+\draw[->] (witness.south) -- (-3, -5.5) {};
+
+\draw[->] ([xshift=0.25cm] instance.south) -- (3.25, -5.5) {};
+
+\draw[->, rounded corners=0.5cm] (-0.5, -4) -- (-0.5, -4.75) -- (-2, -4.75) -- (-2, -5.5) {};
+\draw[->, rounded corners=0.5cm] (0.5, -4) -- (0.5, -4.75) -- (2, -4.75) -- (2, -5.5) {};
+
+\draw[<->] (prover box) -- (verifier box) {};
+\end{tikzpicture}
+\end{frame}
+
 \end{document}
