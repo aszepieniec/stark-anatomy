@@ -56,9 +56,21 @@ This description covers one round, at the end of which the prover and verifier a
 
 ![FRI overview](graphics/fri-overview.svg)
 
+### Index Folding
+
+The above description glosses over a counter-intuitive point: *the random indices are not independent between rounds*. Instead, the same index is re-used across all rounds, with reductions modulo the codeword length when necessary.
+
+The reason why sampling the indices independently in each round less insecure, is because it is likely to fail to catch hybrid codewords, as the next picture shows.
+
+![Sampling indices in FRI. Left: less secure; right: more secure.](graphics/fri-attack.svg)
+
+The blue codeword is far from any codeword that matches with a low degree polynomial, whereas the green codeword does correspond to a low degree polynomial. In order to switch from blue to green, the malicious prover uses a hybrid codeword in the second round. This hybrid codeword is obtained by selecting the values from the one codeword or the other based on a randomly chosen partition. The malicious prover succeeds when all colinearity checks involve points of the same color.
+
+The attack is thwarted when the same indices are used. The hybrid codeword necessarily generates a colinearity test of mismatching colors in at least one round.
+
 ### Intuition for Security
 
-The polynomial $f^\star(X^2)$ is a random linear combination of $f(X)$ and $f(-X)$. Clearly, if the prover is honest, then $f^\star(X)$ and its codeword satisfy this relation. What is less intuitive is when the prover is dishonest -- what is it about this colinearity check that makes the verifier likely to notice the fraud?
+The polynomial $f^\star(X^2)$ is a random linear combination of $f(X)$ and $f(-X)$. Clearly, if the prover is honest, then $f^\star(X)$ and its codeword satisfy this relation. What is less intuitive is when the prover is dishonest in more subtle ways than the hybrid codeword attack -- what is it about this colinearity check that makes the verifier likely to notice the fraud?
 
 A fraudulent prover is successful when the verifier accepts a codeword that does not correspond to a low degree polynomial. Let $\{f(\omega^i)\}_{i=0}^{N-1}$ be such a fraudulent codeword, corresponding to a polynomial $f(X)$ of degree $N-1$. Then $f_E(X)$ and $f_O(X)$ will be of degree at most $N/2 - 1$, and so will their linear combination $f^\star(X) = f_E(X) + \alpha \cdot f_O(X)$. At this point the malicious prover has two options.
  1. He computes the codeword $\{f^\star(\omega^{2i})\}_{i=0}^{N/2-1}$ honestly by evaluating $f^\star(X)$ on $L^\star = \langle \omega^2 \rangle$. This does not improve his situation because instead of "proving" that a codeword of length $N$ corresponds to a polynomial of degree less than $\rho \cdot N$, he now has to "prove" that this codeword of length $N/2$ corresponds to a polynomial of degree less than $\rho \cdot N/2$. There is no reason to assume this false claim is any easier to prove than the one he started out with.
