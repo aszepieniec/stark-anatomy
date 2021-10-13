@@ -342,7 +342,9 @@ Before moving on to the next section, it is worth pausing to note that all ingre
 
 ## Multivariate Polynomials
 
-*Multivariate polynomials* generalize univariate polynomials to many indeterminates -- not just $X$, but $X, Y, Z, \ldots$. Multivariate polynomials are not very useful for reducing big claims about large vectors to small claims about scalar values in random points. Instead, multivariate polynomials are useful for articulating the arithmetic constraints that an integral computation satisfies.
+*Multivariate polynomials* generalize univariate polynomials to many indeterminates -- not just $X$, but $X, Y, Z, \ldots$. Where univariate polynomials are useful for reducing big claims about large vectors to small claims about scalar values in random points, multivariate polynomials are useful for articulating the arithmetic constraints that an integral computation satisfies.
+
+For example, consider the [[arithmetic-geometric mean|https://en.wikipedia.org/wiki/Arithmetic%E2%80%93geometric_mean]], which is defined as the limit of either the first or second coordinate (which are equal in the limit) of the sequence $(a, b) \mapsto \left( \frac{a+b}{2}, \sqrt{a \cdot b} \right)$, for a giving starting point $(a_0, b_0)$. In order to prove the integrity of several iterations of this process[^3], what is needed is a set of multivariate polynomials that capture the constraint of the correct application of a single iteration relates the current state, $X_0, X_1$ to the next state, $Y_0, Y_1$. These polynomials might be $m_0(X_0, X_1, Y_0, Y_1) = Y_0 - \frac{X_0 + X_1}{2}$ and $m_1(X_0, X_1, Y_0, Y_1) = Y_1^2 - X_0 \cdot X_1$. (Note that the natural choice $m_1(X_0, X_1, Y_0, Y_1) = Y_1 - \sqrt{X_0 \cdot X_1}$ is not in fact a polynomial, but has the same zeros.)
 
 Where the natural structure for implementing univariate polynomials is a list of coefficients, the natural structure for multivariate polynomials is a dictionary mapping exponent vectors to coefficients. Whenever this dictionary contains zero coefficients, these should be ignored. As usual, the first step is to overload the standard arithmetic operators, basic constructors, and standard functionalities.
 
@@ -522,7 +524,7 @@ class ProofStream:
 
 ## Merkle Tree
 
-A [[Merkle tree|https://en.wikipedia.org/wiki/Merkle_tree]] is a vector commitment scheme built from a collision-resistant hash function[^3]. Specifically, it allows the user to commit to an array of $2^N$ items such that
+A [[Merkle tree|https://en.wikipedia.org/wiki/Merkle_tree]] is a vector commitment scheme built from a collision-resistant hash function[^4]. Specifically, it allows the user to commit to an array of $2^N$ items such that
  - the commitment is a single hash digest and this commitment is *binding* -- it represents the array in a way that prevents the user from changing it without first breaking the hash function;
  - for any index $i \in \{0, \ldots, 2^N-1\}$, the value in location $i$ of the array represented by the commitment can be proven with $N$ more hash digests.
 
@@ -589,4 +591,5 @@ This functional implementation overlooks one important aspect: the data objects 
 
 [^1]: Actually, an [[amazing new paper|https://arxiv.org/pdf/2107.08473.pdf]] by the StarkWare team shows how to apply the same techniques in *any* finite field, whether it has the requisite structure or not. This tutorial explains the construction the simple way, using structured finite fields.
 [^2]: A *monic* polynomial is one whose leading coefficient is one.
-[^3]: In some cases, such as hash-based signatures, collision-resistance may be overkill and more basic security notion such as second-preimage resistance may suffice.
+[^3]: Never mind that it does not make any sense to prove the correct computation of the algebraic-geometric mean of finite field elements; it serves the purpose of illustration.
+[^4]: In some cases, such as hash-based signatures, collision-resistance may be overkill and more basic security notion such as second-preimage resistance may suffice.
