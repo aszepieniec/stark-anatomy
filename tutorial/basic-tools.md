@@ -332,6 +332,14 @@ def test_colinearity( points ):
     return polynomial.degree() == 1
 ```
 
+Before moving on to the next section, it is worth pausing to note that all ingredients are in place for *finite extension fields*, or simply *extension fields*. A finite field is simply a set equipped with addition and multiplication operators that behave according to high school algebra rules, *e.g.* every nonzero element has an inverse, or no two nonzero elements multiplied give zero. There are two ways to obtain them:
+ 1. Start with the set of integers, and reduce the result of any addition or multiplication modulo a given prime number $p$.
+ 2. Start with the set of polynomials over a finite field, and reduce the result of any addition or multiplication modulo a given *irreducible polynomial* $p(X)$. A polynomial is *irreducible* when it cannot be decomposed as the product of two smaller polynomials, analogously to prime numbers.
+
+ The point is that it is possible to do the arithmetization in a smaller field than cryptographic compilation step, as long as the latter step uses an extension field of that of the former. Specifically and for example, [[Distaff VM|https://github.com/GuildOfWeavers/distaff]] operates over the finite field defined by a 64-bit prime, but the FRI step operates over an extension field thereof in order to target 128 bits of security.
+
+ This tutorial will not use extension fields, and so an elaborate discussion of the topic is out of scope.
+
 ## Multivariate Polynomials
 
 *Multivariate polynomials* generalize univariate polynomials to many indeterminates -- not just $X$, but $X, Y, Z, \ldots$. Multivariate polynomials are not very useful for reducing big claims about large vectors to small claims about scalar values in random points. Instead, multivariate polynomials are useful for articulating the arithmetic constraints that an integral computation satisfies.
