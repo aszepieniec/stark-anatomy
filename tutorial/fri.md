@@ -56,9 +56,11 @@ This description covers one round, at the end of which the prover and verifier a
 
 ![FRI overview](graphics/fri-overview.svg)
 
+In production systems the length of the codeword is often reduced not by a factor 2 but a small power of 2. This optimization reduces the proof size and might even generate running time improvements. However, this tutorial optimizes for simplicity and any further discussion about higher folding factors is out of scope.
+
 ### Index Folding
 
-The above description glosses over a counter-intuitive point: *the random indices are not independent between rounds*. Instead, the same index is re-used across all rounds, with reductions modulo the codeword length when necessary.
+The above description glosses over a counter-intuitive point but highly subtle: *the random indices are not independent between rounds*. Instead, the same index is re-used across all rounds, with reductions modulo the codeword length when necessary.
 
 The reason why sampling the indices independently in each round less insecure, is because it is likely to fail to catch hybrid codewords, as the next picture shows.
 
