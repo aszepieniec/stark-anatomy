@@ -145,20 +145,23 @@ class Stark:
         # compute matching codeword
         combined_codeword = combination.evaluate_domain(fri_domain)
 
-        # prove low degree of combination polynomial
+        # prove low degree of combination polynomial, and collect indices
         indices = self.fri.prove(combined_codeword, proof_stream)
-        indices.sort()
+
+        # process indices
         duplicated_indices = [i for i in indices] + [(i + self.expansion_factor) % self.fri.domain_length for i in indices]
+        quadrupled_indices = [i for i in duplicated_indices] + [(i + (self.fri.domain_length // 2)) % self.fri.domain_length for i in duplicated_indices]
+        quadrupled_indices.sort()
 
         # open indicated positions in the boundary quotient codewords
         for bqc in boundary_quotient_codewords:
-            for i in duplicated_indices:
+            for i in quadrupled_indices:
                 proof_stream.push(bqc[i])
                 path = Merkle.open(i, bqc)
                 proof_stream.push(path)
 
         # ... as well as in the randomizer
-        for i in indices:
+        for i in quadrupled_indices:
             proof_stream.push(randomizer_codeword[i])
             path = Merkle.open(i, randomizer_codeword)
             proof_stream.push(path)
@@ -201,6 +204,7 @@ class Stark:
 
         # read and verify leafs, which are elements of boundary quotient codewords
         duplicated_indices = [i for i in indices] + [(i + self.expansion_factor) % self.fri.domain_length for i in indices]
+        duplicated_indices.sort()
         leafs = []
         for r in range(len(boundary_quotient_roots)):
             leafs = leafs + [dict()]
@@ -213,10 +217,12 @@ class Stark:
 
         # read and verify randomizer leafs
         randomizer = dict()
-        for i in indices:
+        for i in duplicated_indices:
             randomizer[i] = proof_stream.pull()
             path = proof_stream.pull()
             verifier_accepts = verifier_accepts and Merkle.verify(randomizer_root, i, path, randomizer[i])
+            if not verifier_accepts:
+                return False
 
         # verify leafs of combination polynomial
         for i in range(len(indices)):

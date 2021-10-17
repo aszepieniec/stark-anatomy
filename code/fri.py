@@ -16,10 +16,12 @@ class Fri:
         self.expansion_factor = expansion_factor
         self.num_colinearity_tests = num_colinearity_tests
 
+        assert(self.num_rounds() >= 1), "cannot do FRI with less than one round"
+
     def num_rounds( self ):
         codeword_length = self.domain_length
         num_rounds = 0
-        while codeword_length > self.expansion_factor and self.num_colinearity_tests < codeword_length:
+        while codeword_length > self.expansion_factor and 4*self.num_colinearity_tests < codeword_length:
             codeword_length /= 2
             num_rounds += 1
         return num_rounds
@@ -30,24 +32,21 @@ class Fri:
             acc = (acc << 8) ^ int(b)
         return acc % size
 
-    def sample_indices( self, seed, size, number ):
-        assert(number <= size), "cannot sample more indices than available"
+    def sample_indices( self, seed, size, reduced_size, number ):
+        assert(number <= reduced_size), f"cannot sample more indices than available in last codeword; requested: {number}, available: {reduced_size}"
+        assert(number <= 2*reduced_size), "not enough entropy in indices wrt last codeword"
+
         indices = []
+        reduced_indices = []
         counter = 0
-        if number > size//2:
-            remaining = list(range(size))
-            for i in range(number):
-                index = Fri.sample_index(blake2b(seed + bytes(counter)).digest(), len(remaining))
-                counter += 1
-                r = remaining[index]
-                indices += [r]
-                remaining.remove(r)
-        else:
-            while len(indices) < number:
-                index = Fri.sample_index(blake2b(seed + bytes(counter)).digest(), size)
-                counter += 1
-                if index not in indices:
-                    indices += [index]
+        while len(indices) < number:
+            index = Fri.sample_index(blake2b(seed + bytes(counter)).digest(), size)
+            reduced_index = index % reduced_size
+            counter += 1
+            if reduced_index not in reduced_indices:
+                indices += [index]
+                reduced_indices += [reduced_index]
+
         return indices
 
     def eval_domain( self ):
@@ -62,14 +61,16 @@ class Fri:
 
         # for each round
         for r in range(self.num_rounds()):
+            N = len(codeword)
+
             # make sure omega has the right order
-            assert(omega^(len(codeword) - 1) == omega.inverse()), "error in commit: omega does not have the right order!"
+            assert(omega^(N - 1) == omega.inverse()), "error in commit: omega does not have the right order!"
 
             # compute and send Merkle root
             root = Merkle.commit(codeword)
             proof_stream.push(root)
 
-            # prepare next round, if necessary
+            # prepare next round, but only if necessary
             if r == self.num_rounds() - 1:
                 break
 
@@ -80,7 +81,8 @@ class Fri:
             codewords += [codeword]
 
             # split and fold
-            codeword = [two.inverse() * ( (one + alpha / (offset * (omega^i)) ) * codeword[i] + (one - alpha / (offset * (omega^i)) ) * codeword[len(codeword)//2 + i] ) for i in range(len(codeword)//2)]
+            codeword = [two.inverse() * ( (one + alpha / (offset * (omega^i)) ) * codeword[i] + (one - alpha / (offset * (omega^i)) ) * codeword[N//2 + i] ) for i in range(N//2)]
+
             omega = omega^2
             offset = offset^2
 
@@ -92,11 +94,7 @@ class Fri:
 
         return codewords
 
-    def query( self, current_codeword, next_codeword, proof_stream ):
-        # sample c indices
-        assert(len(next_codeword) > self.num_colinearity_tests), "length of next codeword must be larger than number of colinearity tests"
-        c_indices = self.sample_indices(proof_stream.prover_fiat_shamir(), len(next_codeword), self.num_colinearity_tests)
-
+    def query( self, current_codeword, next_codeword, c_indices, proof_stream ):
         # infer a and b indices
         a_indices = [index for index in c_indices]
         b_indices = [index + len(current_codeword)//2 for index in c_indices]
@@ -119,12 +117,14 @@ class Fri:
         # commit phase
         codewords = self.commit(codeword, proof_stream)
 
+        # get indices
+        top_level_indices = self.sample_indices(proof_stream.prover_fiat_shamir(), len(codewords[1]), len(codewords[-1]), self.num_colinearity_tests)
+        indices = [index for index in top_level_indices]
+
         # query phase
         for i in range(len(codewords)-1):
-            if i == 0:
-                top_level_indices = self.query(codewords[i], codewords[i+1], proof_stream)
-            else:
-                self.query(codewords[i], codewords[i+1], proof_stream)
+            indices = [index % (len(codewords[i])//2) for index in indices] # fold
+            self.query(codewords[i], codewords[i+1], indices, proof_stream)
 
         return top_level_indices
 
@@ -159,9 +159,10 @@ class Fri:
         # assert that last_omega has the right order
         assert(last_omega.inverse() == last_omega^(len(last_codeword)-1)), "omega does not have right order"
 
+        # compute interpolant
         last_domain = [last_offset * (last_omega^i) for i in range(len(last_codeword))]
-
         poly = Polynomial.interpolate_domain(last_domain, last_codeword)
+
         # verify by  evaluating
         assert(poly.evaluate_domain(last_domain) == last_codeword), "re-evaluated codeword does not match original!"
         if poly.degree() > degree:
@@ -170,15 +171,18 @@ class Fri:
             print("but should be:", degree)
             return False
 
+        # get indices
+        top_level_indices = self.sample_indices(proof_stream.verifier_fiat_shamir(), self.domain_length >> 1, self.domain_length >> (self.num_rounds()-1), self.num_colinearity_tests)
+
         # for every round, check consistency of subsequent layers
         for r in range(0, self.num_rounds()-1):
 
-            # sample c indices
-            c_indices = self.sample_indices(proof_stream.verifier_fiat_shamir(), self.domain_length >> (r+1), self.num_colinearity_tests)
+            # fold c indices
+            c_indices = [index % (self.domain_length >> (r+1)) for index in top_level_indices]
 
             # infer a and b indices
             a_indices = [index for index in c_indices]
-            b_indices = [index + (self.domain_length >> (r+1)) for index in c_indices]
+            b_indices = [index + (self.domain_length >> (r+1)) for index in a_indices]
 
             # read values and check colinearity
             aa = []
