@@ -84,10 +84,10 @@ Intuitively, a prover who lies in one location is hardly cheating, because it is
 
 How many colinearity checks are needed for a target security level of $\lambda$ bits? That's the million dollar question.
 
-The [[FRI paper|https://eccc.weizmann.ac.il/report/2017/134/revision/1/download/]], the [[DEEP-FRI follow-up|https://sites.math.rutgers.edu/~sk1233/deep-fri.pdf]], and the [[follow-up to the follow-up|https://eprint.iacr.org/2020/654]], present a sequence of more refined argument relying crucially on the code rate $\rho$. I do not pretend to understand these proofs and will content myself with merely reciting the rule of thumb used in the [[EthSTARK documentation|https://eprint.iacr.org/2021/582]]:
- - the hash function used for building Merkle trees needs to have at least $2\lambda$ output bits; and
- - the field needs to have at least $2^\lambda$ elements; and
- - you get $\log_2 \rho^{-1}$ bits of security for every colinearity check, so setting setting the number of colinearity checks to $s = \lceil \lambda / \log_2 \rho^{-1} \rceil$ achieves $\lambda$ bits of security.
+The [[FRI paper|https://eccc.weizmann.ac.il/report/2017/134/revision/1/download/]], the [[DEEP-FRI follow-up|https://sites.math.rutgers.edu/~sk1233/deep-fri.pdf]], and the [[follow-up to the follow-up|https://eprint.iacr.org/2020/654]], present a sequence of more refined argument relying crucially on the code rate $\rho$. I do not pretend to understand these proofs and will content myself with merely reciting the rule of thumb used in the [[EthSTARK documentation|https://eprint.iacr.org/2021/582]] for conjectural security[^4]:
+ - The hash function used for building Merkle trees needs to have at least $2\lambda$ output bits.
+ - The field needs to have at least $2^\lambda$ elements. (Note that this refers tot the field used for FRI. In particular, you can switch to an extension field if the base field is not large enough.)
+ - You get $\log_2 \rho^{-1}$ bits of security for every colinearity check, so setting setting the number of colinearity checks to $s = \lceil \lambda / \log_2 \rho^{-1} \rceil$ achieves $\lambda$ bits of security.
 
 ### Coset-FRI
 
@@ -404,3 +404,5 @@ When the random coefficients are present, the cancellation of high degree terms 
 [^2]: The term "corresponds" is used informally here in a manner that hides allowance for error-correcting codewords to disagree from their generating polynomial slightly. FRI makes no distinction between codewords that agree exactly with a low degree polynomials on the given domain, and polynomials that are merely close to such codewords in terms of Hamming distance.
 
 [^3]: It might make sense to terminate the protocol early, in which case the prover must send a non-trivial codeword in the clear and the verifier must verify that it has a defining polynomial of bounded degree.
+
+[^4]: The [[EthSTARK documentation|https://eprint.iacr.org/2021/582.pdf]] also provides a significantly more complex formula for the security level provably achieved without relying on coding theoretic conjectures.
