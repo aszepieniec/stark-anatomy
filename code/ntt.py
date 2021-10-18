@@ -129,3 +129,8 @@ def fast_interpolate( domain, values, primitive_root, root_order ):
 
     return left_interpolant * right_zerofier + right_interpolant * left_zerofier
 
+def fast_coset_evaluate( polynomial, offset, generator, order ):
+    scaled_polynomial = polynomial.scale(offset)
+    values = ntt(generator, scaled_polynomial.coefficients + [offset.field.zero()] * (order - len(polynomial.coefficients)))
+    return values
+

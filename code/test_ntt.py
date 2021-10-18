@@ -76,3 +76,23 @@ def test_interpolate( ):
             assert(False)
         print("")
 
+def test_coset_evaluate( ):
+    field = Field.main()
+
+    logn = 9
+    n = 1 << logn
+    primitive_root = field.primitive_nth_root(n)
+
+    two = FieldElement(2, field)
+
+    domain = [two * (primitive_root^i) for i in range(n)]
+
+    degree = ((int(os.urandom(1)[0])*256 + int(os.urandom(1)[0])) % n) - 1
+    coefficients = [field.sample(os.urandom(17)) for i in range(degree+1)]
+    poly = Polynomial(coefficients)
+
+    values_fast = fast_coset_evaluate(poly, two, primitive_root, n)
+    values_traditional = [poly.evaluate(d) for d in domain]
+
+    assert(all(vf == vt for (vf, vt) in zip(values_fast, values_traditional))), "values do not match with traditional evaluations"
+
