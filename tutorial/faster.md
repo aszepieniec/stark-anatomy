@@ -208,6 +208,15 @@ def fast_interpolate( domain, values, primitive_root, root_order ):
     return left_interpolant * right_zerofier + right_interpolant * left_zerofier
 ```
 
+In terms of fast polynomial arithmetic, one ingredient remains: fast evaluation on a coset. It is possible to solve this task using fast batch-evaluation on arbitrary domains, but when the given domain coincides with a coset of order $2^k$, it would be a shame not to use the NTT directly. The only question is how to shift the domain of evaluation. This is precisely what polynomial scaling achieves.
+
+```python
+def fast_coset_evaluate( polynomial, offset, generator, order ):
+    scaled_polynomial = polynomial.scale(offset)
+    values = ntt(generator, scaled_polynomial.coefficients + [offset.field.zero()] * (order - len(polynomial.coefficients)))
+    return values
+```
+
 ## Fast Zerofier Evaluation
 
 The STARK trace length must be a power of 2. When this is the case, the composition polynomials will take the value 0 on all but one point of the power-of-two subgroup, and the matching zerofier has the form $\frac{X^{2^k} - 1}{X-1}$, which can be computed quickly by the verifier. If the trace is far from a power of two, say by a difference of $d$, then the verifier needs to evaluate a zerofier that has $d-1$ factors in the denominator. In other words, *the trace length must be a power of two in order for the verifier to be fast*.
