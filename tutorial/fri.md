@@ -32,7 +32,7 @@ $$ \{f^\star(\omega^{2i})\}_{i=0}^{N/2-1} = \{f_E(\omega^{2i}) + \alpha \cdot f_
 
 
 Expand again, this time with the definition of $f_E(X^2)$ and $f_O(X^2)$.
-$$ \{f^\star(\omega^i)\}_{i=0}^{N-1} = \left\{ \frac{f(\omega^i) + f(-\omega^i)}{2} + \alpha \cdot \frac{f(\omega^i) - f(-\omega^i)}{2 \omega^i} \right\}_{i=0}^{N/2-1} \\ = \{ 2^{-1} \cdot \left( ( 1 + \alpha \cdot \omega^{-i} ) \cdot f(\omega^i) + (1 - \alpha \cdot \omega^{-i} ) \cdot f(-\omega^i) \right) \}_{i=0}^{N/2-1} $$
+$$ \{f^\star(\omega^{2i})\}_{i=0}^{N/2-1} = \left\{ \frac{f(\omega^i) + f(-\omega^i)}{2} + \alpha \cdot \frac{f(\omega^i) - f(-\omega^i)}{2 \omega^i} \right\}_{i=0}^{N/2-1} \\ = \{ 2^{-1} \cdot \left( ( 1 + \alpha \cdot \omega^{-i} ) \cdot f(\omega^i) + (1 - \alpha \cdot \omega^{-i} ) \cdot f(-\omega^i) \right) \}_{i=0}^{N/2-1} $$
 
 Since the order of $\omega$ is $N$, we have $\omega^{N/2} = -1$, and therefore $f(-\omega^i) = f(\omega^{N/2 + i})$. This substitution makes it clear that even though the index iterates over half the range (from $0$ to $N/2-1$), all the points of $\{f(\omega^i)\}_{i=0}^{N-1}$ are involved in the derivation of $\{f^\star(\omega^{2i})\}_{i=0}^{N/2-1}$. It does not matter that the latter codeword has half the length; its polynomial has half the degree.
 
