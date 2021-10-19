@@ -134,3 +134,44 @@ def fast_coset_evaluate( polynomial, offset, generator, order ):
     values = ntt(generator, scaled_polynomial.coefficients + [offset.field.zero()] * (order - len(polynomial.coefficients)))
     return values
 
+def fast_coset_divide( lhs, rhs, offset, primitive_root, root_order ): # clean division only!
+    assert(primitive_root^root_order == primitive_root.field.one()), "supplied root does not have supplied order"
+    assert(primitive_root^(root_order//2) != primitive_root.field.one()), "supplied root is not primitive root of supplied order"
+    assert(not rhs.is_zero()), "cannot divide by zero polynomial"
+
+    if lhs.is_zero():
+        return Polynomial([])
+
+    assert(rhs.degree() <= lhs.degree()), "cannot divide by polynomial of larger degree"
+
+    field = lhs.coefficients[0].field
+    root = primitive_root
+    order = root_order
+    degree = max(lhs.degree(),rhs.degree())
+
+    if degree < 8:
+        return lhs / rhs
+
+    while degree < order // 2:
+        root = root^2
+        order = order // 2
+
+    scaled_lhs = lhs.scale(offset)
+    scaled_rhs = rhs.scale(offset)
+    
+    lhs_coefficients = scaled_lhs.coefficients[:(lhs.degree()+1)]
+    while len(lhs_coefficients) < order:
+        lhs_coefficients += [field.zero()]
+    rhs_coefficients = scaled_rhs.coefficients[:(rhs.degree()+1)]
+    while len(rhs_coefficients) < order:
+        rhs_coefficients += [field.zero()]
+
+    lhs_codeword = ntt(root, lhs_coefficients)
+    rhs_codeword = ntt(root, rhs_coefficients)
+
+    quotient_codeword = [l / r for (l, r) in zip(lhs_codeword, rhs_codeword)]
+    scaled_quotient_coefficients = intt(root, quotient_codeword)
+    scaled_quotient = Polynomial(scaled_quotient_coefficients[:(lhs.degree() - rhs.degree() + 1)])
+
+    return scaled_quotient.scale(offset.inverse())
+

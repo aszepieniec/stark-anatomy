@@ -50,6 +50,25 @@ def test_multiply( ):
 
         assert(fast_product == slow_product), "fast product does not equal slow product"
 
+def test_divide( ):
+    field = Field.main()
+
+    logn = 6
+    n = 1 << logn
+    primitive_root = field.primitive_nth_root(n)
+
+    for trial in range(20):
+        lhs_degree = int(os.urandom(1)[0]) % (n // 2)
+        rhs_degree = int(os.urandom(1)[0]) % (n // 2)
+
+        lhs = Polynomial([field.sample(os.urandom(17)) for i in range(lhs_degree+1)])
+        rhs = Polynomial([field.sample(os.urandom(17)) for i in range(rhs_degree+1)])
+
+        fast_product = fast_multiply(lhs, rhs, primitive_root, n)
+        quotient = fast_coset_divide(fast_product, lhs, field.generator(), primitive_root, n)
+
+        assert(quotient == rhs), "fast divide does not equal original factor"
+
 def test_interpolate( ):
     field = Field.main()
 
