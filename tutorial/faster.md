@@ -428,3 +428,5 @@ Dividing out the transition zerofier is a pretty intense task. It pays to switch
         # divide out zerofier
         transition_quotients = [fast_coset_divide(tp, transition_zerofier, self.generator, self.omicron, self.omicron_domain_length) for tp in transition_polynomials]
 ```
+
+After modifying the Rescue-Prime signature scheme to use the new, `FastStark` class and methods, this gives rise to a significantly faster signature scheme.
