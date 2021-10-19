@@ -149,7 +149,6 @@ class Fri:
             return False
 
         # check if it is low degree
-        # this procedure is slow but can be made faster (TODO)
         degree = (len(last_codeword) // self.expansion_factor) - 1
         last_omega = omega
         last_offset = offset
@@ -162,9 +161,9 @@ class Fri:
 
         # compute interpolant
         last_domain = [last_offset * (last_omega^i) for i in range(len(last_codeword))]
-        #poly = Polynomial.interpolate_domain(last_domain, last_codeword)
-        coefficients = intt(last_omega, last_codeword)
-        poly = Polynomial(coefficients).scale(last_offset.inverse())
+        poly = Polynomial.interpolate_domain(last_domain, last_codeword)
+        #coefficients = intt(last_omega, last_codeword)
+        #poly = Polynomial(coefficients).scale(last_offset.inverse())
 
         # verify by  evaluating
         assert(poly.evaluate_domain(last_domain) == last_codeword), "re-evaluated codeword does not match original!"

@@ -429,12 +429,26 @@ Dividing out the transition zerofier is a pretty intense task. It pays to switch
         transition_quotients = [fast_coset_divide(tp, transition_zerofier, self.generator, self.omicron, self.omicron_domain_length) for tp in transition_polynomials]
 ```
 
+Lastly, in the FRI verifier, switch out the slow Lagrange interpolation for the much faster (coset) NTT based interpolation.
+
+```python
+# class Fri:
+    # [...]
+    # def verify( [..] ):
+        # [...]
+        # compute interpolant
+        last_domain = [last_offset * (last_omega^i) for i in range(len(last_codeword))]
+        coefficients = intt(last_omega, last_codeword)
+        poly = Polynomial(coefficients).scale(last_offset.inverse())
+```
+
 After modifying the Rescue-Prime signature scheme to use the new, `FastStark` class and methods, this gives rise to a significantly faster signature scheme.
 
  - secret key size: 16 bytes (yay!)
  - public key size: 16 bytes (yay!)
- - signature size: **~146 kB**
+ - signature size: **~160 kB**
  - keygen time: 0.01 seconds (acceptable)
- - signing time: **226 seconds**
+ - signing time: **72 seconds**
  - verification time: **8 seconds**
 
+How's that for an improvement? The proof is larger because there are many more Merkle paths associated with zerofier leafs, but in exchange proving and verifying is an order of magnitude faster. Of course there are plenty of improvements left applied, but as this tutorial is ending, those are left as exercises to the reader.
