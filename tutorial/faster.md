@@ -208,13 +208,70 @@ def fast_interpolate( domain, values, primitive_root, root_order ):
     return left_interpolant * right_zerofier + right_interpolant * left_zerofier
 ```
 
-In terms of fast polynomial arithmetic, one ingredient remains: fast evaluation on a coset. It is possible to solve this task using fast batch-evaluation on arbitrary domains, but when the given domain coincides with a coset of order $2^k$, it would be a shame not to use the NTT directly. The only question is how to shift the domain of evaluation. This is precisely what polynomial scaling achieves.
+Next up: fast evaluation on a coset. This task is needed in the STARK pipeline when transforming a polynomial into a codeword to be input to FRI. It is possible to solve this problem using fast batch-evaluation on arbitrary domains. However, when the given domain coincides with a coset of order $2^k$, it would be a shame not to use the NTT directly. The only question is how to shift the domain of evaluation. This is precisely what polynomial scaling achieves.
 
 ```python
 def fast_coset_evaluate( polynomial, offset, generator, order ):
     scaled_polynomial = polynomial.scale(offset)
     values = ntt(generator, scaled_polynomial.coefficients + [offset.field.zero()] * (order - len(polynomial.coefficients)))
     return values
+```
+
+Fast evaluation on a coset allows us to answer a pesky problem that arises when adapting the fast multiplication procedure to divide instead of multiply. What happens when the divisor codeword is zero in a given location? If the numerator codeword is not zero in that location, then the division gives a nonzero remainder and the entire operation can be flagged as erroneous. But there can still be clean division if the numerator is also zero in the given location. This is exactly the problem that occurs when attempting to use NTTs to divide out the zerofiers.
+
+The solution is to perform the element-wise division one codewords arising from evaluation on a coset. Specifically, the procedure involves five steps:
+ - scale
+ - NTT
+ - element-wise divide
+ - inverse NTT
+ - unscale
+
+This solution only works if the denominator polynomials does not have any zeros on the coset. However, in some cases (like dividing out zerofiers), the denominator is *known* not to have zeros on a partcular coset.
+
+The python code has a lot of boilerplate to deal with special circumstances, but in the end it boils down to those five steps.
+
+```python
+def fast_coset_divide( lhs, rhs, offset, primitive_root, root_order ): # clean division only!
+    assert(primitive_root^root_order == primitive_root.field.one()), "supplied root does not have supplied order"
+    assert(primitive_root^(root_order//2) != primitive_root.field.one()), "supplied root is not primitive root of supplied order"
+    assert(not rhs.is_zero()), "cannot divide by zero polynomial"
+
+    if lhs.is_zero():
+        return Polynomial([])
+
+    assert(rhs.degree() <= lhs.degree()), "cannot divide by polynomial of larger degree"
+
+    field = lhs.coefficients[0].field
+    root = primitive_root
+    order = root_order
+    degree = max(lhs.degree(),rhs.degree())
+
+    if degree < 8:
+        return lhs / rhs
+
+    while degree < order // 2:
+        root = root^2
+        order = order // 2
+
+    scaled_lhs = lhs.scale(offset)
+    scaled_rhs = rhs.scale(offset)
+    
+    lhs_coefficients = scaled_lhs.coefficients[:(lhs.degree()+1)]
+    while len(lhs_coefficients) < order:
+        lhs_coefficients += [field.zero()]
+    rhs_coefficients = scaled_rhs.coefficients[:(rhs.degree()+1)]
+    while len(rhs_coefficients) < order:
+        rhs_coefficients += [field.zero()]
+
+    lhs_codeword = ntt(root, lhs_coefficients)
+    rhs_codeword = ntt(root, rhs_coefficients)
+
+    quotient_codeword = [l / r for (l, r) in zip(lhs_codeword, rhs_codeword)]
+    scaled_quotient_coefficients = intt(root, quotient_codeword)
+    scaled_quotient = Polynomial(scaled_quotient_coefficients[:(lhs.degree() - rhs.degree() + 1)])
+
+    return scaled_quotient.scale(offset.inverse())
+
 ```
 
 ## Fast Zerofier Evaluation
@@ -250,3 +307,124 @@ The prover wishes to show that a certain transition polynomial $p(X)$ evaluates 
  2. $q_r(X) = \frac{p(X) }{\omicron^{T-1-2^t} \cdot Z_{2^t}(\omicron^{2^t-T+1} \cdot X)}$.
 
 The denominator of the second polynomial is exactly the zerofier $\prod_{i=T-1-2^t}^{T-1} (X - \omicron^i)$. The transition polynomial is divisible by both zerofiers if and only if it is divisible by the union zerofier $\prod_{i=0}^{T-1} (X - \omicron^i)$.
+
+While this solution works adequately in the general case, for the Rescue-Prime computation, the cycle count is known. Therefore, the implementation reflects this setting.
+
+## Fast STARKs
+
+Now it is time to apply the developed tools to make the STARK algorithmically efficient.
+
+First, add a preprocessing function. This function is a member of the STARK class with access to its fields (such as the number of cycles). It produces two outputs: one for the prover, and one for the prover. In this concrete case, the prover receives the zerofier polynomial and zerofier codeword, and the verifier receives the zerofier Merkle root.
+
+```python
+# class FastStark:
+# [...]
+    def preprocess( self ):
+        transition_zerofier = fast_zerofier(self.omicron_domain[:(self.original_trace_length-1)], self.omicron, len(self.omicron_domain))
+        transition_zerofier_codeword = fast_coset_evaluate(transition_zerofier, self.generator, self.omega, self.fri.domain_length)
+        transition_zerofier_root = Merkle.commit(transition_zerofier_codeword)
+        return transition_zerofier, transition_zerofier_codeword, transition_zerofier_root
+```
+
+The argument lists of `prove` and `verify` must be adapted accordingly.
+
+```python
+# class FastStark:
+# [...]
+    def prove( self, trace, transition_constraints, boundary, transition_zerofier, transition_zerofier_codeword, proof_stream=None ):
+# [...]
+    def verify( self, proof, transition_constraints, boundary, transition_zerofier_root, proof_stream=None ):
+```
+
+The prover can use fast coset division to divide out the transition zerofier, and note that this denominator is exactly the argument.
+
+```python
+# class FastStark:
+#     [...]
+#     def prove( [..] ):
+#       [...]
+        # divide out zerofier
+        transition_quotients = [fast_coset_divide(tp, transition_zerofier, self.generator, self.omicron, self.omicron_domain_length) for tp in transition_polynomials]
+```
+
+The verifier needs to perform this division in a number of locations, which means that he needs the value of the verifier in those locations. Therefore, the prover must provide them, which authentication paths.
+
+```python
+# class FastStark:
+#     [...]
+#     def prove( [..] ):
+#       [...]
+        # ... and also in the zerofier!
+        for i in quadrupled_indices:
+            proof_stream.push(transition_zerofier_codeword[i])
+            path = Merkle.open(i, transition_zerofier_codeword)
+            proof_stream.push(path)
+```
+
+The verifier, in turn, needs to read these values and their authentication paths from the proof stream, before verifying the authentication paths and storing the zerofier values in a structure for later use. Note that these authentication paths are verified against the Merkle root, which is the new input to the verifier.
+
+```python
+# class FastStark:
+#     [...]
+#     def verify( [..] ):
+#       [...]
+        # read and verify transition zerofier leafs
+        transition_zerofier = dict()
+        for i in duplicated_indices:
+            transition_zerofier[i] = proof_stream.pull()
+            path = proof_stream.pull()
+            verifier_accepts = verifier_accepts and Merkle.verify(transition_zerofier_root, i, path, transition_zerofier[i])
+            if not verifier_accepts:
+                return False
+```
+
+Then finally, when the nonlinear combination is computed, can these values be read from memory and used.
+
+```python
+# class FastStark:
+#     [...]
+#     def verify( [..] ):
+#       [...]
+                quotient = tcv / transition_zerofier[current_index]
+```
+
+At this point what is left is switching to fast polynomial arithmetic outside of the context of preprocessing. The first opportunity is interpolating the trace.
+
+```python
+# class FastStark:
+#     [...]
+#     def prove( [..] ):
+#         [...]
+            trace_polynomials = trace_polynomials + [fast_interpolate(trace_domain, single_trace, self.omicron, self.omicron_domain_length)]
+```
+
+Next: when committing to the boundary quotients, use fast coset evaluation. Same goes for the randomizer polynomial as well as the combination polynomial.
+
+```python
+# class FastStark:
+#     [...]
+#     def prove( [..] ):
+        # [...]
+        # commit to boundary quotients
+        # [...]
+        for s in range(self.num_registers):
+            boundary_quotient_codewords = boundary_quotient_codewords + [fast_coset_evaluate(boundary_quotients[s], self.generator, self.omega, self.fri_domain_length)]
+            merkle_root = Merkle.commit(boundary_quotient_codewords[s])
+            proof_stream.push(merkle_root)
+        # [...]
+        # commit to randomizer polynomial
+        randomizer_polynomial = Polynomial([self.field.sample(os.urandom(17)) for i in range(self.max_degree(transition_constraints)+1)])
+        randomizer_codeword = fast_coset_evaluate(randomizer_polynomial, self.generator, self.omega, self.fri_domain_length)
+        randomizer_root = Merkle.commit(randomizer_codeword)
+        proof_stream.push(randomizer_root)
+        # [...]
+        # compute matching codeword
+        combined_codeword = fast_coset_evaluate(combination, self.generator, self.omega, self.fri_domain_length)
+```
+
+Dividing out the transition zerofier is a pretty intense task. It pays to switch to NTT-based division. Note that coset division is needed here, since the zerofier definitely takes the value zero on points of the trace domain.
+
+```python
+        # divide out zerofier
+        transition_quotients = [fast_coset_divide(tp, transition_zerofier, self.generator, self.omicron, self.omicron_domain_length) for tp in transition_polynomials]
+```

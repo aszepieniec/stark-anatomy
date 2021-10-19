@@ -87,7 +87,7 @@ class FastStark:
         trace_polynomials = []
         for s in range(self.num_registers):
             single_trace = [trace[c][s] for c in range(len(trace))]
-            trace_polynomials = trace_polynomials + [Polynomial.interpolate_domain(trace_domain, single_trace)]
+            trace_polynomials = trace_polynomials + [fast_interpolate(trace_domain, single_trace, self.omicron, self.omicron_domain_length)]
 
         # subtract boundary interpolants and divide out boundary zerofiers
         boundary_quotients = []
@@ -98,7 +98,6 @@ class FastStark:
             boundary_quotients += [quotient]
 
         # commit to boundary quotients
-        #fri_domain = self.fri.eval_domain()
         boundary_quotient_codewords = []
         boundary_quotient_Merkle_roots = []
         for s in range(self.num_registers):
