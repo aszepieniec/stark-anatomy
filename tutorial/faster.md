@@ -430,3 +430,11 @@ Dividing out the transition zerofier is a pretty intense task. It pays to switch
 ```
 
 After modifying the Rescue-Prime signature scheme to use the new, `FastStark` class and methods, this gives rise to a significantly faster signature scheme.
+
+ - secret key size: 16 bytes (yay!)
+ - public key size: 16 bytes (yay!)
+ - signature size: **~146 kB**
+ - keygen time: 0.01 seconds (acceptable)
+ - signing time: **226 seconds**
+ - verification time: **8 seconds**
+

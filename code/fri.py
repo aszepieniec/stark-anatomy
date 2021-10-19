@@ -1,6 +1,7 @@
 from algebra import *
 from merkle import *
 from ip import *
+from ntt import *
 from binascii import hexlify, unhexlify
 import math
 from hashlib import blake2b
@@ -161,7 +162,9 @@ class Fri:
 
         # compute interpolant
         last_domain = [last_offset * (last_omega^i) for i in range(len(last_codeword))]
-        poly = Polynomial.interpolate_domain(last_domain, last_codeword)
+        #poly = Polynomial.interpolate_domain(last_domain, last_codeword)
+        coefficients = intt(last_omega, last_codeword)
+        poly = Polynomial(coefficients).scale(last_offset.inverse())
 
         # verify by  evaluating
         assert(poly.evaluate_domain(last_domain) == last_codeword), "re-evaluated codeword does not match original!"

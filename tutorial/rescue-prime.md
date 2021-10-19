@@ -410,10 +410,10 @@ This code defines a *provably secure*[^1], *post-quantum* signature scheme that 
  - public key size: 16 bytes (yay!)
  - signature size: **~146 kB**
  - keygen time: 0.01 seconds (acceptable)
- - signing time: **151 seconds**
- - verification time: **7 seconds**
+ - signing time: **65 seconds**
+ - verification time: **8 seconds**
 
-There might be a few optimizations available that can reduce the proof's size, such as mering common paths when opening a batch of Merkle leafs. However, these optimizations distract from the purpose of this tutorial, which is to highlight and explain the mathematics involved.
+There might be a few optimizations available that can reduce the proof's size, such as merging common paths when opening a batch of Merkle leafs, or storing the intermediate hashes to avoid recomputing them. However, these optimizations distract from the purpose of this tutorial, which is to highlight and explain the mathematics involved.
 
 In terms of speed, a lot of the poor performance is due to using python instead of a language that is closer to the hardware such as C or rust. Python was chosen for the same reason -- to highlight and explain the maths. But the biggest performance gain in terms of speed is going to come from switching to faster algorithms for key operations. This is the topic of the next part of the tutorial.
 
