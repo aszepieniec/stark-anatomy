@@ -400,11 +400,7 @@ captures the right intuition but is concretely insecure. The reason is that when
 
 The involvement of random coefficients $\alpha$ and $\beta$ supplied by the verifier makes this combination secure:
 
-{% raw %}
-
 $$ g(X) = \alpha \cdot f(X) + \beta \cdot X^{2^k - d-1} \cdot f(X) $$
-
-{% endraw %}
 
 When the random coefficients are present, the cancellation of high degree terms occurs with negligible probability.
 
