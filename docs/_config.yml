@@ -4,7 +4,6 @@ incremental: false
 highlighter: rouge
 gist:
   noscript: false
-math_engine: mathjax
-theme: jekyll-theme-slate
+theme: minima
 include: _includes
 
