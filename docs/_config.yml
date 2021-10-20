@@ -16,16 +16,12 @@
 title: Anatomy of a STARK
 email: alan@nervos.org
 description: STARK tutorial with supporting source code in python.
-baseurl: "/docs/"
-url: "" # the base hostname & protocol for your site, e.g. http://example.com
 twitter_username: aszepieniec
 github_username: aszepieniec
 
 # Build settings
 markdown: kramdown
 theme: jekyll-theme-minimal
-plugins:
-  - jekyll-feed
 
 # Exclude from processing.
 # The following items will not be processed, by default. Create a custom list
