@@ -84,7 +84,7 @@ Intuitively, a prover who lies in one location is hardly cheating, because it is
 
 How many colinearity checks are needed for a target security level of $\lambda$ bits? That's the million dollar question.
 
-The [[FRI paper|https://eccc.weizmann.ac.il/report/2017/134/revision/1/download/]], the [[DEEP-FRI follow-up|https://sites.math.rutgers.edu/~sk1233/deep-fri.pdf]], and the [[follow-up to the follow-up|https://eprint.iacr.org/2020/654]], present a sequence of more refined argument relying crucially on the code rate $\rho$. I do not pretend to understand these proofs and will content myself with merely reciting the rule of thumb used in the [[EthSTARK documentation|https://eprint.iacr.org/2021/582]] for conjectural security[^4]:
+The [FRI paper](https://eccc.weizmann.ac.il/report/2017/134/revision/1/download/), the [DEEP-FRI follow-up](https://sites.math.rutgers.edu/~sk1233/deep-fri.pdf), and the [follow-up to the follow-up](https://eprint.iacr.org/2020/654), present a sequence of more refined argument relying crucially on the code rate $\rho$. I do not pretend to understand these proofs and will content myself with merely reciting the rule of thumb used in the [EthSTARK documentation](https://eprint.iacr.org/2021/582) for conjectural security[^4]:
  - The hash function used for building Merkle trees needs to have at least $2\lambda$ output bits.
  - The field needs to have at least $2^\lambda$ elements. (Note that this refers tot the field used for FRI. In particular, you can switch to an extension field if the base field is not large enough.)
  - You get $\log_2 \rho^{-1}$ bits of security for every colinearity check, so setting setting the number of colinearity checks to $s = \lceil \lambda / \log_2 \rho^{-1} \rceil$ achieves $\lambda$ bits of security.
@@ -370,7 +370,7 @@ FRI establishes that a given Merkle root decommits to a polynomial of degree les
 Let $f(X)$ be a polynomial of degree at most $d$. Let $g(X)$ be another polynomial defined as $$g(X) = f(X) + X^{2^k - d - 1} \cdot f(X) \enspace ,$$
 where $2^k > d+1$. Then $g(X)$ has degree less than $2^k$ only if $f(X)$ has degree at most $d$. So the prover who uses FRI to establish that $g(X)$ has degree less than $2^k$ automatically establishes that $f(X)$ has degree at most $d$.
  
-In order to link the Merkle root for $g(X)$ to the Merkle root for $f(X)$, the supplies a bunch (about $\lambda$) of random indices $i$ and the prover responds with the leafs at those indices and their authentication paths. The verifier then verifies that for every such point $x_i$ being the $i$th point of the evaluation domain, $g(x_i) = (1+x_i^{2^k - d - 1}) \cdot f(x_i)$. Alternatively, the first codeword in FRI can omitted altogether; in this case the verifier relates the second FRI codeword $g^\star(X)$ to $f(X)$ by eliminating the values of $g(X)$ using the same formula.
+In order to link the Merkle root for $g(X)$ to the Merkle root for $f(X)$, the verifier supplies a bunch (about $\lambda$) of random indices $i$ and the prover responds with the leafs at those indices and their authentication paths. The verifier then verifies that for every such point $x_i$ being the $i$th point of the evaluation domain, $g(x_i) = (1+x_i^{2^k - d - 1}) \cdot f(x_i)$. Alternatively, the first codeword in FRI can omitted altogether; in this case the verifier relates the second FRI codeword $g^\star(X)$ to $f(X)$ by eliminating the values of $g(X)$ using the same formula.
 
 **Two:** dividing out the zerofier. The verifier asks for the value of a committed polynomial $f(X)$ in a given point $z$. The prover responds: $f(z) = y$. Can he authenticate this response? Once again, the answer is yes!
 
@@ -408,4 +408,4 @@ When the random coefficients are present, the cancellation of high degree terms 
 
 [^3]: It might make sense to terminate the protocol early, in which case the prover must send a non-trivial codeword in the clear and the verifier must verify that it has a defining polynomial of bounded degree.
 
-[^4]: The [[EthSTARK documentation|https://eprint.iacr.org/2021/582.pdf]] also provides a significantly more complex formula for the security level provably achieved without relying on coding theoretic conjectures.
+[^4]: The [EthSTARK documentation](https://eprint.iacr.org/2021/582.pdf) also provides a significantly more complex formula for the security level provably achieved without relying on coding theoretic conjectures.
