@@ -4,7 +4,7 @@ This part of the tutorial puts the tools developed in the previous parts togethe
 
 ## Rescue-Prime
 
-[[Rescue-Prime|https://eprint.iacr.org/2020/1143.pdf]] is an arithmetization-oriented hash function, meaning that it has a compact description in terms of AIR. It is a sponge function constructed from the Rescue-XLIX permutation $f_{\mathrm{R}^{\mathrm{XLIX}}} : \mathbb{F}^m \rightarrow \mathbb{F}^m$, consists of several almost-identical rounds. Every round consists of six steps:
+[Rescue-Prime](https://eprint.iacr.org/2020/1143.pdf) is an arithmetization-oriented hash function, meaning that it has a compact description in terms of AIR. It is a sponge function constructed from the Rescue-XLIX permutation $f_{\mathrm{R}^{\mathrm{XLIX}}} : \mathbb{F}^m \rightarrow \mathbb{F}^m$, consists of several almost-identical rounds. Every round consists of six steps:
  1. Forward S-box. Every element of the state is raised to the power $\alpha$, where $\alpha$ is the smallest invertible power.
  2. MDS. The vector of state elements is multiplied by a matrix with special properties.
  3. Round constants. Pre-defined constants are added to every element of the state.
@@ -30,7 +30,7 @@ Furthermore, the input to the hash computation will be a single field element. S
 
 ## Implementation
 
-The Rescue-Prime [[paper|https://eprint.iacr.org/2020/1143.pdf]] provides nearly complete reference implementation. However, the code here is tailored to this one application.
+The Rescue-Prime [paper](https://eprint.iacr.org/2020/1143.pdf) provides nearly complete reference implementation. However, the code here is tailored to this one application.
 
 ```python
 class RescuePrime:
@@ -193,11 +193,12 @@ class RescuePrime:
 
 ### Rescue-Prime AIR
 
-The transition constraints for a single round of the Rescue-XLIX permutation are obtained expressing the state values in the middle of the round in terms of the state values at the beginning, and again in terms of the state values at the end, and then equating both expressions. Specifically, let $\boldsymbol{s}_i$ denote the state values at the beginning of round $i$, let $\boldsymbol{c}_{2i}$ and $\boldsymbol{c}_{2i+1}$ be round constants, let $M$ be the MDS matrix, and let superscript denote element-wise powering. Then the transition of a single round is captured by the equation
+The transition constraints for a single round of the Rescue-XLIX permutation are obtained expressing the state values in the middle of the round in terms of the state values at the beginning, and again in terms of the state values at the end, and then equating both expressions. Specifically, let $\boldsymbol{s}_ {i}$ denote the state values at the beginning of round $i$, let $\boldsymbol{c}_ {2i}$ and $\boldsymbol{c}_{2i+1}$ be round constants, let $M$ be the MDS matrix, and let superscript denote element-wise powering. Then the transition of a single round is captured by the equation
+
 $$ M (\boldsymbol{s}_i^\alpha) + \boldsymbol{c}_{2i} = \left(M^{-1} (\boldsymbol{s}_{i+1} - \boldsymbol{c}_{2i+1})\right)^\alpha \enspace .$$
 
-To be used in a STARK, transition constraints cannot depend on the round. In other words, what is needed is a single equation that describes all rounds, not just the $i$th round. Let $\boldsymbol{X}$ denote the vector of variables representing the current state (beginning of the round), and $\boldsymbol{Y}$ denote the vector of variables represnting the next state (at the end of the round). Furthermore, let $\mathbf{f}_{\boldsymbol{c}_{2i}}(W)$ denote the vector of $m$ polynomials that take the value $\boldsymbol{c}_{2i}$ on $\omicron^i$, and analogously for $\mathbf{f}_{\boldsymbol{c}_{2i+1}}(W)$. Suppose without loss of generality that the execution trace will be interpolated on the domain $\{\omicron^i | 0 \leq i \leq T\}$ for some $T$. Then the above family of arithmetic transition constraints gives rise to the following equation capturing the same transition conditions.
-$$ M(\boldsymbol{X}^\alpha) + \mathbf{f}_{\boldsymbol{c}_{2i}}(W) = \left(M^{-1}(\boldsymbol{Y} - \mathbf{f}_{\boldsymbol{c}_{2i+1}}(W))\right)^\alpha $$
+To be used in a STARK, transition constraints cannot depend on the round. In other words, what is needed is a single equation that describes all rounds, not just the $i$th round. Let $\boldsymbol{X}$ denote the vector of variables representing the current state (beginning of the round), and $\boldsymbol{Y}$ denote the vector of variables represnting the next state (at the end of the round). Furthermore, let $\mathbf{f}_ {\boldsymbol{c}_ {2i}}(W)$ denote the vector of $m$ polynomials that take the value $\boldsymbol{c}_ {2i}$ on $\omicron^i$, and analogously for $\mathbf{f}_ {\boldsymbol{c}_{2i+1}}(W)$. Suppose without loss of generality that the execution trace will be interpolated on the domain $\lbrace \omicron^i vert 0 \leq i \leq T\rbrace$ for some $T$. Then the above family of arithmetic transition constraints gives rise to the following equation capturing the same transition conditions.
+$$ M(\boldsymbol{X}^\alpha) + \mathbf{f}_ {\boldsymbol{c}_ {2i}}(W) = \left(M^{-1}(\boldsymbol{Y} - \mathbf{f}_ {\boldsymbol{c}_{2i+1}}(W))\right)^\alpha $$
 
 The transition constraint polynomial is obtained by moving all terms to the left hand side and dropping the equation to zero. Note that there are $2m+1$ variables, corresponding to $m = \mathsf{w}$ registers.
 
@@ -255,7 +256,7 @@ The transition constraint polynomial is obtained by moving all terms to the left
         return air
 ```
 
-The boundary constraints are a lot simpler. At the beginning, the first state element is the unknown secret and the second state element is zero because the sponge construction defines it so. At the end (after all $N$ rounds or $T$ cycles), the first state element is the one element of known hash digest $[h]$, and the second state element is unconstrained. Note that this second state element must be kept secret to be secure -- otherwise the attacker and invert the permutation. This description gives rise to the following set $\mathcal{B}$ of triples $(c, r, e) \in \mathbb{Z}_{T+1} \times \mathbb{Z}_\mathsf{w} \times \mathbb{F}$:
+The boundary constraints are a lot simpler. At the beginning, the first state element is the unknown secret and the second state element is zero because the sponge construction defines it so. At the end (after all $N$ rounds or $T$ cycles), the first state element is the one element of known hash digest $[h]$, and the second state element is unconstrained. Note that this second state element must be kept secret to be secure -- otherwise the attacker and invert the permutation. This description gives rise to the following set $\mathcal{B}$ of triples $(c, r, e) \in \lbrace 0, \ldots, T \rbrace \times \lbrace 0, \ldots, \mathsf{w}-1 \rbrace \times \mathbb{F}$:
  - $(0, 1, 0)$
  - $(T, 0, h)$.
 
