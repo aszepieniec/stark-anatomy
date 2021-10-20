@@ -1,5 +1,5 @@
 highlighter: rouge
 markdown: kramdown
-theme: architect
+theme: modernist
 include: _includes
 
