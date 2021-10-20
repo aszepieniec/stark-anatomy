@@ -399,7 +399,13 @@ $$ g(X) = f(X) + X^{2^k - d-1} \cdot f(X) $$
 captures the right intuition but is concretely insecure. The reason is that when evaluation is restricted to $\mathbb{F}_p$, polynomials behave identical to their representatives modulo $X^p - X$. And so the right summand in the above expression can contain terms that are cancelled by the left when evaluated on a subset of $\mathbb{F}_p$ for the purpose of computing the polynomial's codeword. As a result, the codeword might correspond to a polynomial of low degree even though $f(X)$ has a *very* high degree!
 
 The involvement of random coefficients $\alpha$ and $\beta$ supplied by the verifier makes this combination secure:
+
+{% raw %}
+
 $$ g(X) = \alpha \cdot f(X) + \beta \cdot X^{2^k - d-1} \cdot f(X) $$
+
+{% endraw %}
+
 When the random coefficients are present, the cancellation of high degree terms occurs with negligible probability.
 
 [^1]: The generality lost in this description has to do with when the codeword in question is compiled on the fly from applying arithmetic operations to other codewords.
