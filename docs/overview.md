@@ -73,7 +73,7 @@ At this point the Polynomial IOP has been compiled into an interactive concrete 
 
 This description glosses over many details. The remainder of this tutorial will explain the construction in more concrete and tangible terms, and will insert more fine-grained components into the diagram.
 
-[0](introduction) - **1** - [2](basic-tools) - [3](fri) - [4](stark) - [5](rescue-prime) - [6](faster)
+[0](index) - **1** - [2](basic-tools) - [3](fri) - [4](stark) - [5](rescue-prime) - [6](faster)
 
 [^1]: Also, algebraic *internal* representation.
 [^2]: Note that FRI is defined in terms of abstract oracles which can be queried in arbitrary locations; a FRI protocol can thus be compiled into a concrete protocol by simulating the oracles with any cryptographic vector commitment scheme. Merkle trees provide this functionality but are not the only cryptographic primitive to do it.

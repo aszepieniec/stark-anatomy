@@ -589,7 +589,7 @@ This functional implementation overlooks one important aspect: the data objects 
         return Merkle.verify_(root, index, path, Merkle.H(bytes(data_element)).digest())
 ```
 
-[0](introduction) - [1](overview) - **2** - [3](fri) - [4](stark) - [5](rescue-prime) - [6](faster)
+[0](index) - [1](overview) - **2** - [3](fri) - [4](stark) - [5](rescue-prime) - [6](faster)
 
 [^1]: Actually, an [amazing new paper](https://arxiv.org/pdf/2107.08473.pdf) by the StarkWare team shows how to apply the same techniques in *any* finite field, whether it has the requisite structure or not. This tutorial explains the construction the simple way, using structured finite fields.
 [^2]: A *monic* polynomial is one whose leading coefficient is one.
