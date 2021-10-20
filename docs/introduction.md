@@ -61,5 +61,7 @@ This tutorial does re-hash the background material when it is needed. However, t
 
 The author wishes to thank Bobbin Threadbare and Thorkil Værge for useful feedback and comments, as well as [Nervos](https://nervos.org) Foundation for financial support. Send him an email at `alan@nervos.org` or follow `aszepieniec` on twitter or Github.
 
+**0** - [1](overview) - [2](basic-tools) - [3](fri) - [4](stark) - [5](rescue-prime) - [6](faster)
+
 [^1]: In the literature, this idealization is known as the quantum random oracle model.
 [^2]: A Reed-Solomon codeword is the vector of evaluations of a low degree polynomial on a given domain of points. Different codewords belong to the same code when their defining polynomials are different but the evaluation domain is the same.

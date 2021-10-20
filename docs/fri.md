@@ -415,6 +415,8 @@ $$ g(X) = \alpha \cdot f(X) + \beta \cdot X^{2^k - d-1} \cdot f(X) $$
 
 When the random coefficients are present, the cancellation of high degree terms occurs with negligible probability.
 
+[0](introduction) - [1](overview) - [2](basic-tools) - **3** - [4](stark) - [5](rescue-prime) - [6](faster)
+
 [^1]: The generality lost in this description has to do with when the codeword in question is compiled on the fly from applying arithmetic operations to other codewords.
 
 [^2]: The term "corresponds" is used informally here in a manner that hides allowance for error-correcting codewords to disagree from their generating polynomial slightly. FRI makes no distinction between codewords that agree exactly with a low degree polynomials on the given domain, and polynomials that are merely close to such codewords in terms of Hamming distance.
