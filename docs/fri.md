@@ -25,7 +25,9 @@ and
 $$f_O(X^2) = \frac{f(X) - f(-X)}{2X} = \sum_{i=0}^{\frac{d+1}{2}-1} c_{2i+1} X^{2i} \enspace .$$
 To see that this decomposition is correct, observe that for $f_E(X)$, the odd terms cancel; whereas for $f_O(X)$, it is the even terms that cancel. The key step of the protocol derives a codeword for $f^\star(X) = f_E(X) + \alpha \cdot f_O(X)$ from the codeword for $f(X)$, where $\alpha$ is a random scalar supplied by the verifier.
 
-Let $D$ be a subgroup of even order $N$ of the multiplicative group of the field, and let $\omega$ generate this subgroup: $\langle \omega \rangle = D \subset \mathbb{F}_p \backslash\{0\}$. Let $\{f(\omega^i)\}_{i=0}^{N-1}$ be the codeword for $f(X)$, corresponding with evaluation on $D$. Let $D^\star = \langle \omega^2 \rangle$ be another domain, of half the length, and $\{f_E(\omega^{2i})\}_{i=0}^{N/2-1}$, $\{f_O(\omega^{2i})\}_{i=0}^{N/2-1}$, and $\{f^\star(\omega^{2i})\}_{i=0}^{N/2-1}$ be the codewords for $f_E(X)$, $f_O(X)$, and $f^\star(X)$, respectively, corresponding to evaluation on $D^\star$.
+Let $D$ be a subgroup of even order $N$ of the multiplicative group of the field, and let $\omega$ generate this subgroup:
+$$\langle \omega \rangle = D \subset \mathbb{F}_p \backslash\{0\} \enspace .$$
+Let $\{f(\omega^i)\}_{i=0}^{N-1}$ be the codeword for $f(X)$, corresponding with evaluation on $D$. Let $D^\star = \langle \omega^2 \rangle$ be another domain, of half the length, and $\{f_E(\omega^{2i})\}_{i=0}^{N/2-1}$, $\{f_O(\omega^{2i})\}_{i=0}^{N/2-1}$, and $\{f^\star(\omega^{2i})\}_{i=0}^{N/2-1}$ be the codewords for $f_E(X)$, $f_O(X)$, and $f^\star(X)$, respectively, corresponding to evaluation on $D^\star$.
 
 Expanding the definition of $f^\star(X)$ gives
 $$ \{f^\star(\omega^{2i})\}_{i=0}^{N/2-1} = \{f_E(\omega^{2i}) + \alpha \cdot f_O(\omega^{2i})\}_{i=0}^{N/2-1} . $$
@@ -156,7 +158,7 @@ The commit phase consists of several rounds in which:
  - The Merkle root is sent to the verifier.
  - The verifier supplies a random challenge $\alpha$.
  - The prover applies the split-and-fold formula to derive a codeword for the next round.
- - The prover squares both the offset $g$ and generator $\omega$ such that $\{g \cdot \omega^i | i \in \mathbb{Z}\}$ always corresponds to the working codeword's evaluation domain.
+ - The prover squares both the offset $g$ and generator $\omega$ such that $\{g \cdot \omega^i \vert i \in \mathbb{Z}\}$ always corresponds to the working codeword's evaluation domain.
 
 After running the loop, the prover is left with a codeword. It sends this codeword to the verifier in the clear. Lastly, the prover needs to keep track of the codewords computed in every round in order to open the Merkle trees generated from them in the next phase.
 
