@@ -14,18 +14,18 @@ Zk-SNARKs have existed for a while, but the STARK proof system is a relatively n
 
  ![Eli Ben-Sasson likes STARKs better](graphics/twitter-eli.png "STARKs will beat SNARKs")
 
-In this tutorial I attempt to explain how many of the pieces work together. This textual explanation is supported by a python implementation for proving and verifying a simple computation based on the [[Rescue-Prime | https://eprint.iacr.org/2020/1143.pdf]] hash function. After reading or studying this tutorial, you should be able to write your own zero-knowledge STARK prover and verifier for a computation of your choice.
+In this tutorial I attempt to explain how many of the pieces work together. This textual explanation is supported by a python implementation for proving and verifying a simple computation based on the [Rescue-Prime](https://eprint.iacr.org/2020/1143.pdf) hash function. After reading or studying this tutorial, you should be able to write your own zero-knowledge STARK prover and verifier for a computation of your choice.
 
 ## Why another tutorial?
 
 It should be noted early on that there are a variety of sources for learning about STARKs. Here is an incomplete list.
- - The scientific papers on [[FRI|]], [[STARK|]], [[DEEP-FRI|]]
- - A multi-part tutorial by Vitalik Buterin (parts [[I | https://vitalik.ca/general/2017/11/09/starks_part_1.html]]/[[II | https://vitalik.ca/general/2017/11/22/starks_part_2.html]]/[[3 | https://vitalik.ca/general/2018/07/21/starks_part_3.html]])
- - A series of blog posts by StarkWare (parts [[1 | https://medium.com/starkware/stark-math-the-journey-begins-51bd2b063c71]], [[2 | https://medium.com/starkware/arithmetization-i-15c046390862]], [[3 | https://medium.com/starkware/arithmetization-ii-403c3b3f4355]], [[4 | https://medium.com/starkware/low-degree-testing-f7614f5172db]], [[5 | https://medium.com/starkware/a-framework-for-efficient-starks-19608ba06fbe]])
- - The [[STARK @ Home | https://www.youtube.com/playlist?list=PLcIyXLwiPilUFGw7r2uyWerOkbx4GFMXq]] webcasts by StarkWare
- - The [[STARK 101 | https://starkware.co/developers-community/stark101-onlinecourse/]] online course by StarkWare
- - The [[EthStark documentation | https://eprint.iacr.org/2021/582.pdf]] by StarkWare
- - generally speaking, anything put out by [[StarkWare | https://starkware.co]]
+ - The scientific papers on [FRI](https://eccc.weizmann.ac.il/report/2017/134/revision/1/download/), [STARK](https://eprint.iacr.org/2018/046.pdf), [DEEP-FRI](https://eprint.iacr.org/2019/336.pdf)
+ - A multi-part tutorial by Vitalik Buterin (parts [I](https://vitalik.ca/general/2017/11/09/starks_part_1.html)/[II](https://vitalik.ca/general/2017/11/22/starks_part_2.html)/[3](https://vitalik.ca/general/2018/07/21/starks_part_3.html))
+ - A series of blog posts by StarkWare (parts [1](https://medium.com/starkware/stark-math-the-journey-begins-51bd2b063c71), [2](https://medium.com/starkware/arithmetization-i-15c046390862), [3](https://medium.com/starkware/arithmetization-ii-403c3b3f4355), [4](https://medium.com/starkware/low-degree-testing-f7614f5172db), [5](https://medium.com/starkware/a-framework-for-efficient-starks-19608ba06fbe))
+ - The [STARK @ Home](https://www.youtube.com/playlist?list=PLcIyXLwiPilUFGw7r2uyWerOkbx4GFMXq) webcasts by StarkWare
+ - The [STARK 101](https://starkware.co/developers-community/stark101-onlinecourse/) online course by StarkWare
+ - The [EthStark documentation](https://eprint.iacr.org/2021/582.pdf) by StarkWare
+ - generally speaking, anything put out by [StarkWare](https://starkware.co)
 
 With these sources available, why am I writing another tutorial?
 
@@ -50,16 +50,16 @@ This tutorial does re-hash the background material when it is needed. However, t
 
 ## Roadmap
 
- - [[Part 1: STARK Overview|overview]]
- - [[Part 2: Basic Tools|basic-tools]]
- - [[Part 3: FRI|fri]]
- - [[Part 4: The STARK Polynomial IOP|stark]]
- - [[Part 5: A Rescue-Prime STARK|rescue-prime]]
- - [[Part 6: Speeding Things Up|faster]]
+ - [Part 1: STARK Overview](overview)
+ - [Part 2: Basic Tools](basic-tools)
+ - [Part 3: FRI](fri)
+ - [Part 4: The STARK Polynomial IOP](stark)
+ - [Part 5: A Rescue-Prime STARK](rescue-prime)
+ - [Part 6: Speeding Things Up](faster)
 
 ## Acknowledgements
 
-The author wishes to thank Bobbin Threadbare and Thorkil Værge for useful feedback and comments, as well as Nervos Foundation for financial support. Send him an email at `alan@nervos.org` or follow `@aszepieniec` on twitter.
+The author wishes to thank Bobbin Threadbare and Thorkil Værge for useful feedback and comments, as well as [Nervos](https://nervos.org) Foundation for financial support. Send him an email at `alan@nervos.org` or follow `@aszepieniec` on twitter.
 
 [^1]: In the literature, this idealization is known as the quantum random oracle model.
 [^2]: A Reed-Solomon codeword is the vector of evaluations of a low degree polynomial on a given domain of points. Different codewords belong to the same code when their defining polynomials are different but the evaluation domain is the same.
