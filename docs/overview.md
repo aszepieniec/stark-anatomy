@@ -8,7 +8,7 @@ In the terminology of this tutorial, a STARK is a particular SNARK where
 
  This part of the tutorial is about explaining the key terms in this definition of STARKs.
 
- ## Interactive Proof Systems
+## Interactive Proof Systems
 
  In computational complexity theory, an interactive proof system is a protocol between at least two parties in which one party, the verifier, is convinced of the correctness of a certain mathematical claim if and only if that claim is true. In theory, the claim could be anything expressible by mathematical symbols, such as the Birch and Swinnerton-Dyer conjecture, $\mathbf{P} \neq \mathbf{NP}$, or "the fifteenth Fibonacci number is 643617." (In a sound proof system, the verifier will reject that last claim.) 
  
