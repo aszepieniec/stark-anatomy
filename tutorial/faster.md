@@ -451,4 +451,4 @@ After modifying the Rescue-Prime signature scheme to use the new, `FastStark` cl
  - signing time: **72 seconds**
  - verification time: **8 seconds**
 
-How's that for an improvement? The proof is larger because there are many more Merkle paths associated with zerofier leafs, but in exchange proving and verifying is an order of magnitude faster. Of course there are plenty of improvements left applied, but as this tutorial is ending, those are left as exercises to the reader.
+How's that for an improvement? The proof is larger because there are many more Merkle paths associated with zerofier leafs, but in exchange proving and verifying is an order of magnitude faster. Of course there is no shortage of further improvements, but those are beyond the scope of this tutorial and left as exercises to the reader.

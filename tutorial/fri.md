@@ -115,8 +115,7 @@ class Fri:
     def num_rounds( self ):
         codeword_length = self.domain_length
         num_rounds = 0
-        while codeword_length > self.expansion_factor and 2*self.num_colinearity_tests < codeword_length:
-        expansion_factor:
+        while codeword_length > self.expansion_factor and 4*self.num_colinearity_tests < codeword_length:
             codeword_length /= 2
             num_rounds += 1
         return num_rounds
@@ -125,7 +124,7 @@ class Fri:
         return [self.offset * (self.omega^i) for i in range(self.domain_length)]
 ```
 
-Note that the method to compute the number of rounds terminates the protocol early. Specifically, it terminates as soon as the number of colinearity checks is more than half the length of the working codeword. If there were another step, there would be more colinearity checks than points in the codeword to perform this test at.
+Note that the method to compute the number of rounds terminates the protocol early. Specifically, it terminates as soon as the number of colinearity checks is more than one quarter the length of the working codeword. If there were another step, more than half the points in the codeword would be a $C$ point in some colinearity test. At this point, the entropy of a random selection of indices drops significantly.
 
 ### Prove
 
@@ -140,12 +139,14 @@ It is important to keep track of the set of indices of leafs of the initial code
         # commit phase
         codewords = self.commit(codeword, proof_stream)
 
+        # get indices
+        top_level_indices = self.sample_indices(proof_stream.prover_fiat_shamir(), len(codewords[1]), len(codewords[-1]), self.num_colinearity_tests)
+        indices = [index for index in top_level_indices]
+
         # query phase
         for i in range(len(codewords)-1):
-            if i == 0:
-                top_level_indices = self.query(codewords[i], codewords[i+1], proof_stream)
-            else:
-                self.query(codewords[i], codewords[i+1], proof_stream)
+            indices = [index % (len(codewords[i])//2) for index in indices] # fold
+            self.query(codewords[i], codewords[i+1], indices, proof_stream)
 
         return top_level_indices
 ```
@@ -199,18 +200,13 @@ After running the loop, the prover is left with a codeword. It sends this codewo
 ```
 
 The commit phase consists of the same number of iterations of a different loop:
- - The verifier sends a seed which is turned into a set of indices, which indicate locations in the next codeword. These indices correspond to the x-coordinate of the $C$ points.
- - The indices for the x-coordinates of the $A$ and $B$ points are derived.
+ - The indices for the x-coordinates of the $A$ and $B$ points are derived from the set of indices for the x-coordinates of $C$ points.
  - The indicated codeword values are sent to the verifier, along with their authentication paths.
 
 The prover needs to record the indices of the first round.
 
 ```python
-    def query( self, current_codeword, next_codeword, proof_stream ):
-        # sample c indices
-        assert(len(next_codeword) > self.num_colinearity_tests), "length of next codeword must be larger than number of colinearity tests"
-        c_indices = self.sample_indices(proof_stream.prover_fiat_shamir(), len(next_codeword), self.num_colinearity_tests)
-
+    def query( self, current_codeword, next_codeword, c_indices, proof_stream ):
         # infer a and b indices
         a_indices = [index for index in c_indices]
         b_indices = [index + len(current_codeword)//2 for index in c_indices]
@@ -228,7 +224,7 @@ The prover needs to record the indices of the first round.
         return a_indices + b_indices
 ```
 
-In the above snippet, the sampling of indices is hidden away behind the `sample_indices` method. This method takes a seed, a list size, and a desired number, and generates that number of uniformly pseudorandom indices in the given interval. The actual logic is tricky. It involves repeatedly sampling a single index by calling `blake2b` on the seed appended with an increasing counter. If the desired number of indices is smaller than or equal to half the list size, then sampled indices to into a new list unless they are in it already. If the desired number of indices is greater than half the list size, then there is a list that records the available indices. The sampled index is removed from this list if it is in there, and otherwise it is ignored.
+In the above snippet, the sampling of indices is hidden away behind the argument `c_indices`. The wrapper function `prove` samples invokes the function `sample_indices` to sample the set of master indices. This method takes a seed, a list size, and a desired number, and generates that number of uniformly pseudorandom indices in the given interval. The actual logic is tricky. It involves repeatedly sampling a single index by calling `blake2b` on the seed appended with an increasing counter. The function keeps track of indices that are fully folded, *i.e.*, indicate locations in the last codeword. Sampled indices that generate a collision through folding are rejected.
 
 ```python
     def sample_index( byte_array, size ):
@@ -237,24 +233,21 @@ In the above snippet, the sampling of indices is hidden away behind the `sample_
             acc = (acc << 8) ^ int(b)
         return acc % size
 
-    def sample_indices( self, seed, size, number ):
-        assert(number <= size), "cannot sample more indices than available"
+    def sample_indices( self, seed, size, reduced_size, number ):
+        assert(number <= reduced_size), f"cannot sample more indices than available in last codeword; requested: {number}, available: {reduced_size}"
+        assert(number <= 2*reduced_size), "not enough entropy in indices wrt last codeword"
+
         indices = []
+        reduced_indices = []
         counter = 0
-        if number > size//2:
-            remaining = list(range(size))
-            for i in range(number):
-                index = Fri.sample_index(blake2b(seed + bytes(counter)).digest(), len(remaining))
-                counter += 1
-                r = remaining[index]
-                indices += [r]
-                remaining.remove(r)
-        else:
-            while len(indices) < number:
-                index = Fri.sample_index(blake2b(seed + bytes(counter)).digest(), size)
-                counter += 1
-                if index not in indices:
-                    indices += [index]
+        while len(indices) < number:
+            index = Fri.sample_index(blake2b(seed + bytes(counter)).digest(), size)
+            reduced_index = index % reduced_size
+            counter += 1
+            if reduced_index not in reduced_indices:
+                indices += [index]
+                reduced_indices += [reduced_index]
+
         return indices
 ```
 
@@ -263,7 +256,7 @@ In the above snippet, the sampling of indices is hidden away behind the `sample_
 The verifier runs through the same checklist as the prover but runs the dual steps to his. Specifically, the verifier:
  - reads the Merkle roots from the proof stream and reproduces the random scalars $\alpha$ with Fiat-Shamir;
  - reads the last codewords from the proof stream and checks that it matches with a low degree polynomial as well as the last Merkle root to be sent;
- - reproduces the random indices with Fiat-Shamir, and computes the remaining indices for the colinearity checks;
+ - reproduces the master list of random indices with Fiat-Shamir, and infers the remaining indices for the colinearity checks;
  - reads the Merkle leafs and their authentication paths from the proof stream, and verifies their authenticity against the indices;
  - runs the colinearity checks for every pair of consecutive codewords.
 
@@ -288,30 +281,40 @@ The verifier runs through the same checklist as the prover but runs the dual ste
             return False
 
         # check if it is low degree
-        # this procedure is slow but can be made faster (TODO)
         degree = (len(last_codeword) // self.expansion_factor) - 1
         last_omega = omega
         last_offset = offset
         for r in range(self.num_rounds()-1):
             last_omega = last_omega^2
             last_offset = last_offset^2
+
+        # assert that last_omega has the right order
+        assert(last_omega.inverse() == last_omega^(len(last_codeword)-1)), "omega does not have right order"
+
+        # compute interpolant
         last_domain = [last_offset * (last_omega^i) for i in range(len(last_codeword))]
         poly = Polynomial.interpolate_domain(last_domain, last_codeword)
+
+        assert(poly.evaluate_domain(last_domain) == last_codeword), "re-evaluated codeword does not match original!"
+        
         if poly.degree() > degree:
             print("last codeword does not correspond to polynomial of low enough degree")
             print("observed degree:", poly.degree())
             print("but should be:", degree)
             return False
 
+        # get indices
+        top_level_indices = self.sample_indices(proof_stream.verifier_fiat_shamir(), self.domain_length >> 1, self.domain_length >> (self.num_rounds()-1), self.num_colinearity_tests)
+
         # for every round, check consistency of subsequent layers
         for r in range(0, self.num_rounds()-1):
 
-            # sample c indices
-            c_indices = self.sample_indices(proof_stream.verifier_fiat_shamir(), self.domain_length >> (r+1), self.num_colinearity_tests)
+            # fold c indices
+            c_indices = [index % (self.domain_length >> (r+1)) for index in top_level_indices]
 
             # infer a and b indices
             a_indices = [index for index in c_indices]
-            b_indices = [index + (self.domain_length >> (r+1)) for index in c_indices]
+            b_indices = [index + (self.domain_length >> (r+1)) for index in a_indices]
 
             # read values and check colinearity
             aa = []
