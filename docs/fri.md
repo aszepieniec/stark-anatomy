@@ -415,7 +415,7 @@ $$ g(X) = \alpha \cdot f(X) + \beta \cdot X^{2^k - d-1} \cdot f(X) $$
 
 When the random coefficients are present, the cancellation of high degree terms occurs with negligible probability.
 
-[0](introduction) - [1](overview) - [2](basic-tools) - **3** - [4](stark) - [5](rescue-prime) - [6](faster)
+[0](index) - [1](overview) - [2](basic-tools) - **3** - [4](stark) - [5](rescue-prime) - [6](faster)
 
 [^1]: The generality lost in this description has to do with when the codeword in question is compiled on the fly from applying arithmetic operations to other codewords.
 

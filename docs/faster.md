@@ -454,4 +454,4 @@ After modifying the Rescue-Prime signature scheme to use the new, `FastStark` cl
 How's that for an improvement? The proof is larger because there are many more Merkle paths associated with zerofier leafs, but in exchange verifying is an order of magnitude faster. Of course there is no shortage of further improvements, but those are beyond the scope of this tutorial and left as exercises to the reader.
 
 
-[0](introduction) - [1](overview) - [2](basic-tools) - [3](fri) - [4](stark) - [5](rescue-prime) - **6**
+[0](index) - [1](overview) - [2](basic-tools) - [3](fri) - [4](stark) - [5](rescue-prime) - **6**

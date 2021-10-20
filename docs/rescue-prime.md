@@ -418,6 +418,6 @@ There might be a few optimizations available that can reduce the proof's size, s
 
 In terms of speed, a lot of the poor performance is due to using python instead of a language that is closer to the hardware such as C or rust. Python was chosen for the same reason -- to highlight and explain the maths. But the biggest performance gain in terms of speed is going to come from switching to faster algorithms for key operations. This is the topic of the next and last part of the tutorial.
 
-[0](introduction) - [1](overview) - [2](basic-tools) - [3](fri) - [4](stark) - **5** - [6](faster)
+[0](index) - [1](overview) - [2](basic-tools) - [3](fri) - [4](stark) - **5** - [6](faster)
 
 [^1]: More specifically, in the random oracle model, a successful signature-forger gives rise to an adversary who breaks the one-wayness of Rescue-Prime with polynomially related running time and success probability.
