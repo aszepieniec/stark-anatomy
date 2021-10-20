@@ -589,7 +589,7 @@ This functional implementation overlooks one important aspect: the data objects 
         return Merkle.verify_(root, index, path, Merkle.H(bytes(data_element)).digest())
 ```
 
-[^1]: Actually, an [[[]amazing new paper](https://arxiv.org/pdf/2107.08473.pdf) by the StarkWare team shows how to apply the same techniques in *any* finite field, whether it has the requisite structure or not. This tutorial explains the construction the simple way, using structured finite fields.
+[^1]: Actually, an [amazing new paper](https://arxiv.org/pdf/2107.08473.pdf) by the StarkWare team shows how to apply the same techniques in *any* finite field, whether it has the requisite structure or not. This tutorial explains the construction the simple way, using structured finite fields.
 [^2]: A *monic* polynomial is one whose leading coefficient is one.
 [^3]: Never mind that it does not make any sense to prove the correct computation of the algebraic-geometric mean of finite field elements; it serves the purpose of illustration.
 [^4]: In some cases, such as hash-based signatures, collision-resistance may be overkill and more basic security notion such as second-preimage resistance may suffice.
