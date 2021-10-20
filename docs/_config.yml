@@ -1,8 +1,6 @@
-lsi: false
-safe: true
-incremental: false
 highlighter: rouge
 markdown: kramdown
+math: mathjax
 theme: minima
 include: _includes
 
