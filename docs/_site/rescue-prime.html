@@ -1,0 +1,502 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1"><!-- Begin Jekyll SEO tag v2.7.1 -->
+<title>Anatomy of a STARK, Part 5: A Rescue-Prime STARK | Anatomy of a STARK</title>
+<meta name="generator" content="Jekyll v3.9.0" />
+<meta property="og:title" content="Anatomy of a STARK, Part 5: A Rescue-Prime STARK" />
+<meta property="og:locale" content="en_US" />
+<meta name="description" content="STARK tutorial with supporting source code in python." />
+<meta property="og:description" content="STARK tutorial with supporting source code in python." />
+<link rel="canonical" href="http://localhost:4000/rescue-prime.html" />
+<meta property="og:url" content="http://localhost:4000/rescue-prime.html" />
+<meta property="og:site_name" content="Anatomy of a STARK" />
+<meta name="twitter:card" content="summary" />
+<meta property="twitter:title" content="Anatomy of a STARK, Part 5: A Rescue-Prime STARK" />
+<script type="application/ld+json">
+{"description":"STARK tutorial with supporting source code in python.","@type":"WebPage","headline":"Anatomy of a STARK, Part 5: A Rescue-Prime STARK","url":"http://localhost:4000/rescue-prime.html","@context":"https://schema.org"}</script>
+<!-- End Jekyll SEO tag -->
+<link rel="stylesheet" href="/assets/main.css"><link type="application/atom+xml" rel="alternate" href="http://localhost:4000/feed.xml" title="Anatomy of a STARK" /></head>
+<body><header class="site-header" role="banner">
+
+  <div class="wrapper"><a class="site-title" rel="author" href="/">Anatomy of a STARK</a><nav class="site-nav">
+        <input type="checkbox" id="nav-trigger" class="nav-trigger" />
+        <label for="nav-trigger">
+          <span class="menu-icon">
+            <svg viewBox="0 0 18 15" width="18px" height="15px">
+              <path d="M18,1.484c0,0.82-0.665,1.484-1.484,1.484H1.484C0.665,2.969,0,2.304,0,1.484l0,0C0,0.665,0.665,0,1.484,0 h15.032C17.335,0,18,0.665,18,1.484L18,1.484z M18,7.516C18,8.335,17.335,9,16.516,9H1.484C0.665,9,0,8.335,0,7.516l0,0 c0-0.82,0.665-1.484,1.484-1.484h15.032C17.335,6.031,18,6.696,18,7.516L18,7.516z M18,13.516C18,14.335,17.335,15,16.516,15H1.484 C0.665,15,0,14.335,0,13.516l0,0c0-0.82,0.665-1.483,1.484-1.483h15.032C17.335,12.031,18,12.695,18,13.516L18,13.516z"/>
+            </svg>
+          </span>
+        </label>
+
+        <div class="trigger"><a class="page-link" href="/about/">About</a><a class="page-link" href="/basic-tools.html">Anatomy of a STARK, Part 2: Basic Tools</a><a class="page-link" href="/faster.html">Anatomy of a STARK, Part 6: Speeding Things Up</a><a class="page-link" href="/fri.html">Anatomy of a STARK, Part 3: FRI</a><a class="page-link" href="/introduction.html">Anatomy of a STARK, Part 0: Introduction</a><a class="page-link" href="/overview.html">Anatomy of a STARK, Part 1: STARK Overview</a><a class="page-link" href="/rescue-prime.html">Anatomy of a STARK, Part 5: A Rescue-Prime STARK</a><a class="page-link" href="/stark.html">Anatomy of a STARK, Part 4: The STARK Polynomial IOP</a></div>
+      </nav></div>
+</header>
+<main class="page-content" aria-label="Content">
+      <div class="wrapper">
+        <article class="post">
+
+  <header class="post-header">
+    <h1 class="post-title">Anatomy of a STARK, Part 5: A Rescue-Prime STARK</h1>
+  </header>
+
+  <div class="post-content">
+    <h1 id="anatomy-of-a-stark-part-5-a-rescue-prime-stark">Anatomy of a STARK, Part 5: A Rescue-Prime STARK</h1>
+
+<p>This part of the tutorial puts the tools developed in the previous parts together to build a concretely useful STARK proof system. This application produces a STARK proof of correct evaluation of the Rescue-Prime hash function on a secret input with a known output. It is concretely useful because the resulting non-interactive proof doubles as a post-quantum signature scheme.</p>
+
+<h2 id="rescue-prime">Rescue-Prime</h2>
+
+<p>[[Rescue-Prime|https://eprint.iacr.org/2020/1143.pdf]] is an arithmetization-oriented hash function, meaning that it has a compact description in terms of AIR. It is a sponge function constructed from the Rescue-XLIX permutation $f_{\mathrm{R}^{\mathrm{XLIX}}} : \mathbb{F}^m \rightarrow \mathbb{F}^m$, consists of several almost-identical rounds. Every round consists of six steps:</p>
+<ol>
+  <li>Forward S-box. Every element of the state is raised to the power $\alpha$, where $\alpha$ is the smallest invertible power.</li>
+  <li>MDS. The vector of state elements is multiplied by a matrix with special properties.</li>
+  <li>Round constants. Pre-defined constants are added to every element of the state.</li>
+  <li>Backward S-box. Every element of the state is raised to the power $\alpha^{-1}$, which is the integer whose power map is the inverse of $x \mapsto x^\alpha$.</li>
+  <li>MDS. The vector of state elements is multiplied by a matrix with special properties.</li>
+  <li>Round constants. Pre-defined constants are added to every element of the state.</li>
+</ol>
+
+<p><img src="/graphics/rescue-prime-round.svg" alt="Rescue-XLIX round function" /></p>
+
+<p>The rounds are <em>almost</em> identical but not quite because constants are different in every rounds. While the Backward S-box step seems like a high degree operation, as we shall see, all six steps of the Rescue-XLIX round function can be captured by non-deterministic transition constraints of degree $\alpha$.</p>
+
+<p>Once the Rescue-XLIX permutation is defined, one obtains Rescue-Prime by instantiating a sponge function with it. In this construction, input field elements are absorbed into the top $r$ elements of the state in between permutations. After one final permutation, the top $r$ elements are read out. The Rescue-Prime hash digest consists of these $r$ elements.</p>
+
+<p><img src="/graphics/rescue-prime-sponge.svg" alt="Rescue-Prime sponge construction" /></p>
+
+<p>For the present STARK proof the following parameters are used:</p>
+<ul>
+  <li>prime field of $p = 407 \cdot 2^{119} + 1$ elements</li>
+  <li>$\alpha = 3$ and $\alpha^{-1} = 180331931428153586757283157844700080811$</li>
+  <li>$m = 2$</li>
+  <li>$r = 1$.</li>
+</ul>
+
+<p>Furthermore, the input to the hash computation will be a single field element. So in particular, there will be only one round of absorbing and one application of the permutation.</p>
+
+<h2 id="implementation">Implementation</h2>
+
+<table>
+  <tbody>
+    <tr>
+      <td>The Rescue-Prime [[paper</td>
+      <td>https://eprint.iacr.org/2020/1143.pdf]] provides nearly complete reference implementation. However, the code here is tailored to this one application.</td>
+    </tr>
+  </tbody>
+</table>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">class</span> <span class="nc">RescuePrime</span><span class="p">:</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span> <span class="bp">self</span> <span class="p">):</span>
+        <span class="bp">self</span><span class="p">.</span><span class="n">p</span> <span class="o">=</span> <span class="mi">407</span> <span class="o">*</span> <span class="p">(</span><span class="mi">1</span> <span class="o">&lt;&lt;</span> <span class="mi">119</span><span class="p">)</span> <span class="o">+</span> <span class="mi">1</span>
+        <span class="bp">self</span><span class="p">.</span><span class="n">field</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="bp">self</span><span class="p">.</span><span class="n">p</span><span class="p">)</span>
+        <span class="bp">self</span><span class="p">.</span><span class="n">m</span> <span class="o">=</span> <span class="mi">2</span>
+        <span class="bp">self</span><span class="p">.</span><span class="n">rate</span> <span class="o">=</span> <span class="mi">1</span>
+        <span class="bp">self</span><span class="p">.</span><span class="n">capacity</span> <span class="o">=</span> <span class="mi">1</span>
+        <span class="bp">self</span><span class="p">.</span><span class="n">N</span> <span class="o">=</span> <span class="mi">27</span>
+        <span class="bp">self</span><span class="p">.</span><span class="n">alpha</span> <span class="o">=</span> <span class="mi">3</span>
+        <span class="bp">self</span><span class="p">.</span><span class="n">alphainv</span> <span class="o">=</span> <span class="mi">180331931428153586757283157844700080811</span>
+        <span class="bp">self</span><span class="p">.</span><span class="n">MDS</span> <span class="o">=</span> <span class="p">[[</span><span class="n">FieldElement</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="bp">self</span><span class="p">.</span><span class="n">field</span><span class="p">)</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="p">[</span><span class="mi">270497897142230380135924736767050121214</span><span class="p">,</span> <span class="mi">4</span><span class="p">]],</span>
+                    <span class="p">[</span><span class="n">FieldElement</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="bp">self</span><span class="p">.</span><span class="n">field</span><span class="p">)</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="p">[</span><span class="mi">270497897142230380135924736767050121205</span><span class="p">,</span> <span class="mi">13</span><span class="p">]]]</span>
+        <span class="bp">self</span><span class="p">.</span><span class="n">MDSinv</span> <span class="o">=</span> <span class="p">[[</span><span class="n">FieldElement</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="bp">self</span><span class="p">.</span><span class="n">field</span><span class="p">)</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="p">[</span><span class="mi">210387253332845851216830350818816760948</span><span class="p">,</span> <span class="mi">60110643809384528919094385948233360270</span><span class="p">]],</span>
+                       <span class="p">[</span><span class="n">FieldElement</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="bp">self</span><span class="p">.</span><span class="n">field</span><span class="p">)</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="p">[</span><span class="mi">90165965714076793378641578922350040407</span><span class="p">,</span> <span class="mi">180331931428153586757283157844700080811</span><span class="p">]]]</span>
+        <span class="bp">self</span><span class="p">.</span><span class="n">round_constants</span> <span class="o">=</span> <span class="p">[</span><span class="n">FieldElement</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="bp">self</span><span class="p">.</span><span class="n">field</span><span class="p">)</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="p">[</span><span class="mi">174420698556543096520990950387834928928</span><span class="p">,</span>
+                                        <span class="mi">109797589356993153279775383318666383471</span><span class="p">,</span>
+                                        <span class="mi">228209559001143551442223248324541026000</span><span class="p">,</span>
+                                        <span class="mi">268065703411175077628483247596226793933</span><span class="p">,</span>
+                                        <span class="mi">250145786294793103303712876509736552288</span><span class="p">,</span>
+                                        <span class="mi">154077925986488943960463842753819802236</span><span class="p">,</span>
+                                        <span class="mi">204351119916823989032262966063401835731</span><span class="p">,</span>
+                                        <span class="mi">57645879694647124999765652767459586992</span><span class="p">,</span>
+                                        <span class="mi">102595110702094480597072290517349480965</span><span class="p">,</span>
+                                        <span class="mi">8547439040206095323896524760274454544</span><span class="p">,</span>
+                                        <span class="mi">50572190394727023982626065566525285390</span><span class="p">,</span>
+                                        <span class="mi">87212354645973284136664042673979287772</span><span class="p">,</span>
+                                        <span class="mi">64194686442324278631544434661927384193</span><span class="p">,</span>
+                                        <span class="mi">23568247650578792137833165499572533289</span><span class="p">,</span>
+                                        <span class="mi">264007385962234849237916966106429729444</span><span class="p">,</span>
+                                        <span class="mi">227358300354534643391164539784212796168</span><span class="p">,</span>
+                                        <span class="mi">179708233992972292788270914486717436725</span><span class="p">,</span>
+                                        <span class="mi">102544935062767739638603684272741145148</span><span class="p">,</span>
+                                        <span class="mi">65916940568893052493361867756647855734</span><span class="p">,</span>
+                                        <span class="mi">144640159807528060664543800548526463356</span><span class="p">,</span>
+                                        <span class="mi">58854991566939066418297427463486407598</span><span class="p">,</span>
+                                        <span class="mi">144030533171309201969715569323510469388</span><span class="p">,</span>
+                                        <span class="mi">264508722432906572066373216583268225708</span><span class="p">,</span>
+                                        <span class="mi">22822825100935314666408731317941213728</span><span class="p">,</span>
+                                        <span class="mi">33847779135505989201180138242500409760</span><span class="p">,</span>
+                                        <span class="mi">146019284593100673590036640208621384175</span><span class="p">,</span>
+                                        <span class="mi">51518045467620803302456472369449375741</span><span class="p">,</span>
+                                        <span class="mi">73980612169525564135758195254813968438</span><span class="p">,</span>
+                                        <span class="mi">31385101081646507577789564023348734881</span><span class="p">,</span>
+                                        <span class="mi">270440021758749482599657914695597186347</span><span class="p">,</span>
+                                        <span class="mi">185230877992845332344172234234093900282</span><span class="p">,</span>
+                                        <span class="mi">210581925261995303483700331833844461519</span><span class="p">,</span>
+                                        <span class="mi">233206235520000865382510460029939548462</span><span class="p">,</span>
+                                        <span class="mi">178264060478215643105832556466392228683</span><span class="p">,</span>
+                                        <span class="mi">69838834175855952450551936238929375468</span><span class="p">,</span>
+                                        <span class="mi">75130152423898813192534713014890860884</span><span class="p">,</span>
+                                        <span class="mi">59548275327570508231574439445023390415</span><span class="p">,</span>
+                                        <span class="mi">43940979610564284967906719248029560342</span><span class="p">,</span>
+                                        <span class="mi">95698099945510403318638730212513975543</span><span class="p">,</span>
+                                        <span class="mi">77477281413246683919638580088082585351</span><span class="p">,</span>
+                                        <span class="mi">206782304337497407273753387483545866988</span><span class="p">,</span>
+                                        <span class="mi">141354674678885463410629926929791411677</span><span class="p">,</span>
+                                        <span class="mi">19199940390616847185791261689448703536</span><span class="p">,</span>
+                                        <span class="mi">177613618019817222931832611307175416361</span><span class="p">,</span>
+                                        <span class="mi">267907751104005095811361156810067173120</span><span class="p">,</span>
+                                        <span class="mi">33296937002574626161968730356414562829</span><span class="p">,</span>
+                                        <span class="mi">63869971087730263431297345514089710163</span><span class="p">,</span>
+                                        <span class="mi">200481282361858638356211874793723910968</span><span class="p">,</span>
+                                        <span class="mi">69328322389827264175963301685224506573</span><span class="p">,</span>
+                                        <span class="mi">239701591437699235962505536113880102063</span><span class="p">,</span>
+                                        <span class="mi">17960711445525398132996203513667829940</span><span class="p">,</span>
+                                        <span class="mi">219475635972825920849300179026969104558</span><span class="p">,</span>
+                                        <span class="mi">230038611061931950901316413728344422823</span><span class="p">,</span>
+                                        <span class="mi">149446814906994196814403811767389273580</span><span class="p">,</span>
+                                        <span class="mi">25535582028106779796087284957910475912</span><span class="p">,</span>
+                                        <span class="mi">93289417880348777872263904150910422367</span><span class="p">,</span>
+                                        <span class="mi">4779480286211196984451238384230810357</span><span class="p">,</span>
+                                        <span class="mi">208762241641328369347598009494500117007</span><span class="p">,</span>
+                                        <span class="mi">34228805619823025763071411313049761059</span><span class="p">,</span>
+                                        <span class="mi">158261639460060679368122984607245246072</span><span class="p">,</span>
+                                        <span class="mi">65048656051037025727800046057154042857</span><span class="p">,</span>
+                                        <span class="mi">134082885477766198947293095565706395050</span><span class="p">,</span>
+                                        <span class="mi">23967684755547703714152865513907888630</span><span class="p">,</span>
+                                        <span class="mi">8509910504689758897218307536423349149</span><span class="p">,</span>
+                                        <span class="mi">232305018091414643115319608123377855094</span><span class="p">,</span>
+                                        <span class="mi">170072389454430682177687789261779760420</span><span class="p">,</span>
+                                        <span class="mi">62135161769871915508973643543011377095</span><span class="p">,</span>
+                                        <span class="mi">15206455074148527786017895403501783555</span><span class="p">,</span>
+                                        <span class="mi">201789266626211748844060539344508876901</span><span class="p">,</span>
+                                        <span class="mi">179184798347291033565902633932801007181</span><span class="p">,</span>
+                                        <span class="mi">9615415305648972863990712807943643216</span><span class="p">,</span>
+                                        <span class="mi">95833504353120759807903032286346974132</span><span class="p">,</span>
+                                        <span class="mi">181975981662825791627439958531194157276</span><span class="p">,</span>
+                                        <span class="mi">267590267548392311337348990085222348350</span><span class="p">,</span>
+                                        <span class="mi">49899900194200760923895805362651210299</span><span class="p">,</span>
+                                        <span class="mi">89154519171560176870922732825690870368</span><span class="p">,</span>
+                                        <span class="mi">265649728290587561988835145059696796797</span><span class="p">,</span>
+                                        <span class="mi">140583850659111280842212115981043548773</span><span class="p">,</span>
+                                        <span class="mi">266613908274746297875734026718148328473</span><span class="p">,</span>
+                                        <span class="mi">236645120614796645424209995934912005038</span><span class="p">,</span>
+                                        <span class="mi">265994065390091692951198742962775551587</span><span class="p">,</span>
+                                        <span class="mi">59082836245981276360468435361137847418</span><span class="p">,</span>
+                                        <span class="mi">26520064393601763202002257967586372271</span><span class="p">,</span>
+                                        <span class="mi">108781692876845940775123575518154991932</span><span class="p">,</span>
+                                        <span class="mi">138658034947980464912436420092172339656</span><span class="p">,</span>
+                                        <span class="mi">45127926643030464660360100330441456786</span><span class="p">,</span>
+                                        <span class="mi">210648707238405606524318597107528368459</span><span class="p">,</span>
+                                        <span class="mi">42375307814689058540930810881506327698</span><span class="p">,</span>
+                                        <span class="mi">237653383836912953043082350232373669114</span><span class="p">,</span>
+                                        <span class="mi">236638771475482562810484106048928039069</span><span class="p">,</span>
+                                        <span class="mi">168366677297979943348866069441526047857</span><span class="p">,</span>
+                                        <span class="mi">195301262267610361172900534545341678525</span><span class="p">,</span>
+                                        <span class="mi">2123819604855435621395010720102555908</span><span class="p">,</span>
+                                        <span class="mi">96986567016099155020743003059932893278</span><span class="p">,</span>
+                                        <span class="mi">248057324456138589201107100302767574618</span><span class="p">,</span>
+                                        <span class="mi">198550227406618432920989444844179399959</span><span class="p">,</span>
+                                        <span class="mi">177812676254201468976352471992022853250</span><span class="p">,</span>
+                                        <span class="mi">211374136170376198628213577084029234846</span><span class="p">,</span>
+                                        <span class="mi">105785712445518775732830634260671010540</span><span class="p">,</span>
+                                        <span class="mi">122179368175793934687780753063673096166</span><span class="p">,</span>
+                                        <span class="mi">126848216361173160497844444214866193172</span><span class="p">,</span>
+                                        <span class="mi">22264167580742653700039698161547403113</span><span class="p">,</span>
+                                        <span class="mi">234275908658634858929918842923795514466</span><span class="p">,</span>
+                                        <span class="mi">189409811294589697028796856023159619258</span><span class="p">,</span>
+                                        <span class="mi">75017033107075630953974011872571911999</span><span class="p">,</span>
+                                        <span class="mi">144945344860351075586575129489570116296</span><span class="p">,</span>
+                                        <span class="mi">261991152616933455169437121254310265934</span><span class="p">,</span>
+                                        <span class="mi">18450316039330448878816627264054416127</span><span class="p">]]</span>
+
+    <span class="k">def</span> <span class="nf">hash</span><span class="p">(</span> <span class="bp">self</span><span class="p">,</span> <span class="n">input_element</span> <span class="p">):</span>
+        <span class="c1"># absorb
+</span>        <span class="n">state</span> <span class="o">=</span> <span class="p">[</span><span class="n">input_element</span><span class="p">]</span> <span class="o">+</span> <span class="p">[</span><span class="bp">self</span><span class="p">.</span><span class="n">field</span><span class="p">.</span><span class="n">zero</span><span class="p">()]</span> <span class="o">*</span> <span class="p">(</span><span class="bp">self</span><span class="p">.</span><span class="n">m</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span>
+
+        <span class="c1"># permutation
+</span>        <span class="k">for</span> <span class="n">r</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="p">.</span><span class="n">N</span><span class="p">):</span>
+            
+            <span class="c1"># forward half-round
+</span>            <span class="c1"># S-box
+</span>            <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="p">.</span><span class="n">m</span><span class="p">):</span>
+                <span class="n">state</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">state</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">^</span><span class="bp">self</span><span class="p">.</span><span class="n">alpha</span>
+            <span class="c1"># matrix
+</span>            <span class="n">temp</span> <span class="o">=</span> <span class="p">[</span><span class="bp">self</span><span class="p">.</span><span class="n">field</span><span class="p">.</span><span class="n">zero</span><span class="p">()</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="p">.</span><span class="n">m</span><span class="p">)]</span>
+            <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="p">.</span><span class="n">m</span><span class="p">):</span>
+                <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="p">.</span><span class="n">m</span><span class="p">):</span>
+                    <span class="n">temp</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">temp</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">+</span> <span class="bp">self</span><span class="p">.</span><span class="n">MDS</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="n">j</span><span class="p">]</span> <span class="o">*</span> <span class="n">state</span><span class="p">[</span><span class="n">j</span><span class="p">]</span>
+            <span class="c1"># constants
+</span>            <span class="n">state</span> <span class="o">=</span> <span class="p">[</span><span class="n">temp</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">+</span> <span class="bp">self</span><span class="p">.</span><span class="n">round_constants</span><span class="p">[</span><span class="mi">2</span><span class="o">*</span><span class="n">r</span><span class="o">*</span><span class="bp">self</span><span class="p">.</span><span class="n">m</span><span class="o">+</span><span class="n">i</span><span class="p">]</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="p">.</span><span class="n">m</span><span class="p">)]</span>
+
+            <span class="c1"># backward half-round
+</span>            <span class="c1"># S-box
+</span>            <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="p">.</span><span class="n">m</span><span class="p">):</span>
+                <span class="n">state</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">state</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">^</span><span class="bp">self</span><span class="p">.</span><span class="n">alphainv</span>
+            <span class="c1"># matrix
+</span>            <span class="n">temp</span> <span class="o">=</span> <span class="p">[</span><span class="bp">self</span><span class="p">.</span><span class="n">field</span><span class="p">.</span><span class="n">zero</span><span class="p">()</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="p">.</span><span class="n">m</span><span class="p">)]</span>
+            <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="p">.</span><span class="n">m</span><span class="p">):</span>
+                <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="p">.</span><span class="n">m</span><span class="p">):</span>
+                    <span class="n">temp</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">temp</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">+</span> <span class="bp">self</span><span class="p">.</span><span class="n">MDS</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="n">j</span><span class="p">]</span> <span class="o">*</span> <span class="n">state</span><span class="p">[</span><span class="n">j</span><span class="p">]</span>
+            <span class="c1"># constants
+</span>            <span class="n">state</span> <span class="o">=</span> <span class="p">[</span><span class="n">temp</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">+</span> <span class="bp">self</span><span class="p">.</span><span class="n">round_constants</span><span class="p">[</span><span class="mi">2</span><span class="o">*</span><span class="n">r</span><span class="o">*</span><span class="bp">self</span><span class="p">.</span><span class="n">m</span><span class="o">+</span><span class="bp">self</span><span class="p">.</span><span class="n">m</span><span class="o">+</span><span class="n">i</span><span class="p">]</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="p">.</span><span class="n">m</span><span class="p">)]</span>
+
+        <span class="c1"># squeeze
+</span>        <span class="k">return</span> <span class="n">state</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+</code></pre></div></div>
+
+<h3 id="rescue-prime-air">Rescue-Prime AIR</h3>
+
+<p>The transition constraints for a single round of the Rescue-XLIX permutation are obtained expressing the state values in the middle of the round in terms of the state values at the beginning, and again in terms of the state values at the end, and then equating both expressions. Specifically, let $\boldsymbol{s}<em>i$ denote the state values at the beginning of round $i$, let $\boldsymbol{c}</em>{2i}$ and $\boldsymbol{c}_{2i+1}$ be round constants, let $M$ be the MDS matrix, and let superscript denote element-wise powering. Then the transition of a single round is captured by the equation
+\(M (\boldsymbol{s}_i^\alpha) + \boldsymbol{c}_{2i} = \left(M^{-1} (\boldsymbol{s}_{i+1} - \boldsymbol{c}_{2i+1})\right)^\alpha \enspace .\)</p>
+
+<p>To be used in a STARK, transition constraints cannot depend on the round. In other words, what is needed is a single equation that describes all rounds, not just the $i$th round. Let $\boldsymbol{X}$ denote the vector of variables representing the current state (beginning of the round), and $\boldsymbol{Y}$ denote the vector of variables represnting the next state (at the end of the round). Furthermore, let $\mathbf{f}<em>{\boldsymbol{c}</em>{2i}}(W)$ denote the vector of $m$ polynomials that take the value $\boldsymbol{c}<em>{2i}$ on $\omicron^i$, and analogously for $\mathbf{f}</em>{\boldsymbol{c}_{2i+1}}(W)$. Suppose without loss of generality that the execution trace will be interpolated on the domain ${\omicron^i | 0 \leq i \leq T}$ for some $T$. Then the above family of arithmetic transition constraints gives rise to the following equation capturing the same transition conditions.
+\(M(\boldsymbol{X}^\alpha) + \mathbf{f}_{\boldsymbol{c}_{2i}}(W) = \left(M^{-1}(\boldsymbol{Y} - \mathbf{f}_{\boldsymbol{c}_{2i+1}}(W))\right)^\alpha\)</p>
+
+<p>The transition constraint polynomial is obtained by moving all terms to the left hand side and dropping the equation to zero. Note that there are $2m+1$ variables, corresponding to $m = \mathsf{w}$ registers.</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code>    <span class="k">def</span> <span class="nf">round_constants_polynomials</span><span class="p">(</span> <span class="bp">self</span><span class="p">,</span> <span class="n">omicron</span> <span class="p">):</span>
+        <span class="n">first_step_constants</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="p">.</span><span class="n">m</span><span class="p">):</span>
+            <span class="n">domain</span> <span class="o">=</span> <span class="p">[</span><span class="n">omicron</span><span class="o">^</span><span class="n">r</span> <span class="k">for</span> <span class="n">r</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="bp">self</span><span class="p">.</span><span class="n">N</span><span class="p">)]</span>
+            <span class="n">values</span> <span class="o">=</span> <span class="p">[</span><span class="bp">self</span><span class="p">.</span><span class="n">round_constants</span><span class="p">[</span><span class="mi">2</span><span class="o">*</span><span class="n">r</span><span class="o">*</span><span class="bp">self</span><span class="p">.</span><span class="n">m</span><span class="o">+</span><span class="n">i</span><span class="p">]</span> <span class="k">for</span> <span class="n">r</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="bp">self</span><span class="p">.</span><span class="n">N</span><span class="p">)]</span>
+            <span class="n">univariate</span> <span class="o">=</span> <span class="n">Polynomial</span><span class="p">.</span><span class="n">interpolate_domain</span><span class="p">(</span><span class="n">domain</span><span class="p">,</span> <span class="n">values</span><span class="p">)</span>
+            <span class="n">multivariate</span> <span class="o">=</span> <span class="n">MPolynomial</span><span class="p">.</span><span class="n">lift</span><span class="p">(</span><span class="n">univariate</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+            <span class="n">first_step_constants</span> <span class="o">+=</span> <span class="p">[</span><span class="n">multivariate</span><span class="p">]</span>
+        <span class="n">second_step_constants</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="p">.</span><span class="n">m</span><span class="p">):</span>
+            <span class="n">domain</span> <span class="o">=</span> <span class="p">[</span><span class="n">omicron</span><span class="o">^</span><span class="n">r</span> <span class="k">for</span> <span class="n">r</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="bp">self</span><span class="p">.</span><span class="n">N</span><span class="p">)]</span>
+            <span class="n">values</span> <span class="o">=</span> <span class="p">[</span><span class="bp">self</span><span class="p">.</span><span class="n">field</span><span class="p">.</span><span class="n">zero</span><span class="p">()]</span> <span class="o">*</span> <span class="bp">self</span><span class="p">.</span><span class="n">N</span>
+            <span class="c1">#for r in range(self.N):
+</span>            <span class="c1">#    print("len(round_constants):", len(self.round_constants), " but grabbing index:", 2*r*self.m+self.m+i, "for r=", r, "for m=", self.m, "for i=", i)
+</span>            <span class="c1">#    values[r] = self.round_constants[2*r*self.m + self.m + i]
+</span>            <span class="n">values</span> <span class="o">=</span> <span class="p">[</span><span class="bp">self</span><span class="p">.</span><span class="n">round_constants</span><span class="p">[</span><span class="mi">2</span><span class="o">*</span><span class="n">r</span><span class="o">*</span><span class="bp">self</span><span class="p">.</span><span class="n">m</span><span class="o">+</span><span class="bp">self</span><span class="p">.</span><span class="n">m</span><span class="o">+</span><span class="n">i</span><span class="p">]</span> <span class="k">for</span> <span class="n">r</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="p">.</span><span class="n">N</span><span class="p">)]</span>
+            <span class="n">univariate</span> <span class="o">=</span> <span class="n">Polynomial</span><span class="p">.</span><span class="n">interpolate_domain</span><span class="p">(</span><span class="n">domain</span><span class="p">,</span> <span class="n">values</span><span class="p">)</span>
+            <span class="n">multivariate</span> <span class="o">=</span> <span class="n">MPolynomial</span><span class="p">.</span><span class="n">lift</span><span class="p">(</span><span class="n">univariate</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+            <span class="n">second_step_constants</span> <span class="o">+=</span> <span class="p">[</span><span class="n">multivariate</span><span class="p">]</span>
+
+        <span class="k">return</span> <span class="n">first_step_constants</span><span class="p">,</span> <span class="n">second_step_constants</span>
+
+    <span class="k">def</span> <span class="nf">transition_constraints</span><span class="p">(</span> <span class="bp">self</span><span class="p">,</span> <span class="n">omicron</span> <span class="p">):</span>
+        <span class="c1"># get polynomials that interpolate through the round constants
+</span>        <span class="n">first_step_constants</span><span class="p">,</span> <span class="n">second_step_constants</span> <span class="o">=</span> <span class="bp">self</span><span class="p">.</span><span class="n">round_constants_polynomials</span><span class="p">(</span><span class="n">omicron</span><span class="p">)</span>
+
+        <span class="c1"># arithmetize one round of Rescue-Prime
+</span>        <span class="n">variables</span> <span class="o">=</span> <span class="n">MPolynomial</span><span class="p">.</span><span class="n">variables</span><span class="p">(</span><span class="mi">1</span> <span class="o">+</span> <span class="mi">2</span><span class="o">*</span><span class="bp">self</span><span class="p">.</span><span class="n">m</span><span class="p">,</span> <span class="bp">self</span><span class="p">.</span><span class="n">field</span><span class="p">)</span>
+        <span class="n">cycle_index</span> <span class="o">=</span> <span class="n">variables</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="n">previous_state</span> <span class="o">=</span> <span class="n">variables</span><span class="p">[</span><span class="mi">1</span><span class="p">:(</span><span class="mi">1</span><span class="o">+</span><span class="bp">self</span><span class="p">.</span><span class="n">m</span><span class="p">)]</span>
+        <span class="n">next_state</span> <span class="o">=</span> <span class="n">variables</span><span class="p">[(</span><span class="mi">1</span><span class="o">+</span><span class="bp">self</span><span class="p">.</span><span class="n">m</span><span class="p">):(</span><span class="mi">1</span><span class="o">+</span><span class="mi">2</span><span class="o">*</span><span class="bp">self</span><span class="p">.</span><span class="n">m</span><span class="p">)]</span>
+        <span class="n">air</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="p">.</span><span class="n">m</span><span class="p">):</span>
+            <span class="c1"># compute left hand side symbolically
+</span>            <span class="c1"># lhs = sum(MPolynomial.constant(self.MDS[i][k]) * (previous_state[k]^self.alpha) for k in range(self.m)) + first_step_constants[i]
+</span>            <span class="n">lhs</span> <span class="o">=</span> <span class="n">MPolynomial</span><span class="p">.</span><span class="n">constant</span><span class="p">(</span><span class="bp">self</span><span class="p">.</span><span class="n">field</span><span class="p">.</span><span class="n">zero</span><span class="p">())</span>
+            <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="p">.</span><span class="n">m</span><span class="p">):</span>
+                <span class="n">lhs</span> <span class="o">=</span> <span class="n">lhs</span> <span class="o">+</span> <span class="n">MPolynomial</span><span class="p">.</span><span class="n">constant</span><span class="p">(</span><span class="bp">self</span><span class="p">.</span><span class="n">MDS</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="n">k</span><span class="p">])</span> <span class="o">*</span> <span class="p">(</span><span class="n">previous_state</span><span class="p">[</span><span class="n">k</span><span class="p">]</span><span class="o">^</span><span class="bp">self</span><span class="p">.</span><span class="n">alpha</span><span class="p">)</span>
+            <span class="n">lhs</span> <span class="o">=</span> <span class="n">lhs</span> <span class="o">+</span> <span class="n">first_step_constants</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+
+            <span class="c1"># compute right hand side symbolically
+</span>            <span class="c1"># rhs = sum(MPolynomial.constant(self.MDSinv[i][k]) * (next_state[k] - second_step_constants[k]) for k in range(self.m))^self.alpha
+</span>            <span class="n">rhs</span> <span class="o">=</span> <span class="n">MPolynomial</span><span class="p">.</span><span class="n">constant</span><span class="p">(</span><span class="bp">self</span><span class="p">.</span><span class="n">field</span><span class="p">.</span><span class="n">zero</span><span class="p">())</span>
+            <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="p">.</span><span class="n">m</span><span class="p">):</span>
+                <span class="n">rhs</span> <span class="o">=</span> <span class="n">rhs</span> <span class="o">+</span> <span class="n">MPolynomial</span><span class="p">.</span><span class="n">constant</span><span class="p">(</span><span class="bp">self</span><span class="p">.</span><span class="n">MDSinv</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="n">k</span><span class="p">])</span> <span class="o">*</span> <span class="p">(</span><span class="n">next_state</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">-</span> <span class="n">second_step_constants</span><span class="p">[</span><span class="n">k</span><span class="p">])</span>
+            <span class="n">rhs</span> <span class="o">=</span> <span class="n">rhs</span><span class="o">^</span><span class="bp">self</span><span class="p">.</span><span class="n">alpha</span>
+
+            <span class="c1"># equate left and right hand sides
+</span>            <span class="n">air</span> <span class="o">+=</span> <span class="p">[</span><span class="n">lhs</span><span class="o">-</span><span class="n">rhs</span><span class="p">]</span>
+
+        <span class="k">return</span> <span class="n">air</span>
+</code></pre></div></div>
+
+<p>The boundary constraints are a lot simpler. At the beginning, the first state element is the unknown secret and the second state element is zero because the sponge construction defines it so. At the end (after all $N$ rounds or $T$ cycles), the first state element is the one element of known hash digest $[h]$, and the second state element is unconstrained. Note that this second state element must be kept secret to be secure – otherwise the attacker and invert the permutation. This description gives rise to the following set $\mathcal{B}$ of triples $(c, r, e) \in \mathbb{Z}<em>{T+1} \times \mathbb{Z}</em>\mathsf{w} \times \mathbb{F}$:</p>
+<ul>
+  <li>$(0, 1, 0)$</li>
+  <li>$(T, 0, h)$.</li>
+</ul>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code>    <span class="k">def</span> <span class="nf">boundary_constraints</span><span class="p">(</span> <span class="bp">self</span><span class="p">,</span> <span class="n">output_element</span> <span class="p">):</span>
+        <span class="n">constraints</span> <span class="o">=</span> <span class="p">[]</span>
+
+        <span class="c1"># at start, capacity is zero
+</span>        <span class="n">constraints</span> <span class="o">+=</span> <span class="p">[(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="bp">self</span><span class="p">.</span><span class="n">field</span><span class="p">.</span><span class="n">zero</span><span class="p">())]</span>
+
+        <span class="c1"># at end, rate part is the given output element
+</span>        <span class="n">constraints</span> <span class="o">+=</span> <span class="p">[(</span><span class="bp">self</span><span class="p">.</span><span class="n">N</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="n">output_element</span><span class="p">)]</span>
+
+        <span class="k">return</span> <span class="n">constraints</span>
+</code></pre></div></div>
+
+<p>The piece of the arithmetization is the witness, which for STARKs is the execution trace. In the case of this particular computation, the trace is the collection of states after every round, in addition to the state at the very beginning.</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code>    <span class="k">def</span> <span class="nf">trace</span><span class="p">(</span> <span class="bp">self</span><span class="p">,</span> <span class="n">input_element</span> <span class="p">):</span>
+        <span class="n">trace</span> <span class="o">=</span> <span class="p">[]</span>
+
+        <span class="c1"># absorb
+</span>        <span class="n">state</span> <span class="o">=</span> <span class="p">[</span><span class="n">input_element</span><span class="p">]</span> <span class="o">+</span> <span class="p">[</span><span class="bp">self</span><span class="p">.</span><span class="n">field</span><span class="p">.</span><span class="n">zero</span><span class="p">()]</span> <span class="o">*</span> <span class="p">(</span><span class="bp">self</span><span class="p">.</span><span class="n">m</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span>
+
+        <span class="c1"># explicit copy to record state into trace
+</span>        <span class="n">trace</span> <span class="o">+=</span> <span class="p">[[</span><span class="n">s</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">state</span><span class="p">]]</span>
+
+        <span class="c1"># permutation
+</span>        <span class="k">for</span> <span class="n">r</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="p">.</span><span class="n">N</span><span class="p">):</span>
+            
+            <span class="c1"># forward half-round
+</span>            <span class="c1"># S-box
+</span>            <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="p">.</span><span class="n">m</span><span class="p">):</span>
+                <span class="n">state</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">state</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">^</span><span class="bp">self</span><span class="p">.</span><span class="n">alpha</span>
+            <span class="c1"># matrix
+</span>            <span class="n">temp</span> <span class="o">=</span> <span class="p">[</span><span class="bp">self</span><span class="p">.</span><span class="n">field</span><span class="p">.</span><span class="n">zero</span><span class="p">()</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="p">.</span><span class="n">m</span><span class="p">)]</span>
+            <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="p">.</span><span class="n">m</span><span class="p">):</span>
+                <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="p">.</span><span class="n">m</span><span class="p">):</span>
+                    <span class="n">temp</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">temp</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">+</span> <span class="bp">self</span><span class="p">.</span><span class="n">MDS</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="n">j</span><span class="p">]</span> <span class="o">*</span> <span class="n">state</span><span class="p">[</span><span class="n">j</span><span class="p">]</span>
+            <span class="c1"># constants
+</span>            <span class="n">state</span> <span class="o">=</span> <span class="p">[</span><span class="n">temp</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">+</span> <span class="bp">self</span><span class="p">.</span><span class="n">round_constants</span><span class="p">[</span><span class="mi">2</span><span class="o">*</span><span class="n">r</span><span class="o">*</span><span class="bp">self</span><span class="p">.</span><span class="n">m</span><span class="o">+</span><span class="n">i</span><span class="p">]</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="p">.</span><span class="n">m</span><span class="p">)]</span>
+
+            <span class="c1"># backward half-round
+</span>            <span class="c1"># S-box
+</span>            <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="p">.</span><span class="n">m</span><span class="p">):</span>
+                <span class="n">state</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">state</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">^</span><span class="bp">self</span><span class="p">.</span><span class="n">alphainv</span>
+            <span class="c1"># matrix
+</span>            <span class="n">temp</span> <span class="o">=</span> <span class="p">[</span><span class="bp">self</span><span class="p">.</span><span class="n">field</span><span class="p">.</span><span class="n">zero</span><span class="p">()</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="p">.</span><span class="n">m</span><span class="p">)]</span>
+            <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="p">.</span><span class="n">m</span><span class="p">):</span>
+                <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="p">.</span><span class="n">m</span><span class="p">):</span>
+                    <span class="n">temp</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">temp</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">+</span> <span class="bp">self</span><span class="p">.</span><span class="n">MDS</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="n">j</span><span class="p">]</span> <span class="o">*</span> <span class="n">state</span><span class="p">[</span><span class="n">j</span><span class="p">]</span>
+            <span class="c1"># constants
+</span>            <span class="n">state</span> <span class="o">=</span> <span class="p">[</span><span class="n">temp</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">+</span> <span class="bp">self</span><span class="p">.</span><span class="n">round_constants</span><span class="p">[</span><span class="mi">2</span><span class="o">*</span><span class="n">r</span><span class="o">*</span><span class="bp">self</span><span class="p">.</span><span class="n">m</span><span class="o">+</span><span class="bp">self</span><span class="p">.</span><span class="n">m</span><span class="o">+</span><span class="n">i</span><span class="p">]</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="p">.</span><span class="n">m</span><span class="p">)]</span>
+            
+            <span class="c1"># record state at this point, with explicit copy
+</span>            <span class="n">trace</span> <span class="o">+=</span> <span class="p">[[</span><span class="n">s</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">state</span><span class="p">]]</span>
+
+        <span class="k">return</span> <span class="n">trace</span>
+</code></pre></div></div>
+
+<h2 id="stark-based-signatures">STARK-based Signatures</h2>
+
+<p>A non-interactive zero-knowldge proof system can be transformed into a signature scheme. The catch is that it must be capable of proving knowledge of a solution to a cryptographically hard problem. STARKs can be used to prove arbitrarily complex computational statements. However, the whole point of Rescue-Prime is that it generates cryptographically hard problem instances in a STARK-friendly way – concretely, with a compact AIR. So let’s transform a STARK for Rescue-Prime into a signature scheme.</p>
+
+<h3 id="rescue-prime-stark">Rescue-Prime STARK</h3>
+
+<p>Producing a prover and verifier for STARK for Rescue-Prime consists of little more than linking together existing code snippets.</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code>
+<span class="k">class</span> <span class="nc">RPSSS</span><span class="p">:</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span> <span class="bp">self</span> <span class="p">):</span>
+        <span class="bp">self</span><span class="p">.</span><span class="n">field</span> <span class="o">=</span> <span class="n">Field</span><span class="p">.</span><span class="n">main</span><span class="p">()</span>
+        <span class="n">expansion_factor</span> <span class="o">=</span> <span class="mi">4</span>
+        <span class="n">num_colinearity_checks</span> <span class="o">=</span> <span class="mi">64</span>
+        <span class="n">security_level</span> <span class="o">=</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">num_colinearity_checks</span>
+
+        <span class="bp">self</span><span class="p">.</span><span class="n">rp</span> <span class="o">=</span> <span class="n">RescuePrime</span><span class="p">()</span>
+        <span class="n">num_cycles</span> <span class="o">=</span> <span class="bp">self</span><span class="p">.</span><span class="n">rp</span><span class="p">.</span><span class="n">N</span><span class="o">+</span><span class="mi">1</span>
+        <span class="n">state_width</span> <span class="o">=</span> <span class="bp">self</span><span class="p">.</span><span class="n">rp</span><span class="p">.</span><span class="n">m</span>
+
+        <span class="bp">self</span><span class="p">.</span><span class="n">stark</span> <span class="o">=</span> <span class="n">Stark</span><span class="p">(</span><span class="bp">self</span><span class="p">.</span><span class="n">field</span><span class="p">,</span> <span class="n">expansion_factor</span><span class="p">,</span> <span class="n">num_colinearity_checks</span><span class="p">,</span> <span class="n">security_level</span><span class="p">,</span> <span class="n">state_width</span><span class="p">,</span> <span class="n">num_cycles</span><span class="p">,</span> <span class="n">transition_constraints_degree</span><span class="o">=</span><span class="mi">3</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">stark_prove</span><span class="p">(</span> <span class="bp">self</span><span class="p">,</span> <span class="n">input_element</span><span class="p">,</span> <span class="n">proof_stream</span> <span class="p">):</span>
+        <span class="n">output_element</span> <span class="o">=</span> <span class="bp">self</span><span class="p">.</span><span class="n">rp</span><span class="p">.</span><span class="nb">hash</span><span class="p">(</span><span class="n">input_element</span><span class="p">)</span>
+
+        <span class="n">trace</span> <span class="o">=</span> <span class="bp">self</span><span class="p">.</span><span class="n">rp</span><span class="p">.</span><span class="n">trace</span><span class="p">(</span><span class="n">input_element</span><span class="p">)</span>
+        <span class="n">transition_constraints</span> <span class="o">=</span> <span class="bp">self</span><span class="p">.</span><span class="n">rp</span><span class="p">.</span><span class="n">transition_constraints</span><span class="p">(</span><span class="bp">self</span><span class="p">.</span><span class="n">stark</span><span class="p">.</span><span class="n">omicron</span><span class="p">)</span>
+        <span class="n">boundary_constraints</span> <span class="o">=</span> <span class="bp">self</span><span class="p">.</span><span class="n">rp</span><span class="p">.</span><span class="n">boundary_constraints</span><span class="p">(</span><span class="n">output_element</span><span class="p">)</span>
+        <span class="n">proof</span> <span class="o">=</span> <span class="bp">self</span><span class="p">.</span><span class="n">stark</span><span class="p">.</span><span class="n">prove</span><span class="p">(</span><span class="n">trace</span><span class="p">,</span> <span class="n">transition_constraints</span><span class="p">,</span> <span class="n">boundary_constraints</span><span class="p">,</span> <span class="n">proof_stream</span><span class="p">)</span>
+ 
+        <span class="k">return</span> <span class="n">proof</span>
+
+    <span class="k">def</span> <span class="nf">stark_verify</span><span class="p">(</span> <span class="bp">self</span><span class="p">,</span> <span class="n">output_element</span><span class="p">,</span> <span class="n">stark_proof</span><span class="p">,</span> <span class="n">proof_stream</span> <span class="p">):</span>
+        <span class="n">boundary_constraints</span> <span class="o">=</span> <span class="bp">self</span><span class="p">.</span><span class="n">rp</span><span class="p">.</span><span class="n">boundary_constraints</span><span class="p">(</span><span class="n">output_element</span><span class="p">)</span>
+        <span class="n">transition_constraints</span> <span class="o">=</span> <span class="bp">self</span><span class="p">.</span><span class="n">rp</span><span class="p">.</span><span class="n">transition_constraints</span><span class="p">(</span><span class="bp">self</span><span class="p">.</span><span class="n">stark</span><span class="p">.</span><span class="n">omicron</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="p">.</span><span class="n">stark</span><span class="p">.</span><span class="n">verify</span><span class="p">(</span><span class="n">stark_proof</span><span class="p">,</span> <span class="n">transition_constraints</span><span class="p">,</span> <span class="n">boundary_constraints</span><span class="p">,</span> <span class="n">proof_stream</span><span class="p">)</span>
+</code></pre></div></div>
+
+<p>Note the explicit argument concerning the proof stream. This needs to be a special object that simulates a <em>message-dependent</em> Fiat-Shamir transform, as opposed to a regular one.</p>
+
+<h3 id="message-dependent-fiat-shamir">Message-Dependent Fiat-Shamir</h3>
+
+<p>In order to transform a zero-knowledge proof system into a signature scheme, a non-interactive proof must be tied to the document that is being signed. Traditionally, the way to do this via Fiat-Shamir is to define the verifier’s pseudorandom response as the hash digest of the document concatenated with the entire protocol transcript up until the point where its output is required.</p>
+
+<p>In terms of implementation, this requires a new proof stream object – one that is aware of the document for which the signature is to be generated or verified. The next class achieves just this.</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code>
+<span class="k">class</span> <span class="nc">SignatureProofStream</span><span class="p">(</span><span class="n">ProofStream</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span> <span class="bp">self</span><span class="p">,</span> <span class="n">document</span> <span class="p">):</span>
+        <span class="n">ProofStream</span><span class="p">.</span><span class="n">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+        <span class="bp">self</span><span class="p">.</span><span class="n">document</span> <span class="o">=</span> <span class="n">document</span>
+        <span class="bp">self</span><span class="p">.</span><span class="n">prefix</span> <span class="o">=</span> <span class="n">blake2s</span><span class="p">(</span><span class="nb">bytes</span><span class="p">(</span><span class="n">document</span><span class="p">)).</span><span class="n">digest</span><span class="p">()</span>
+
+    <span class="k">def</span> <span class="nf">prover_fiat_shamir</span><span class="p">(</span> <span class="bp">self</span><span class="p">,</span> <span class="n">num_bytes</span><span class="o">=</span><span class="mi">32</span> <span class="p">):</span>
+        <span class="k">return</span> <span class="n">shake_256</span><span class="p">(</span><span class="bp">self</span><span class="p">.</span><span class="n">prefix</span> <span class="o">+</span> <span class="bp">self</span><span class="p">.</span><span class="n">serialize</span><span class="p">()).</span><span class="n">digest</span><span class="p">(</span><span class="n">num_bytes</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">verifier_fiat_shamir</span><span class="p">(</span> <span class="bp">self</span><span class="p">,</span> <span class="n">num_bytes</span><span class="o">=</span><span class="mi">32</span> <span class="p">):</span>
+        <span class="k">return</span> <span class="n">shake_256</span><span class="p">(</span><span class="bp">self</span><span class="p">.</span><span class="n">prefix</span> <span class="o">+</span> <span class="n">pickle</span><span class="p">.</span><span class="n">dumps</span><span class="p">(</span><span class="bp">self</span><span class="p">.</span><span class="n">objects</span><span class="p">[:</span><span class="bp">self</span><span class="p">.</span><span class="n">read_index</span><span class="p">])).</span><span class="n">digest</span><span class="p">(</span><span class="n">num_bytes</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">deserialize</span><span class="p">(</span> <span class="bp">self</span><span class="p">,</span> <span class="n">bb</span> <span class="p">):</span>
+        <span class="n">sps</span> <span class="o">=</span> <span class="n">SignatureProofStream</span><span class="p">(</span><span class="bp">self</span><span class="p">.</span><span class="n">document</span><span class="p">)</span>
+        <span class="n">sps</span><span class="p">.</span><span class="n">objects</span> <span class="o">=</span> <span class="n">pickle</span><span class="p">.</span><span class="n">loads</span><span class="p">(</span><span class="n">bb</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">sps</span>
+</code></pre></div></div>
+
+<h3 id="signature-scheme">Signature Scheme</h3>
+
+<p>At this point it is possible to define the key generation, signature generation, and signature verification functions that make up a signature scheme. Note that these functions are members of the Rescue-Prime STARK Signature Scheme (<code class="language-plaintext highlighter-rouge">RPSSS</code>) class whose definition started earlier.</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1"># class RPSSS:
+</span>    <span class="k">def</span> <span class="nf">keygen</span><span class="p">(</span> <span class="bp">self</span> <span class="p">):</span>
+        <span class="n">sk</span> <span class="o">=</span> <span class="bp">self</span><span class="p">.</span><span class="n">field</span><span class="p">.</span><span class="n">sample</span><span class="p">(</span><span class="n">os</span><span class="p">.</span><span class="n">urandom</span><span class="p">(</span><span class="mi">17</span><span class="p">))</span>
+        <span class="n">pk</span> <span class="o">=</span> <span class="bp">self</span><span class="p">.</span><span class="n">rp</span><span class="p">.</span><span class="nb">hash</span><span class="p">(</span><span class="n">sk</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">sk</span><span class="p">,</span> <span class="n">pk</span>
+
+    <span class="k">def</span> <span class="nf">sign</span><span class="p">(</span> <span class="bp">self</span><span class="p">,</span> <span class="n">sk</span><span class="p">,</span> <span class="n">document</span> <span class="p">):</span>
+        <span class="n">sps</span> <span class="o">=</span> <span class="n">SignatureProofStream</span><span class="p">(</span><span class="n">document</span><span class="p">)</span>
+        <span class="n">signature</span> <span class="o">=</span> <span class="bp">self</span><span class="p">.</span><span class="n">stark_prove</span><span class="p">(</span><span class="n">sk</span><span class="p">,</span> <span class="n">sps</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">signature</span>
+
+    <span class="k">def</span> <span class="nf">verify</span><span class="p">(</span> <span class="bp">self</span><span class="p">,</span> <span class="n">pk</span><span class="p">,</span> <span class="n">document</span><span class="p">,</span> <span class="n">signature</span> <span class="p">):</span>
+        <span class="n">sps</span> <span class="o">=</span> <span class="n">SignatureProofStream</span><span class="p">(</span><span class="n">document</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="p">.</span><span class="n">stark_verify</span><span class="p">(</span><span class="n">pk</span><span class="p">,</span> <span class="n">signature</span><span class="p">,</span> <span class="n">sps</span><span class="p">)</span>
+</code></pre></div></div>
+
+<p>This code defines a <em>provably secure</em><sup id="fnref:1" role="doc-noteref"><a href="#fn:1" class="footnote">1</a></sup>, <em>post-quantum</em> signature scheme that (almost) achieves a 128 bit security level. While this description sounds flattering, the scheme’s performance metrics are much less so:</p>
+<ul>
+  <li>secret key size: 16 bytes (yay!)</li>
+  <li>public key size: 16 bytes (yay!)</li>
+  <li>signature size: <strong>~133 kB</strong></li>
+  <li>keygen time: 0.01 seconds (acceptable)</li>
+  <li>signing time: <strong>250 seconds</strong></li>
+  <li>verification time: <strong>444 seconds</strong></li>
+</ul>
+
+<p>There might be a few optimizations available that can reduce the proof’s size, such as merging common paths when opening a batch of Merkle leafs. However, these optimizations distract from the purpose of this tutorial, which is to highlight and explain the mathematics involved.</p>
+
+<p>In terms of speed, a lot of the poor performance is due to using python instead of a language that is closer to the hardware such as C or rust. Python was chosen for the same reason – to highlight and explain the maths. But the biggest performance gain in terms of speed is going to come from switching to faster algorithms for key operations. This is the topic of the next part of the tutorial.</p>
+
+<div class="footnotes" role="doc-endnotes">
+  <ol>
+    <li id="fn:1" role="doc-endnote">
+      <p>More specifically, in the random oracle model, a successful signature-forger gives rise to an adversary who breaks the one-wayness of Rescue-Prime with polynomially related running time and success probability. <a href="#fnref:1" class="reversefootnote" role="doc-backlink">&#8617;</a></p>
+    </li>
+  </ol>
+</div>
+
+  </div>
+
+</article>
+
+      </div>
+    </main><!-- Parse the Latex divs with Katex-->
+<script type="text/javascript">
+  $("script[type='math/tex']").replaceWith(
+    function(){
+      var tex = $(this).text();
+      return katex.renderToString(tex, {displayMode: false});
+  });
+  
+  $("script[type='math/tex; mode=display']").replaceWith(
+    function(){
+      var tex = $(this).text();
+      return katex.renderToString(tex.replace(/%.*/g, ''), {displayMode: true});
+  });
+</script>
+
+</body>
+
+</html>

@@ -1,0 +1,526 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1"><!-- Begin Jekyll SEO tag v2.7.1 -->
+<title>Anatomy of a STARK, Part 4: The STARK Polynomial IOP | Anatomy of a STARK</title>
+<meta name="generator" content="Jekyll v3.9.0" />
+<meta property="og:title" content="Anatomy of a STARK, Part 4: The STARK Polynomial IOP" />
+<meta property="og:locale" content="en_US" />
+<meta name="description" content="STARK tutorial with supporting source code in python." />
+<meta property="og:description" content="STARK tutorial with supporting source code in python." />
+<link rel="canonical" href="http://localhost:4000/stark.html" />
+<meta property="og:url" content="http://localhost:4000/stark.html" />
+<meta property="og:site_name" content="Anatomy of a STARK" />
+<meta name="twitter:card" content="summary" />
+<meta property="twitter:title" content="Anatomy of a STARK, Part 4: The STARK Polynomial IOP" />
+<script type="application/ld+json">
+{"description":"STARK tutorial with supporting source code in python.","@type":"WebPage","headline":"Anatomy of a STARK, Part 4: The STARK Polynomial IOP","url":"http://localhost:4000/stark.html","@context":"https://schema.org"}</script>
+<!-- End Jekyll SEO tag -->
+<link rel="stylesheet" href="/assets/main.css"><link type="application/atom+xml" rel="alternate" href="http://localhost:4000/feed.xml" title="Anatomy of a STARK" /></head>
+<body><header class="site-header" role="banner">
+
+  <div class="wrapper"><a class="site-title" rel="author" href="/">Anatomy of a STARK</a><nav class="site-nav">
+        <input type="checkbox" id="nav-trigger" class="nav-trigger" />
+        <label for="nav-trigger">
+          <span class="menu-icon">
+            <svg viewBox="0 0 18 15" width="18px" height="15px">
+              <path d="M18,1.484c0,0.82-0.665,1.484-1.484,1.484H1.484C0.665,2.969,0,2.304,0,1.484l0,0C0,0.665,0.665,0,1.484,0 h15.032C17.335,0,18,0.665,18,1.484L18,1.484z M18,7.516C18,8.335,17.335,9,16.516,9H1.484C0.665,9,0,8.335,0,7.516l0,0 c0-0.82,0.665-1.484,1.484-1.484h15.032C17.335,6.031,18,6.696,18,7.516L18,7.516z M18,13.516C18,14.335,17.335,15,16.516,15H1.484 C0.665,15,0,14.335,0,13.516l0,0c0-0.82,0.665-1.483,1.484-1.483h15.032C17.335,12.031,18,12.695,18,13.516L18,13.516z"/>
+            </svg>
+          </span>
+        </label>
+
+        <div class="trigger"><a class="page-link" href="/about/">About</a><a class="page-link" href="/basic-tools.html">Anatomy of a STARK, Part 2: Basic Tools</a><a class="page-link" href="/faster.html">Anatomy of a STARK, Part 6: Speeding Things Up</a><a class="page-link" href="/fri.html">Anatomy of a STARK, Part 3: FRI</a><a class="page-link" href="/introduction.html">Anatomy of a STARK, Part 0: Introduction</a><a class="page-link" href="/overview.html">Anatomy of a STARK, Part 1: STARK Overview</a><a class="page-link" href="/rescue-prime.html">Anatomy of a STARK, Part 5: A Rescue-Prime STARK</a><a class="page-link" href="/stark.html">Anatomy of a STARK, Part 4: The STARK Polynomial IOP</a></div>
+      </nav></div>
+</header>
+<main class="page-content" aria-label="Content">
+      <div class="wrapper">
+        <article class="post">
+
+  <header class="post-header">
+    <h1 class="post-title">Anatomy of a STARK, Part 4: The STARK Polynomial IOP</h1>
+  </header>
+
+  <div class="post-content">
+    <h1 id="anatomy-of-a-stark-part-4-the-stark-polynomial-iop">Anatomy of a STARK, Part 4: The STARK Polynomial IOP</h1>
+
+<p>This part of the tutorial deals with the information-theoretic backbone of the STARK proof system, which you might call the STARK Polynomial IOP. 
+Recall that the compilation pipeline of SNARKs involves intermediate stages, the first two of which are the <em>arithmetic constraint system</em> and the <em>Polynomial IOP</em>. This tutorial describes the properties of the arithmetic constraint system but a discussion about the <em>arithmetization</em> step, which transforms the initial computation into an arithmetic constraint system, is out of scope. However, <em>interpolation</em> step, which transforms this arithmetic constraint system into a Polynomial IOP, is discussed at length. The final Polynomial IOP can be compiled into a concrete proof system using the FRI-based compiler described in [[part 3|fri.md]].</p>
+
+<h2 id="arithmetic-intermediate-representation-air">Arithmetic Intermediate Representation (AIR)</h2>
+
+<p>The <em>arithmetic intermediate representation (AIR)</em> (also, arithmetic <em>internal</em> representation) is a way of describing a computation in terms of an execution trace that satisfies a number of constraints induced by the correct evolution of the state. The term <em>arithmetic</em> refers to the fact that this execution trace consists of a list of finite field elements (or an array, if more than one register is involved), and that the constraints are expressible as low degree polynomials.</p>
+
+<p>Let’s make this more concrete. Let $\mathbb{F}<em>p$ be the field of definition. Without loss of generality, the computation describes the evolution a *state* of $\mathsf{w}$ registers for $T$ cycles. The *algebraic execution trace (AET)* is the table of $T \times \mathsf{w}$ field elements where every row describes the state of the system at the given point in time, and every column tracks the value of the given register. A *state transition function* $f : \mathbb{F}_p^\mathsf{w} \rightarrow \mathbb{F}_p^\mathsf{w}$ determines the state at the next cycle as a function of the state at the previous cycle. Furthermore, a list of boundary conditions $\mathcal{B} : [\mathbb{Z}_T \times \mathbb{Z}</em>\mathsf{w} \times \mathbb{F}]$  enforce the correct values of some or all registers at the first cycle, last cycle, or even at arbitrary cycles.</p>
+
+<p>The <em>computational integrity claim</em> consists of the state transition function and the boundary conditions. The <em>witness</em> to this claim is the algebraic execution trace. The claim is <em>true</em> if there is a witness $W \in \mathbb{G}^{T \times \mathsf{w}}$ such that:</p>
+<ul>
+  <li>for every cycle, the state evolves correctly: $\forall i \in \mathbb{Z}<em>T \, . \, f(W</em>{[i,:]}) = W_{[i+1,:]}$; and</li>
+  <li>all boundary conditions are satisfied: $\forall (i, w, e) \in \mathcal{B} \, . \, W_{[i,w]} = e$.</li>
+</ul>
+
+<p>The state transition function hides a lot of complexity. For the purpose of STARKs, it needs to be describable as low degree polynomials that are <em>independent of the cycle</em>. However, this list of polynomials does not need to compute the next state from the current one; it merely needs to distinguish correct evolutions from incorrect ones. Specifically, the function $f : \mathbb{F}<em>p^\mathsf{w} \rightarrow \mathbb{F}_p^\mathsf{w}$ is represented by a list of polynomials $\mathbf{p} \in \mathbb{F}_p[X_0, \ldots, X</em>{\mathsf{w}-1}, Y_0, \ldots, Y_{\mathsf{w}-1}]$ such that $f(\mathbf{x}) = \mathbf{y}$ if and only if $\mathbf{p}(\mathbf{x}, \mathbf{y}) = \mathbf{0}$. Say there are $r$ such state transition verification polynomials. Then the transition constraints become:</p>
+<ul>
+  <li>$\forall i \in \mathbb{Z}<em>T \, . \, \forall j \in \mathbb{Z}_r \, . \, p_r(W</em>{[i,0]}, \ldots, W_{[i, \mathsf{w}-1]}, W_{[i+1,0]}, \ldots, W_{[i+1, \mathsf{w}-1]}) = 0$.</li>
+</ul>
+
+<p>This representation admits <em>non-determinism</em>, which has the capacity to reduce high degree state transition <em>computation</em> polynomials with low degree state transition <em>verification</em> polynomials. For example: the state transition function $f : \mathbb{F}_p \rightarrow \mathbb{F}_p$ given by
+\(x \mapsto \left\{ \begin{array}{l}
+x^{-1} &amp; \Leftarrow x \neq 0 \\
+0 &amp; \Leftarrow x = 0 
+\end{array} \right.\)
+can be represented as a computation polynomial $f(x) = x^{p-1}$ or as a pair of verification polynomials $\mathbf{p}(x,y) = (x(xy-1), y(xy-1))$. The degree drops from $p-1$ to 3.</p>
+
+<p>Not all lists of $\mathsf{w}$ represent valid states. For instance, some registers may be constrained to bits and thus take only values from ${0, 1}$. The state transition function is what guarantees that the next state is well-formed if the current state is. When translating to verification polynomials, these <em>consistency constraints</em> are polynomials in the ring $\mathbb{F}<em>p[X_0, \ldots, X</em>{\mathsf{w}-1}]$ because they apply to every single row in the AET, as opposed to every consecutive pair of rows. For the sake of simplicity, this tutorial will ignore consistency constraints and pretend as though every $\mathsf{w}$-tuple of field elements represents a valid state.</p>
+
+<h2 id="interpolation">Interpolation</h2>
+
+<p>The arithmetic constraint system described above already represents the computational integrity claim as a bunch polynomials. Transforming this constraint system into a Polynomial IOP requires extending this representation in terms of polynomials to the witness and its validity. Specifically, we need to represent the conditions for true computational integrity claims in terms of identities of polynomials.</p>
+
+<table>
+  <tbody>
+    <tr>
+      <td>Let $D$ be a list of points referred to from here on out as the <em>trace evaluation domain</em>. Typically, $D$ is set to the span of a generator $\omicron$ of a subgroup of order $2^k \geq T+1$. So for the time being set $D = {\omicron^i</td>
+      <td>i \in \mathbb{Z}}$. The Greek letter $\omicron$ (“omicron”) indicates that the trace evaluation domain is smaller than the FRI evaluation domain by a factor exactly equal to the expansion factor<sup id="fnref:1" role="doc-noteref"><a href="#fn:1" class="footnote">1</a></sup>.</td>
+    </tr>
+  </tbody>
+</table>
+
+<p>Let $\boldsymbol{t}(X) \in (\mathbb{F}_p[X])^\mathsf{w}$ be a list of $\mathsf{w}$ univariate polynomials that interpolate through $W$ on $D$. Specifically, the <em>trace polynomial</em> $t_w(X)$ for register $w$ is the univariate polynomial of lowest degree such that $\forall i \in {0, \ldots, T} \, . \, t_w(\omicron^i) = W[i, w]$. The trace polynomials are a representation of the algebraic execution trace in terms of univariate polynomials.</p>
+
+<p>Translating the conditions for true computational integrity claims to the trace polynomials, one gets:</p>
+<ul>
+  <li>all boundary constraints are satisfied: $\forall (i, w, e) \in \mathcal{B} \, . \, t_w(\omicron^i) = e$; and</li>
+  <li>for all cycles, all transition constraints are satisfied: $\forall i \in \mathbb{Z}<em>T \, . \, \forall j \in \mathbb{Z}_r \, . \, p_j( t_0(\omicron^i), \ldots, t</em>{\mathsf{w}-1}(\omicron^i), t_0(\omicron^{i+1}), \ldots, t_{\mathsf{w}-1}(\omicron^{i+1})) = 0$.</li>
+</ul>
+
+<table>
+  <tbody>
+    <tr>
+      <td>The last expression looks complicated. However, observe that the left hand side of the equation corresponds to the univariate polynomial $p_j(t_0(X)), \ldots, t_{\mathsf{w}-1}(X), t_0(\omicron \cdot X), \ldots, t_{\mathsf{w}-1}(\omicron \cdot X))$. The entire expression simply says that all $r$ of these <em>transition polynomials</em> evaluate to 0 in ${ \omicron^i</td>
+      <td>i \in \mathbb{Z}_T}$.</td>
+    </tr>
+  </tbody>
+</table>
+
+<p>This observation gives rise to the following high-level Polynomial IOP:</p>
+<ol>
+  <li>The prover commits to the trace polynomials $\boldsymbol{t}(X)$.</li>
+  <li>The verifier checks that $t_w(X)$ evaluates to $e$ in $\omicron^i$ for all $(i, w, e) \in \mathcal{B}$.</li>
+  <li>The prover commits to the transition polynomials $\mathbf{c}(X) = \mathbf{p}(t_0(X)), \ldots, t_{\mathsf{w}-1}(X), t_0(\omicron \cdot X), \ldots, t_{\mathsf{w}-1}(\omicron \cdot X))$.</li>
+  <li>The verifier checks that $\mathbf{c}(X)$ and $\boldsymbol{t}(X)$ are correctly related by:
+   4.1. choosing a random point $z \in \mathbb{F}<em>p \backslash {0}$,
+   4.2. querying the values of $\boldsymbol{t}(X)$ in $z$ and $\omicron \cdot z$,
+   4.3. evaluating the transition verification polynomials $\mathbf{p}(X_1, \ldots, X</em>{\mathsf{w}-1}, Y_0, \ldots, Y_{\mathsf{w}-1})$ in these $2\mathsf{w}$ points, and
+   4.4 querying the values of $\mathbf{c}(X)$ in $z$,
+   4.5 checking that the values obtained in the previous two steps match;</li>
+  <li>
+    <table>
+      <tbody>
+        <tr>
+          <td>The verifier checks that the transition polynomials $\mathbf{c}(X)$ evaluate to zero in ${ \omicron^i</td>
+          <td>i \in \mathbb{Z}_T}$.</td>
+        </tr>
+      </tbody>
+    </table>
+  </li>
+</ol>
+
+<table>
+  <tbody>
+    <tr>
+      <td>In fact, the commitment of the transition polynomials can be omitted. Instead, the verifier uses the evaluation of $\boldsymbol{t}(X)$ in $z$ and $\omicron \cdot z$ to compute the value of $\mathbf{c}(X)$ in the one point needed to verify that $\mathbf{c}(X)$ evaluates to 0 in ${ \omicron^i</td>
+      <td>i \in \mathbb{Z}_T}$.</td>
+    </tr>
+  </tbody>
+</table>
+
+<p>There is another layer of redundancy, but it is only apparent after the evaluation checks are unrolled. The FRI compiler simulates an evaluation check by a) subtracting the y-coordinate, b) dividing out the zerofier, which is the minimal polynomial that vanishes at the x-coordinate, and c) proving that the resulting quotient has a bounded degree. This procedure happens twice for the STARK polynomials – first: applied to the trace polynomials to show satisfaction of the boundary constraints, and second: applied to the transition polynomials to show that the transition constraints are satisfied. We call the resulting lists of quotient polynomials the <em>boundary quotients</em> and the <em>transition quotients</em> respectively.</p>
+
+<p>The redundancy comes from the fact that the trace polynomials relate to both quotients. It can therefore be eliminated by merging the equations they are involved in. The next diagram illustrates this elimination in the context of the STARK Polynomial IOP workflow. The green box indicates that the polynomials are committed to through the familiar evaluation and Merkle root procedure and are provided as input to FRI.</p>
+
+<p><img src="/graphics/stark-workflow.svg" alt="Overview of the STARK workflow" /></p>
+
+<p>At the top of this diagram in red are the objects associated with the arithmetic constraint system, with the constraints written in small caps font to indicate that they are known to the verifier. The prover interpolates the execution trace to obtain the trace polynomials, but it is not necessary to commit to these polynomials. Instead, the prover interpolates the boundary points and subtracts the resulting interpolants from the trace polynomials. This procedure produces the <em>dense trace polynomials</em>, for lack of a better name. To obtain the boundary quotients from the dense trace polynomials, the prover divides out the zerofier. Note that the boundary quotients and trace polynomials are equivalent in the following sense: if the verifier knows a value in a given point of one, he can compute the matching value of the other using only public information.</p>
+
+<p>To obtain the transition polynomials, the prover evaluates the transition constraints (recall, these are given as multivariate polynomials) symbolically in the trace polynomials. To get the transition quotients from the transition polynomials, divide out the zerofier. Assume for the time being that the verifier is capable of evaluating this zerofier efficiently. Note that the transition quotients and the trace polynomials are not equivalent – the verifier cannot necessarily undo the symbolic evaluation. However, this non-equivalence does not matter. What the verifier needs to verify is that the boundary quotients and the transition quotients are linked. Traveling from the boundary quotients to the transition quotients, and performing the indicated arithmetic along the way, establishes this link. The remaining part of the entire computational integrity claim is the bounded degree of the quotient polynomials, and this is exactly what FRI already solves.</p>
+
+<p>The use of the plural on the right hand side is slightly misleading. After the boundary quotients have been committed to by sending their Merkle roots to the verifier, the prover obtains from the verifier random weights with which to compress the transition constraints to a single linear combination. As a result of this compression, there is one transition constraint, one transition polynomial, and one transition quotient. Nevertheless, this compression may be omitted without affecting security; it merely requires more work on the part of both the prover and the verifier.</p>
+
+<p>To summarize, this workflow generates two recipes: one for the prover and one for the verifier. They are presented here in abstract terms and in interactive form.</p>
+
+<p>Prover:</p>
+<ul>
+  <li>Interpolate the execution trace to obtain the trace polynomials.</li>
+  <li>Interpolate the boundary points to obtain the boundary interpolants, and compute the boundary zerofiers along the way.</li>
+  <li>Subtract the boundary interpolants from the trace polynomials, giving rise to the dense trace polynomials.</li>
+  <li>Divide out the boundary zerofiers from the dense trace polynomials.</li>
+  <li>Commit to the dense trace polynomials.</li>
+  <li>Get $r$ random coefficients from the verifier.</li>
+  <li>Compress the $r$ transition constraints into one master constraint that is the weighted sum.</li>
+  <li>Symbolically evaluate the master constraint in the trace polynomials, thus generating the transition polynomial.</li>
+  <li>Divide out the transition zerofier to get the transition quotient.</li>
+  <li>Commit to the transition zerofier.</li>
+  <li>Run FRI on all committed polynomials.</li>
+  <li>Supply the Merkle leafs and authentication paths that are requested by the verifier.</li>
+</ul>
+
+<p>Verifier:</p>
+<ul>
+  <li>Read the commitments to the boundary quotients.</li>
+  <li>Supply the random coefficients for the master transition constraint.</li>
+  <li>Read the commitment to the transition quotient.</li>
+  <li>Run the FRI verifier.</li>
+  <li>Verify the link between boundary quotients and transition quotient. To do this:
+    <ul>
+      <li>For all points of the transition quotient codeword that were queried in the first round of FRI do:
+        <ul>
+          <li>Let the point be $(x, y)$.</li>
+          <li>Query the matching points on the boundary quotient codewords. Note that there are two of them, $x$ and $\omicron \cdot x$, indicating points “one cycle apart”.</li>
+          <li>Multiply the y-coordinates of these points by the zerofiers’ values in $x$ and $\omicron \cdot x$.</li>
+          <li>Add the boundary interpolants’ values.</li>
+          <li>Evaluate the master transition constraint in this point.</li>
+          <li>Divide by the value of the transition zerofier in $x$.</li>
+          <li>Verify that the resulting value equals $y$.</li>
+        </ul>
+      </li>
+    </ul>
+  </li>
+</ul>
+
+<h2 id="adding-zero-knowledge">Adding Zero-Knowledge</h2>
+
+<p>Formally, an interactive proof system is <em>zero-knowledge</em> if the distribution of transcripts arising from authentic executions of the protocol is independent of the witness and can be sampled efficiently with public information only. In practice, this means that the prover randomizes the data structures and proof arithmetic using randomness that also remains secret. The transcript is independent of the witness because <em>any</em> transcript can be explained by the right choice of randomizers.</p>
+
+<p>With respect to randomizing the STARK proof system, it is worth separating the mechanism into two parts and randomize them separately.</p>
+<ol>
+  <li>The FRI bounded degree proof. This component is randomized by adding a randomizer codeword to the nonlinear combination. This randomizer codeword corresponds to a polynomial of maximal degree whose coefficients are drawn uniformly at random.</li>
+  <li>The linking part that establishes that the boundary quotients are linked to the transition quotient(s). To randomize this, the execution trace for every register is extended with $4s$ uniformly random field elements. The number $4s$ comes from the number $s$ of colinearity checks in the FRI protocol: every colinearity check induces two queries in the initial codeword. The two values of the transition quotient codeword need to be linked two four values of the boundary quotient codewords.</li>
+</ol>
+
+<p>It is important to guarantee that none of the x-coordinates that are queried as part of FRI correspond to x-coordinates used for interpolating the execution trace. This is one of the reasons why coset-FRI comes in handy. Nevertheless, other solutions can address this problem.</p>
+
+<h2 id="implementation">Implementation</h2>
+
+<p>Like the FRI module, the STARK module starts with an initializer function that sets the class’s fields to the initialization arguments or values inferred from them.</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kn">from</span> <span class="nn">functools</span> <span class="kn">import</span> <span class="nb">reduce</span>
+<span class="kn">import</span> <span class="nn">os</span>
+
+<span class="k">class</span> <span class="nc">Stark</span><span class="p">:</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span> <span class="bp">self</span><span class="p">,</span> <span class="n">field</span><span class="p">,</span> <span class="n">expansion_factor</span><span class="p">,</span> <span class="n">num_colinearity_checks</span><span class="p">,</span> <span class="n">security_level</span><span class="p">,</span> <span class="n">num_registers</span><span class="p">,</span> <span class="n">num_cycles</span><span class="p">,</span> <span class="n">transition_constraints_degree</span><span class="o">=</span><span class="mi">2</span> <span class="p">):</span>
+        <span class="k">assert</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="nb">bin</span><span class="p">(</span><span class="n">field</span><span class="p">.</span><span class="n">p</span><span class="p">))</span> <span class="o">-</span> <span class="mi">2</span> <span class="o">&gt;=</span> <span class="n">security_level</span><span class="p">),</span> <span class="s">"p must have at least as many bits as security level"</span>
+        <span class="k">assert</span><span class="p">(</span><span class="n">expansion_factor</span> <span class="o">&amp;</span> <span class="p">(</span><span class="n">expansion_factor</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">),</span> <span class="s">"expansion factor must be a power of 2"</span>
+        <span class="k">assert</span><span class="p">(</span><span class="n">expansion_factor</span> <span class="o">&gt;=</span> <span class="mi">4</span><span class="p">),</span> <span class="s">"expansion factor must be 4 or greater"</span>
+        <span class="k">assert</span><span class="p">(</span><span class="n">num_colinearity_checks</span> <span class="o">*</span> <span class="mi">2</span> <span class="o">&gt;=</span> <span class="n">security_level</span><span class="p">),</span> <span class="s">"number of colinearity checks must be at least half of security level"</span>
+
+        <span class="bp">self</span><span class="p">.</span><span class="n">field</span> <span class="o">=</span> <span class="n">field</span>
+        <span class="bp">self</span><span class="p">.</span><span class="n">expansion_factor</span> <span class="o">=</span> <span class="n">expansion_factor</span>
+        <span class="bp">self</span><span class="p">.</span><span class="n">num_colinearity_checks</span> <span class="o">=</span> <span class="n">num_colinearity_checks</span>
+        <span class="bp">self</span><span class="p">.</span><span class="n">security_level</span> <span class="o">=</span> <span class="n">security_level</span>
+
+        <span class="bp">self</span><span class="p">.</span><span class="n">num_randomizers</span> <span class="o">=</span> <span class="mi">4</span><span class="o">*</span><span class="n">num_colinearity_checks</span>
+
+        <span class="bp">self</span><span class="p">.</span><span class="n">num_registers</span> <span class="o">=</span> <span class="n">num_registers</span>
+        <span class="bp">self</span><span class="p">.</span><span class="n">original_trace_length</span> <span class="o">=</span> <span class="n">num_cycles</span>
+        
+        <span class="n">randomized_trace_length</span> <span class="o">=</span> <span class="bp">self</span><span class="p">.</span><span class="n">original_trace_length</span> <span class="o">+</span> <span class="bp">self</span><span class="p">.</span><span class="n">num_randomizers</span>
+        <span class="n">omicron_domain_length</span> <span class="o">=</span> <span class="mi">1</span> <span class="o">&lt;&lt;</span> <span class="nb">len</span><span class="p">(</span><span class="nb">bin</span><span class="p">(</span><span class="n">randomized_trace_length</span> <span class="o">*</span> <span class="n">transition_constraints_degree</span><span class="p">)[</span><span class="mi">2</span><span class="p">:])</span>
+        <span class="n">fri_domain_length</span> <span class="o">=</span> <span class="n">omicron_domain_length</span> <span class="o">*</span> <span class="n">expansion_factor</span>
+
+        <span class="bp">self</span><span class="p">.</span><span class="n">generator</span> <span class="o">=</span> <span class="bp">self</span><span class="p">.</span><span class="n">field</span><span class="p">.</span><span class="n">generator</span><span class="p">()</span>
+        <span class="bp">self</span><span class="p">.</span><span class="n">omega</span> <span class="o">=</span> <span class="bp">self</span><span class="p">.</span><span class="n">field</span><span class="p">.</span><span class="n">primitive_nth_root</span><span class="p">(</span><span class="n">fri_domain_length</span><span class="p">)</span>
+        <span class="bp">self</span><span class="p">.</span><span class="n">omicron</span> <span class="o">=</span> <span class="bp">self</span><span class="p">.</span><span class="n">field</span><span class="p">.</span><span class="n">primitive_nth_root</span><span class="p">(</span><span class="n">omicron_domain_length</span><span class="p">)</span>
+        <span class="bp">self</span><span class="p">.</span><span class="n">omicron_domain</span> <span class="o">=</span> <span class="p">[</span><span class="bp">self</span><span class="p">.</span><span class="n">omicron</span><span class="o">^</span><span class="n">i</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">omicron_domain_length</span><span class="p">)]</span>
+
+        <span class="bp">self</span><span class="p">.</span><span class="n">fri</span> <span class="o">=</span> <span class="n">Fri</span><span class="p">(</span><span class="bp">self</span><span class="p">.</span><span class="n">generator</span><span class="p">,</span> <span class="bp">self</span><span class="p">.</span><span class="n">omega</span><span class="p">,</span> <span class="n">fri_domain_length</span><span class="p">,</span> <span class="bp">self</span><span class="p">.</span><span class="n">expansion_factor</span><span class="p">,</span> <span class="bp">self</span><span class="p">.</span><span class="n">num_colinearity_checks</span><span class="p">)</span>
+</code></pre></div></div>
+
+<p>The code makes a distinction between the <em>original trace length</em>, which is one greater than the number of cycles, and the <em>randomized trace length</em> which the previous variable with $4s$ randomizers extra. A third related variable is the <code class="language-plaintext highlighter-rouge">omicron_domain</code>, which is the list of points in the subgroup of order $2^k$ where $k$ is the smallest integer such that this domain is still larger than or equal to the randomized trace length.</p>
+
+<p>Next up are the helper functions. First are the degree bounds calculators for a) transition polynomials; b) transition quotient polynomials; and c) the nonlinear random combination of polynomials that goes into FRI. This last number is one less than the next power of two.</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code>    <span class="k">def</span> <span class="nf">transition_degree_bounds</span><span class="p">(</span> <span class="bp">self</span><span class="p">,</span> <span class="n">transition_constraints</span> <span class="p">):</span>
+        <span class="n">point_degrees</span> <span class="o">=</span> <span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="p">[</span><span class="bp">self</span><span class="p">.</span><span class="n">original_trace_length</span><span class="o">+</span><span class="bp">self</span><span class="p">.</span><span class="n">num_randomizers</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">*</span> <span class="mi">2</span><span class="o">*</span><span class="bp">self</span><span class="p">.</span><span class="n">num_regisers</span>
+        <span class="k">return</span> <span class="p">[</span><span class="nb">max</span><span class="p">(</span> <span class="nb">sum</span><span class="p">(</span><span class="n">r</span><span class="o">*</span><span class="n">l</span> <span class="k">for</span> <span class="n">r</span><span class="p">,</span> <span class="n">l</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">point_degrees</span><span class="p">,</span> <span class="n">k</span><span class="p">))</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">a</span><span class="p">.</span><span class="n">dictionary</span><span class="p">.</span><span class="n">items</span><span class="p">())</span> <span class="k">for</span> <span class="n">a</span> <span class="ow">in</span> <span class="n">transition_constraints</span><span class="p">]</span>
+
+    <span class="k">def</span> <span class="nf">transition_quotient_degree_bounds</span><span class="p">(</span> <span class="bp">self</span><span class="p">,</span> <span class="n">transition_constraints</span> <span class="p">):</span>
+        <span class="k">return</span> <span class="p">[</span><span class="n">d</span> <span class="o">-</span> <span class="p">(</span><span class="bp">self</span><span class="p">.</span><span class="n">original_trace_length</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span> <span class="k">for</span> <span class="n">d</span> <span class="ow">in</span> <span class="bp">self</span><span class="p">.</span><span class="n">transition_degree_bounds</span><span class="p">(</span><span class="n">transition_constraints</span><span class="p">)]</span>
+
+    <span class="k">def</span> <span class="nf">max_degree</span><span class="p">(</span> <span class="bp">self</span><span class="p">,</span> <span class="n">transition_constraints</span> <span class="p">):</span>
+        <span class="n">md</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="bp">self</span><span class="p">.</span><span class="n">transition_quotient_degree_bounds</span><span class="p">(</span><span class="n">transition_constraints</span><span class="p">))</span>
+        <span class="k">return</span> <span class="p">(</span><span class="mi">1</span> <span class="o">&lt;&lt;</span> <span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="nb">bin</span><span class="p">(</span><span class="n">md</span><span class="p">)[</span><span class="mi">2</span><span class="p">:])))</span> <span class="o">-</span> <span class="mi">1</span>
+</code></pre></div></div>
+
+<p>Note that this code is not compressing the many transition constraints into one. As a result, there are many transition polynomials and many transition quotients.</p>
+
+<p>Up next are zerofier polynomials, which come in two categories: boundary zerofiers and transition zerofiers.</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code>    <span class="k">def</span> <span class="nf">transition_zerofier</span><span class="p">(</span> <span class="bp">self</span> <span class="p">):</span>
+        <span class="n">domain</span> <span class="o">=</span> <span class="bp">self</span><span class="p">.</span><span class="n">omicron_domain</span><span class="p">[</span><span class="mi">0</span><span class="p">:(</span><span class="bp">self</span><span class="p">.</span><span class="n">original_trace_length</span><span class="o">-</span><span class="mi">1</span><span class="p">)]</span>
+        <span class="k">return</span> <span class="n">Polynomial</span><span class="p">.</span><span class="n">zerofier_domain</span><span class="p">(</span><span class="n">domain</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">boundary_zerofiers</span><span class="p">(</span> <span class="bp">self</span><span class="p">,</span> <span class="n">boundary</span> <span class="p">):</span>
+        <span class="n">zerofiers</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="p">.</span><span class="n">num_regisers</span><span class="p">):</span>
+            <span class="n">points</span> <span class="o">=</span> <span class="p">[</span><span class="bp">self</span><span class="p">.</span><span class="n">omicron</span><span class="o">^</span><span class="n">c</span> <span class="k">for</span> <span class="n">c</span><span class="p">,</span> <span class="n">r</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">boundary</span> <span class="k">if</span> <span class="n">r</span> <span class="o">==</span> <span class="n">s</span><span class="p">]</span>
+            <span class="n">zerofiers</span> <span class="o">=</span> <span class="n">zerofiers</span> <span class="o">+</span> <span class="p">[</span><span class="n">Polynomial</span><span class="p">.</span><span class="n">zerofier_domain</span><span class="p">(</span><span class="n">points</span><span class="p">)]</span>
+        <span class="k">return</span> <span class="n">zerofiers</span>
+</code></pre></div></div>
+
+<p>The next function computes polynomials that interpolate through the (location,value)-pairs of the boundary conditions. This function also enables a boundary counterpart to the transition quotient degree bounds calculator.</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code>    <span class="k">def</span> <span class="nf">boundary_interpolants</span><span class="p">(</span> <span class="bp">self</span><span class="p">,</span> <span class="n">boundary</span> <span class="p">):</span>
+        <span class="n">interpolants</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="p">.</span><span class="n">num_regisers</span><span class="p">):</span>
+            <span class="n">points</span> <span class="o">=</span> <span class="p">[(</span><span class="n">c</span><span class="p">,</span><span class="n">v</span><span class="p">)</span> <span class="k">for</span> <span class="n">c</span><span class="p">,</span> <span class="n">r</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">boundary</span> <span class="k">if</span> <span class="n">r</span> <span class="o">==</span> <span class="n">s</span><span class="p">]</span>
+            <span class="n">domain</span> <span class="o">=</span> <span class="p">[</span><span class="bp">self</span><span class="p">.</span><span class="n">omicron</span><span class="o">^</span><span class="n">c</span> <span class="k">for</span> <span class="n">c</span><span class="p">,</span><span class="n">v</span> <span class="ow">in</span> <span class="n">points</span><span class="p">]</span>
+            <span class="n">values</span> <span class="o">=</span> <span class="p">[</span><span class="n">v</span> <span class="k">for</span> <span class="n">c</span><span class="p">,</span><span class="n">v</span> <span class="ow">in</span> <span class="n">points</span><span class="p">]</span>
+            <span class="n">interpolants</span> <span class="o">=</span> <span class="n">interpolants</span> <span class="o">+</span> <span class="p">[</span><span class="n">Polynomial</span><span class="p">.</span><span class="n">interpolate_domain</span><span class="p">(</span><span class="n">domain</span><span class="p">,</span> <span class="n">values</span><span class="p">)]</span>
+        <span class="k">return</span> <span class="n">interpolants</span>
+
+    <span class="k">def</span> <span class="nf">boundary_quotient_degree_bounds</span><span class="p">(</span> <span class="bp">self</span><span class="p">,</span> <span class="n">randomized_trace_length</span><span class="p">,</span> <span class="n">boundary</span> <span class="p">):</span>
+        <span class="n">randomized_trace_degree</span> <span class="o">=</span> <span class="n">randomized_trace_length</span> <span class="o">-</span> <span class="mi">1</span>
+        <span class="k">return</span> <span class="p">[</span><span class="n">randomized_trace_degree</span> <span class="o">-</span> <span class="n">bi</span><span class="p">.</span><span class="n">degree</span><span class="p">()</span> <span class="k">for</span> <span class="n">bi</span> <span class="ow">in</span> <span class="bp">self</span><span class="p">.</span><span class="n">boundary_interpolants</span><span class="p">(</span><span class="n">boundary</span><span class="p">)]</span>
+</code></pre></div></div>
+
+<p>The last helper function is used by prover and verifier when they want to transform a seed, obtained from the Fiat-Shamir transform, into a list of field elements. The resulting field elements are used as weights in the nonlinear combination of polynomials before starting FRI.</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code>    <span class="k">def</span> <span class="nf">sample_weights</span><span class="p">(</span> <span class="bp">self</span><span class="p">,</span> <span class="n">number</span><span class="p">,</span> <span class="n">randomness</span> <span class="p">):</span>
+        <span class="k">return</span> <span class="p">[</span><span class="bp">self</span><span class="p">.</span><span class="n">field</span><span class="p">.</span><span class="n">sample</span><span class="p">(</span><span class="n">blake2b</span><span class="p">(</span><span class="n">randomness</span> <span class="o">+</span> <span class="nb">bytes</span><span class="p">(</span><span class="n">i</span><span class="p">)).</span><span class="n">digest</span><span class="p">())</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">number</span><span class="p">)]</span>
+</code></pre></div></div>
+
+<h3 id="prove">Prove</h3>
+
+<p>Next up is the prover. The big difference with respect to the explanation above is that there is no compression of transition constraints into one master constraint. This task is left as an exercise to the reader.</p>
+
+<p>Another difference is that the transition constraints have $2\mathsf{w}+1$ variables rather than $2\mathsf{w}$. The extra variable takes the value of the evaluation domain over which the execution trace is interpolated. This feature anticipates constraints that depend on the cycle, for instance to evaluate a hash function that uses round constants that are different in each round.</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code>    <span class="k">def</span> <span class="nf">prove</span><span class="p">(</span> <span class="bp">self</span><span class="p">,</span> <span class="n">trace</span><span class="p">,</span> <span class="n">transition_constraints</span><span class="p">,</span> <span class="n">boundary</span><span class="p">,</span> <span class="n">proof_stream</span><span class="o">=</span><span class="bp">None</span> <span class="p">):</span>
+        <span class="c1"># create proof stream object if necessary
+</span>        <span class="k">if</span> <span class="n">proof_stream</span> <span class="o">==</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="n">proof_stream</span> <span class="o">=</span> <span class="n">ProofStream</span><span class="p">()</span>
+        
+        <span class="c1"># concatenate randomizers
+</span>        <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="p">.</span><span class="n">num_randomizers</span><span class="p">):</span>
+            <span class="n">trace</span> <span class="o">=</span> <span class="n">trace</span> <span class="o">+</span> <span class="p">[[</span><span class="bp">self</span><span class="p">.</span><span class="n">field</span><span class="p">.</span><span class="n">sample</span><span class="p">(</span><span class="n">os</span><span class="p">.</span><span class="n">urandom</span><span class="p">(</span><span class="mi">17</span><span class="p">))</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="p">.</span><span class="n">num_registers</span><span class="p">)]]</span>
+
+        <span class="c1"># interpolate
+</span>        <span class="n">trace_domain</span> <span class="o">=</span> <span class="p">[</span><span class="bp">self</span><span class="p">.</span><span class="n">omicron</span><span class="o">^</span><span class="n">i</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">trace</span><span class="p">))]</span>
+        <span class="n">trace_polynomials</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="p">.</span><span class="n">num_registers</span><span class="p">):</span>
+            <span class="n">single_trace</span> <span class="o">=</span> <span class="p">[</span><span class="n">trace</span><span class="p">[</span><span class="n">c</span><span class="p">][</span><span class="n">s</span><span class="p">]</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">trace</span><span class="p">))]</span>
+            <span class="n">trace_polynomials</span> <span class="o">=</span> <span class="n">trace_polynomials</span> <span class="o">+</span> <span class="p">[</span><span class="n">Polynomial</span><span class="p">.</span><span class="n">interpolate_domain</span><span class="p">(</span><span class="n">trace_domain</span><span class="p">,</span> <span class="n">single_trace</span><span class="p">)]</span>
+
+        <span class="c1"># subtract boundary interpolants and divide out boundary zerofiers
+</span>        <span class="n">boundary_quotients</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="p">.</span><span class="n">num_registers</span><span class="p">):</span>
+            <span class="n">interpolant</span> <span class="o">=</span> <span class="bp">self</span><span class="p">.</span><span class="n">boundary_interpolants</span><span class="p">(</span><span class="n">boundary</span><span class="p">)[</span><span class="n">s</span><span class="p">]</span>
+            <span class="n">zerofier</span> <span class="o">=</span> <span class="bp">self</span><span class="p">.</span><span class="n">boundary_zerofiers</span><span class="p">(</span><span class="n">boundary</span><span class="p">)[</span><span class="n">s</span><span class="p">]</span>
+            <span class="n">quotient</span> <span class="o">=</span> <span class="p">(</span><span class="n">trace_polynomials</span><span class="p">[</span><span class="n">s</span><span class="p">]</span> <span class="o">-</span> <span class="n">interpolant</span><span class="p">)</span> <span class="o">/</span> <span class="n">zerofier</span>
+            <span class="n">boundary_quotients</span> <span class="o">+=</span> <span class="p">[</span><span class="n">quotient</span><span class="p">]</span>
+
+        <span class="c1"># commit to boundary quotients
+</span>        <span class="n">fri_domain</span> <span class="o">=</span> <span class="bp">self</span><span class="p">.</span><span class="n">fri</span><span class="p">.</span><span class="n">eval_domain</span><span class="p">()</span>
+        <span class="n">boundary_quotient_codewords</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">boundary_quotient_Merkle_roots</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="p">.</span><span class="n">num_registers</span><span class="p">):</span>
+            <span class="n">boundary_quotient_codewords</span> <span class="o">=</span> <span class="n">boundary_quotient_codewords</span> <span class="o">+</span> <span class="p">[</span><span class="n">boundary_quotients</span><span class="p">[</span><span class="n">s</span><span class="p">].</span><span class="n">evaluate_domain</span><span class="p">(</span><span class="n">fri_domain</span><span class="p">)]</span>
+            <span class="n">merkle_root</span> <span class="o">=</span> <span class="n">Merkle</span><span class="p">.</span><span class="n">commit</span><span class="p">(</span><span class="n">boundary_quotient_codewords</span><span class="p">[</span><span class="n">s</span><span class="p">])</span>
+            <span class="n">proof_stream</span><span class="p">.</span><span class="n">push</span><span class="p">(</span><span class="n">merkle_root</span><span class="p">)</span>
+
+        <span class="c1"># symbolically evaluate transition constraints
+</span>        <span class="n">point</span> <span class="o">=</span> <span class="p">[</span><span class="n">Polynomial</span><span class="p">([</span><span class="bp">self</span><span class="p">.</span><span class="n">field</span><span class="p">.</span><span class="n">zero</span><span class="p">(),</span> <span class="bp">self</span><span class="p">.</span><span class="n">field</span><span class="p">.</span><span class="n">one</span><span class="p">()])]</span> <span class="o">+</span> <span class="n">trace_polynomials</span> <span class="o">+</span> <span class="p">[</span><span class="n">tp</span><span class="p">.</span><span class="n">scale</span><span class="p">(</span><span class="bp">self</span><span class="p">.</span><span class="n">omicron</span><span class="p">)</span> <span class="k">for</span> <span class="n">tp</span> <span class="ow">in</span> <span class="n">trace_polynomials</span><span class="p">]</span>
+        <span class="n">transition_polynomials</span> <span class="o">=</span> <span class="p">[</span><span class="n">a</span><span class="p">.</span><span class="n">evaluate_symbolic</span><span class="p">(</span><span class="n">point</span><span class="p">)</span> <span class="k">for</span> <span class="n">a</span> <span class="ow">in</span> <span class="n">transition_constraints</span><span class="p">]</span>
+
+        <span class="c1"># divide out zerofier
+</span>        <span class="n">transition_quotients</span> <span class="o">=</span> <span class="p">[</span><span class="n">tp</span> <span class="o">/</span> <span class="bp">self</span><span class="p">.</span><span class="n">transition_zerofier</span><span class="p">()</span> <span class="k">for</span> <span class="n">tp</span> <span class="ow">in</span> <span class="n">transition_polynomials</span><span class="p">]</span>
+
+        <span class="c1"># commit to randomizer polynomial
+</span>        <span class="n">randomizer_polynomial</span> <span class="o">=</span> <span class="n">Polynomial</span><span class="p">([</span><span class="bp">self</span><span class="p">.</span><span class="n">field</span><span class="p">.</span><span class="n">sample</span><span class="p">(</span><span class="n">os</span><span class="p">.</span><span class="n">urandom</span><span class="p">(</span><span class="mi">17</span><span class="p">))</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="p">.</span><span class="n">max_degree</span><span class="p">(</span><span class="n">transition_constraints</span><span class="p">)</span><span class="o">+</span><span class="mi">1</span><span class="p">)])</span>
+        <span class="n">randomizer_codeword</span> <span class="o">=</span> <span class="n">randomizer_polynomial</span><span class="p">.</span><span class="n">evaluate_domain</span><span class="p">(</span><span class="n">fri_domain</span><span class="p">)</span> 
+        <span class="n">randomizer_root</span> <span class="o">=</span> <span class="n">Merkle</span><span class="p">.</span><span class="n">commit</span><span class="p">(</span><span class="n">randomizer_codeword</span><span class="p">)</span>
+        <span class="n">proof_stream</span><span class="p">.</span><span class="n">push</span><span class="p">(</span><span class="n">randomizer_root</span><span class="p">)</span>
+
+        <span class="c1"># get weights for nonlinear combination
+</span>        <span class="c1">#  - 1 randomizer
+</span>        <span class="c1">#  - 2 for every transition quotient
+</span>        <span class="c1">#  - 2 for every boundary quotient
+</span>        <span class="n">weights</span> <span class="o">=</span> <span class="bp">self</span><span class="p">.</span><span class="n">sample_weights</span><span class="p">(</span><span class="mi">1</span> <span class="o">+</span> <span class="mi">2</span><span class="o">*</span><span class="nb">len</span><span class="p">(</span><span class="n">transition_quotients</span><span class="p">)</span> <span class="o">+</span> <span class="mi">2</span><span class="o">*</span><span class="nb">len</span><span class="p">(</span><span class="n">boundary_quotients</span><span class="p">),</span> <span class="n">proof_stream</span><span class="p">.</span><span class="n">prover_fiat_shamir</span><span class="p">())</span>
+
+        <span class="k">assert</span><span class="p">([</span><span class="n">tq</span><span class="p">.</span><span class="n">degree</span><span class="p">()</span> <span class="k">for</span> <span class="n">tq</span> <span class="ow">in</span> <span class="n">transition_quotients</span><span class="p">]</span> <span class="o">==</span> <span class="bp">self</span><span class="p">.</span><span class="n">transition_quotient_degree_bounds</span><span class="p">(</span><span class="n">transition_constraints</span><span class="p">)),</span> <span class="s">"transition quotient degrees do not match with expectation"</span>
+
+        <span class="c1"># compute terms of nonlinear combination polynomial
+</span>        <span class="n">x</span> <span class="o">=</span> <span class="n">Polynomial</span><span class="p">([</span><span class="bp">self</span><span class="p">.</span><span class="n">field</span><span class="p">.</span><span class="n">zero</span><span class="p">(),</span> <span class="bp">self</span><span class="p">.</span><span class="n">field</span><span class="p">.</span><span class="n">one</span><span class="p">()])</span>
+        <span class="n">terms</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">terms</span> <span class="o">+=</span> <span class="p">[</span><span class="n">randomizer_polynomial</span><span class="p">]</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">transition_quotients</span><span class="p">)):</span>
+            <span class="n">terms</span> <span class="o">+=</span> <span class="p">[</span><span class="n">transition_quotients</span><span class="p">[</span><span class="n">i</span><span class="p">]]</span>
+            <span class="n">shift</span> <span class="o">=</span> <span class="bp">self</span><span class="p">.</span><span class="n">max_degree</span><span class="p">(</span><span class="n">transition_constraints</span><span class="p">)</span> <span class="o">-</span> <span class="bp">self</span><span class="p">.</span><span class="n">transition_quotient_degree_bounds</span><span class="p">(</span><span class="n">transition_constraints</span><span class="p">)[</span><span class="n">i</span><span class="p">]</span>
+            <span class="n">terms</span> <span class="o">+=</span> <span class="p">[(</span><span class="n">x</span><span class="o">^</span><span class="n">shift</span><span class="p">)</span> <span class="o">*</span> <span class="n">transition_quotients</span><span class="p">[</span><span class="n">i</span><span class="p">]]</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="p">.</span><span class="n">num_registers</span><span class="p">):</span>
+            <span class="n">terms</span> <span class="o">+=</span> <span class="p">[</span><span class="n">boundary_quotients</span><span class="p">[</span><span class="n">i</span><span class="p">]]</span>
+            <span class="n">shift</span> <span class="o">=</span> <span class="bp">self</span><span class="p">.</span><span class="n">max_degree</span><span class="p">(</span><span class="n">transition_constraints</span><span class="p">)</span> <span class="o">-</span> <span class="bp">self</span><span class="p">.</span><span class="n">boundary_quotient_degree_bounds</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">trace</span><span class="p">),</span> <span class="n">boundary</span><span class="p">)[</span><span class="n">i</span><span class="p">]</span>
+            <span class="n">terms</span> <span class="o">+=</span> <span class="p">[(</span><span class="n">x</span><span class="o">^</span><span class="n">shift</span><span class="p">)</span> <span class="o">*</span> <span class="n">boundary_quotients</span><span class="p">[</span><span class="n">i</span><span class="p">]]</span>
+
+        <span class="c1"># take weighted sum
+</span>        <span class="c1"># combination = sum(weights[i] * terms[i] for all i)
+</span>        <span class="n">combination</span> <span class="o">=</span> <span class="nb">reduce</span><span class="p">(</span><span class="k">lambda</span> <span class="n">a</span><span class="p">,</span> <span class="n">b</span> <span class="p">:</span> <span class="n">a</span><span class="o">+</span><span class="n">b</span><span class="p">,</span> <span class="p">[</span><span class="n">Polynomial</span><span class="p">([</span><span class="n">weights</span><span class="p">[</span><span class="n">i</span><span class="p">]])</span> <span class="o">*</span> <span class="n">terms</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">terms</span><span class="p">))],</span> <span class="n">Polynomial</span><span class="p">([]))</span>
+
+        <span class="c1"># compute matching codeword
+</span>        <span class="n">combined_codeword</span> <span class="o">=</span> <span class="n">combination</span><span class="p">.</span><span class="n">evaluate_domain</span><span class="p">(</span><span class="n">fri_domain</span><span class="p">)</span>
+
+        <span class="c1"># prove low degree of combination polynomial
+</span>        <span class="n">indices</span> <span class="o">=</span> <span class="bp">self</span><span class="p">.</span><span class="n">fri</span><span class="p">.</span><span class="n">prove</span><span class="p">(</span><span class="n">combined_codeword</span><span class="p">,</span> <span class="n">proof_stream</span><span class="p">)</span>
+        <span class="n">indices</span><span class="p">.</span><span class="n">sort</span><span class="p">()</span>
+        <span class="n">duplicated_indices</span> <span class="o">=</span> <span class="p">[</span><span class="n">i</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">indices</span><span class="p">]</span> <span class="o">+</span> <span class="p">[(</span><span class="n">i</span> <span class="o">+</span> <span class="bp">self</span><span class="p">.</span><span class="n">expansion_factor</span><span class="p">)</span> <span class="o">%</span> <span class="bp">self</span><span class="p">.</span><span class="n">fri</span><span class="p">.</span><span class="n">domain_length</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">indices</span><span class="p">]</span>
+
+        <span class="c1"># open indicated positions in the boundary quotient codewords
+</span>        <span class="k">for</span> <span class="n">bqc</span> <span class="ow">in</span> <span class="n">boundary_quotient_codewords</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">duplicated_indices</span><span class="p">:</span>
+                <span class="n">proof_stream</span><span class="p">.</span><span class="n">push</span><span class="p">(</span><span class="n">bqc</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
+                <span class="n">path</span> <span class="o">=</span> <span class="n">Merkle</span><span class="p">.</span><span class="nb">open</span><span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="n">bqc</span><span class="p">)</span>
+                <span class="n">proof_stream</span><span class="p">.</span><span class="n">push</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
+
+        <span class="c1"># ... as well as in the randomizer
+</span>        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">indices</span><span class="p">:</span>
+            <span class="n">proof_stream</span><span class="p">.</span><span class="n">push</span><span class="p">(</span><span class="n">randomizer_codeword</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
+            <span class="n">path</span> <span class="o">=</span> <span class="n">Merkle</span><span class="p">.</span><span class="nb">open</span><span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="n">randomizer_codeword</span><span class="p">)</span>
+            <span class="n">proof_stream</span><span class="p">.</span><span class="n">push</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
+
+        <span class="c1"># the final proof is just the serialized stream
+</span>        <span class="k">return</span> <span class="n">proof_stream</span><span class="p">.</span><span class="n">serialize</span><span class="p">()</span>
+</code></pre></div></div>
+
+<h3 id="verify">Verify</h3>
+
+<p>Last is the verifier. It comes with the same caveat and exercise.</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code>    <span class="k">def</span> <span class="nf">verify</span><span class="p">(</span> <span class="bp">self</span><span class="p">,</span> <span class="n">proof</span><span class="p">,</span> <span class="n">transition_constraints</span><span class="p">,</span> <span class="n">boundary</span><span class="p">,</span> <span class="n">proof_stream</span><span class="o">=</span><span class="bp">None</span> <span class="p">):</span>
+        <span class="n">H</span> <span class="o">=</span> <span class="n">blake2b</span>
+
+        <span class="c1"># infer trace length from boundary conditions
+</span>        <span class="n">original_trace_length</span> <span class="o">=</span> <span class="mi">1</span> <span class="o">+</span> <span class="nb">max</span><span class="p">(</span><span class="n">c</span> <span class="k">for</span> <span class="n">c</span><span class="p">,</span> <span class="n">r</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">boundary</span><span class="p">)</span>
+        <span class="n">randomized_trace_length</span> <span class="o">=</span> <span class="n">original_trace_length</span> <span class="o">+</span> <span class="bp">self</span><span class="p">.</span><span class="n">num_randomizers</span>
+
+        <span class="c1"># deserialize with right proof stream
+</span>        <span class="k">if</span> <span class="n">proof_stream</span> <span class="o">==</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="n">proof_stream</span> <span class="o">=</span> <span class="n">ProofStream</span><span class="p">()</span>
+        <span class="n">proof_stream</span> <span class="o">=</span> <span class="n">proof_stream</span><span class="p">.</span><span class="n">deserialize</span><span class="p">(</span><span class="n">proof</span><span class="p">)</span>
+
+        <span class="c1"># get Merkle roots of boundary quotient codewords
+</span>        <span class="n">boundary_quotient_roots</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="p">.</span><span class="n">num_registers</span><span class="p">):</span>
+            <span class="n">boundary_quotient_roots</span> <span class="o">=</span> <span class="n">boundary_quotient_roots</span> <span class="o">+</span> <span class="p">[</span><span class="n">proof_stream</span><span class="p">.</span><span class="n">pull</span><span class="p">()]</span>
+
+        <span class="c1"># get Merkle root of randomizer polynomial
+</span>        <span class="n">randomizer_root</span> <span class="o">=</span> <span class="n">proof_stream</span><span class="p">.</span><span class="n">pull</span><span class="p">()</span>
+
+        <span class="c1"># get weights for nonlinear combination
+</span>        <span class="n">weights</span> <span class="o">=</span> <span class="bp">self</span><span class="p">.</span><span class="n">sample_weights</span><span class="p">(</span><span class="mi">1</span> <span class="o">+</span> <span class="mi">2</span><span class="o">*</span><span class="nb">len</span><span class="p">(</span><span class="n">transition_constraints</span><span class="p">)</span> <span class="o">+</span> <span class="mi">2</span><span class="o">*</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="p">.</span><span class="n">boundary_interpolants</span><span class="p">(</span><span class="n">boundary</span><span class="p">)),</span> <span class="n">proof_stream</span><span class="p">.</span><span class="n">verifier_fiat_shamir</span><span class="p">())</span>
+
+        <span class="c1"># verify low degree of combination polynomial
+</span>        <span class="n">polynomial_values</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">verifier_accepts</span> <span class="o">=</span> <span class="bp">self</span><span class="p">.</span><span class="n">fri</span><span class="p">.</span><span class="n">verify</span><span class="p">(</span><span class="n">proof_stream</span><span class="p">,</span> <span class="n">polynomial_values</span><span class="p">)</span>
+        <span class="n">polynomial_values</span><span class="p">.</span><span class="n">sort</span><span class="p">(</span><span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">iv</span> <span class="p">:</span> <span class="n">iv</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">verifier_accepts</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">False</span>
+
+        <span class="n">indices</span> <span class="o">=</span> <span class="p">[</span><span class="n">i</span> <span class="k">for</span> <span class="n">i</span><span class="p">,</span><span class="n">v</span> <span class="ow">in</span> <span class="n">polynomial_values</span><span class="p">]</span>
+        <span class="n">values</span> <span class="o">=</span> <span class="p">[</span><span class="n">v</span> <span class="k">for</span> <span class="n">i</span><span class="p">,</span><span class="n">v</span> <span class="ow">in</span> <span class="n">polynomial_values</span><span class="p">]</span>
+
+        <span class="c1"># read and verify leafs, which are elements of boundary quotient codewords
+</span>        <span class="n">duplicated_indices</span> <span class="o">=</span> <span class="p">[</span><span class="n">i</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">indices</span><span class="p">]</span> <span class="o">+</span> <span class="p">[(</span><span class="n">i</span> <span class="o">+</span> <span class="bp">self</span><span class="p">.</span><span class="n">expansion_factor</span><span class="p">)</span> <span class="o">%</span> <span class="bp">self</span><span class="p">.</span><span class="n">fri</span><span class="p">.</span><span class="n">domain_length</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">indices</span><span class="p">]</span>
+        <span class="n">leafs</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">r</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">boundary_quotient_roots</span><span class="p">)):</span>
+            <span class="n">leafs</span> <span class="o">=</span> <span class="n">leafs</span> <span class="o">+</span> <span class="p">[</span><span class="nb">dict</span><span class="p">()]</span>
+            <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">duplicated_indices</span><span class="p">:</span>
+                <span class="n">leafs</span><span class="p">[</span><span class="n">r</span><span class="p">][</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">proof_stream</span><span class="p">.</span><span class="n">pull</span><span class="p">()</span>
+                <span class="n">path</span> <span class="o">=</span> <span class="n">proof_stream</span><span class="p">.</span><span class="n">pull</span><span class="p">()</span>
+                <span class="n">verifier_accepts</span> <span class="o">=</span> <span class="n">verifier_accepts</span> <span class="ow">and</span> <span class="n">Merkle</span><span class="p">.</span><span class="n">verify</span><span class="p">(</span><span class="n">boundary_quotient_roots</span><span class="p">[</span><span class="n">r</span><span class="p">],</span> <span class="n">i</span><span class="p">,</span> <span class="n">path</span><span class="p">,</span> <span class="n">leafs</span><span class="p">[</span><span class="n">r</span><span class="p">][</span><span class="n">i</span><span class="p">])</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="n">verifier_accepts</span><span class="p">:</span>
+                    <span class="k">return</span> <span class="bp">False</span>
+
+        <span class="c1"># read and verify randomizer leafs
+</span>        <span class="n">randomizer</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">indices</span><span class="p">:</span>
+            <span class="n">randomizer</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">proof_stream</span><span class="p">.</span><span class="n">pull</span><span class="p">()</span>
+            <span class="n">path</span> <span class="o">=</span> <span class="n">proof_stream</span><span class="p">.</span><span class="n">pull</span><span class="p">()</span>
+            <span class="n">verifier_accepts</span> <span class="o">=</span> <span class="n">verifier_accepts</span> <span class="ow">and</span> <span class="n">Merkle</span><span class="p">.</span><span class="n">verify</span><span class="p">(</span><span class="n">randomizer_root</span><span class="p">,</span> <span class="n">i</span><span class="p">,</span> <span class="n">path</span><span class="p">,</span> <span class="n">randomizer</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
+
+        <span class="c1"># verify leafs of combination polynomial
+</span>        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">indices</span><span class="p">)):</span>
+            <span class="n">current_index</span> <span class="o">=</span> <span class="n">indices</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="c1"># do need i
+</span>
+            <span class="c1"># get trace values by applying a correction to the boundary quotient values (which are the leafs)
+</span>            <span class="n">domain_current_index</span> <span class="o">=</span> <span class="bp">self</span><span class="p">.</span><span class="n">generator</span> <span class="o">*</span> <span class="p">(</span><span class="bp">self</span><span class="p">.</span><span class="n">omega</span><span class="o">^</span><span class="n">current_index</span><span class="p">)</span>
+            <span class="n">next_index</span> <span class="o">=</span> <span class="p">(</span><span class="n">current_index</span> <span class="o">+</span> <span class="bp">self</span><span class="p">.</span><span class="n">expansion_factor</span><span class="p">)</span> <span class="o">%</span> <span class="bp">self</span><span class="p">.</span><span class="n">fri</span><span class="p">.</span><span class="n">domain_length</span>
+            <span class="n">domain_next_index</span> <span class="o">=</span> <span class="bp">self</span><span class="p">.</span><span class="n">generator</span> <span class="o">*</span> <span class="p">(</span><span class="bp">self</span><span class="p">.</span><span class="n">omega</span><span class="o">^</span><span class="n">next_index</span><span class="p">)</span>
+            <span class="n">current_trace</span> <span class="o">=</span> <span class="p">[</span><span class="bp">self</span><span class="p">.</span><span class="n">field</span><span class="p">.</span><span class="n">zero</span><span class="p">()</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="p">.</span><span class="n">num_registers</span><span class="p">)]</span>
+            <span class="n">next_trace</span> <span class="o">=</span> <span class="p">[</span><span class="bp">self</span><span class="p">.</span><span class="n">field</span><span class="p">.</span><span class="n">zero</span><span class="p">()</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="p">.</span><span class="n">num_registers</span><span class="p">)]</span>
+            <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="p">.</span><span class="n">num_registers</span><span class="p">):</span>
+                <span class="n">zerofier</span> <span class="o">=</span> <span class="bp">self</span><span class="p">.</span><span class="n">boundary_zerofiers</span><span class="p">(</span><span class="n">boundary</span><span class="p">)[</span><span class="n">s</span><span class="p">]</span>
+                <span class="n">interpolant</span> <span class="o">=</span> <span class="bp">self</span><span class="p">.</span><span class="n">boundary_interpolants</span><span class="p">(</span><span class="n">boundary</span><span class="p">)[</span><span class="n">s</span><span class="p">]</span>
+
+                <span class="n">current_trace</span><span class="p">[</span><span class="n">s</span><span class="p">]</span> <span class="o">=</span> <span class="n">leafs</span><span class="p">[</span><span class="n">s</span><span class="p">][</span><span class="n">current_index</span><span class="p">]</span> <span class="o">*</span> <span class="n">zerofier</span><span class="p">.</span><span class="n">evaluate</span><span class="p">(</span><span class="n">domain_current_index</span><span class="p">)</span> <span class="o">+</span> <span class="n">interpolant</span><span class="p">.</span><span class="n">evaluate</span><span class="p">(</span><span class="n">domain_current_index</span><span class="p">)</span>
+                <span class="n">next_trace</span><span class="p">[</span><span class="n">s</span><span class="p">]</span> <span class="o">=</span> <span class="n">leafs</span><span class="p">[</span><span class="n">s</span><span class="p">][</span><span class="n">next_index</span><span class="p">]</span> <span class="o">*</span> <span class="n">zerofier</span><span class="p">.</span><span class="n">evaluate</span><span class="p">(</span><span class="n">domain_next_index</span><span class="p">)</span> <span class="o">+</span> <span class="n">interpolant</span><span class="p">.</span><span class="n">evaluate</span><span class="p">(</span><span class="n">domain_next_index</span><span class="p">)</span>
+
+            <span class="n">point</span> <span class="o">=</span> <span class="p">[</span><span class="n">domain_current_index</span><span class="p">]</span> <span class="o">+</span> <span class="n">current_trace</span> <span class="o">+</span> <span class="n">next_trace</span>
+            <span class="n">transition_constraints_values</span> <span class="o">=</span> <span class="p">[</span><span class="n">transition_constraints</span><span class="p">[</span><span class="n">s</span><span class="p">].</span><span class="n">evaluate</span><span class="p">(</span><span class="n">point</span><span class="p">)</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">transition_constraints</span><span class="p">))]</span>
+
+            <span class="c1"># compute nonlinear combination
+</span>            <span class="n">counter</span> <span class="o">=</span> <span class="mi">0</span>
+            <span class="n">terms</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="n">terms</span> <span class="o">+=</span> <span class="p">[</span><span class="n">randomizer</span><span class="p">[</span><span class="n">current_index</span><span class="p">]]</span>
+            <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">transition_constraints_values</span><span class="p">)):</span>
+                <span class="n">tcv</span> <span class="o">=</span> <span class="n">transition_constraints_values</span><span class="p">[</span><span class="n">s</span><span class="p">]</span>
+                <span class="n">quotient</span> <span class="o">=</span> <span class="n">tcv</span> <span class="o">/</span> <span class="bp">self</span><span class="p">.</span><span class="n">transition_zerofier</span><span class="p">().</span><span class="n">evaluate</span><span class="p">(</span><span class="n">domain_current_index</span><span class="p">)</span>
+                <span class="n">terms</span> <span class="o">+=</span> <span class="p">[</span><span class="n">quotient</span><span class="p">]</span>
+                <span class="n">shift</span> <span class="o">=</span> <span class="bp">self</span><span class="p">.</span><span class="n">max_degree</span><span class="p">(</span><span class="n">transition_constraints</span><span class="p">)</span> <span class="o">-</span> <span class="bp">self</span><span class="p">.</span><span class="n">transition_quotient_degree_bounds</span><span class="p">(</span><span class="n">transition_constraints</span><span class="p">)[</span><span class="n">s</span><span class="p">]</span>
+                <span class="n">terms</span> <span class="o">+=</span> <span class="p">[</span><span class="n">quotient</span> <span class="o">*</span> <span class="p">(</span><span class="n">domain_current_index</span><span class="o">^</span><span class="n">shift</span><span class="p">)]</span>
+            <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="p">.</span><span class="n">num_registers</span><span class="p">):</span>
+                <span class="n">bqv</span> <span class="o">=</span> <span class="n">leafs</span><span class="p">[</span><span class="n">s</span><span class="p">][</span><span class="n">current_index</span><span class="p">]</span> <span class="c1"># boundary quotient value
+</span>                <span class="n">terms</span> <span class="o">+=</span> <span class="p">[</span><span class="n">bqv</span><span class="p">]</span>
+                <span class="n">shift</span> <span class="o">=</span> <span class="bp">self</span><span class="p">.</span><span class="n">max_degree</span><span class="p">(</span><span class="n">transition_constraints</span><span class="p">)</span> <span class="o">-</span> <span class="bp">self</span><span class="p">.</span><span class="n">boundary_quotient_degree_bounds</span><span class="p">(</span><span class="n">randomized_trace_length</span><span class="p">,</span> <span class="n">boundary</span><span class="p">)[</span><span class="n">s</span><span class="p">]</span>
+                <span class="n">terms</span> <span class="o">+=</span> <span class="p">[</span><span class="n">bqv</span> <span class="o">*</span> <span class="p">(</span><span class="n">domain_current_index</span><span class="o">^</span><span class="n">shift</span><span class="p">)]</span>
+            <span class="n">combination</span> <span class="o">=</span> <span class="nb">reduce</span><span class="p">(</span><span class="k">lambda</span> <span class="n">a</span><span class="p">,</span> <span class="n">b</span> <span class="p">:</span> <span class="n">a</span><span class="o">+</span><span class="n">b</span><span class="p">,</span> <span class="p">[</span><span class="n">terms</span><span class="p">[</span><span class="n">j</span><span class="p">]</span> <span class="o">*</span> <span class="n">weights</span><span class="p">[</span><span class="n">j</span><span class="p">]</span> <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">terms</span><span class="p">))],</span> <span class="bp">self</span><span class="p">.</span><span class="n">field</span><span class="p">.</span><span class="n">zero</span><span class="p">())</span>
+
+            <span class="c1"># verify against combination polynomial value
+</span>            <span class="n">verifier_accepts</span> <span class="o">=</span> <span class="n">verifier_accepts</span> <span class="ow">and</span> <span class="p">(</span><span class="n">combination</span> <span class="o">==</span> <span class="n">values</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">verifier_accepts</span><span class="p">:</span>
+                <span class="k">return</span> <span class="bp">False</span>
+
+        <span class="k">return</span> <span class="n">verifier_accepts</span>
+</code></pre></div></div>
+
+<div class="footnotes" role="doc-endnotes">
+  <ol>
+    <li id="fn:1" role="doc-endnote">
+      <p>It is worth ensuring that the trace evaluation domain is disjoint from the FRI evaluation domain, for example by using the coset-trick. However, if overlapping subgroups are used for both domains, then $\omega^{1 / \rho} = \omicron$ and $\omega$ generates the larger domain whereas $\omicron$ generates the smaller one. <a href="#fnref:1" class="reversefootnote" role="doc-backlink">&#8617;</a></p>
+    </li>
+  </ol>
+</div>
+
+  </div>
+
+</article>
+
+      </div>
+    </main><!-- Parse the Latex divs with Katex-->
+<script type="text/javascript">
+  $("script[type='math/tex']").replaceWith(
+    function(){
+      var tex = $(this).text();
+      return katex.renderToString(tex, {displayMode: false});
+  });
+  
+  $("script[type='math/tex; mode=display']").replaceWith(
+    function(){
+      var tex = $(this).text();
+      return katex.renderToString(tex.replace(/%.*/g, ''), {displayMode: true});
+  });
+</script>
+
+</body>
+
+</html>

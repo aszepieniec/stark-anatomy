@@ -1,0 +1,665 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1"><!-- Begin Jekyll SEO tag v2.7.1 -->
+<title>Anatomy of a STARK, Part 2: Basic Tools | Anatomy of a STARK</title>
+<meta name="generator" content="Jekyll v3.9.0" />
+<meta property="og:title" content="Anatomy of a STARK, Part 2: Basic Tools" />
+<meta property="og:locale" content="en_US" />
+<meta name="description" content="STARK tutorial with supporting source code in python." />
+<meta property="og:description" content="STARK tutorial with supporting source code in python." />
+<link rel="canonical" href="http://localhost:4000/basic-tools.html" />
+<meta property="og:url" content="http://localhost:4000/basic-tools.html" />
+<meta property="og:site_name" content="Anatomy of a STARK" />
+<meta name="twitter:card" content="summary" />
+<meta property="twitter:title" content="Anatomy of a STARK, Part 2: Basic Tools" />
+<script type="application/ld+json">
+{"description":"STARK tutorial with supporting source code in python.","@type":"WebPage","headline":"Anatomy of a STARK, Part 2: Basic Tools","url":"http://localhost:4000/basic-tools.html","@context":"https://schema.org"}</script>
+<!-- End Jekyll SEO tag -->
+<link rel="stylesheet" href="/assets/main.css"><link type="application/atom+xml" rel="alternate" href="http://localhost:4000/feed.xml" title="Anatomy of a STARK" /></head>
+<body><header class="site-header" role="banner">
+
+  <div class="wrapper"><a class="site-title" rel="author" href="/">Anatomy of a STARK</a><nav class="site-nav">
+        <input type="checkbox" id="nav-trigger" class="nav-trigger" />
+        <label for="nav-trigger">
+          <span class="menu-icon">
+            <svg viewBox="0 0 18 15" width="18px" height="15px">
+              <path d="M18,1.484c0,0.82-0.665,1.484-1.484,1.484H1.484C0.665,2.969,0,2.304,0,1.484l0,0C0,0.665,0.665,0,1.484,0 h15.032C17.335,0,18,0.665,18,1.484L18,1.484z M18,7.516C18,8.335,17.335,9,16.516,9H1.484C0.665,9,0,8.335,0,7.516l0,0 c0-0.82,0.665-1.484,1.484-1.484h15.032C17.335,6.031,18,6.696,18,7.516L18,7.516z M18,13.516C18,14.335,17.335,15,16.516,15H1.484 C0.665,15,0,14.335,0,13.516l0,0c0-0.82,0.665-1.483,1.484-1.483h15.032C17.335,12.031,18,12.695,18,13.516L18,13.516z"/>
+            </svg>
+          </span>
+        </label>
+
+        <div class="trigger"><a class="page-link" href="/about/">About</a><a class="page-link" href="/basic-tools.html">Anatomy of a STARK, Part 2: Basic Tools</a><a class="page-link" href="/faster.html">Anatomy of a STARK, Part 6: Speeding Things Up</a><a class="page-link" href="/fri.html">Anatomy of a STARK, Part 3: FRI</a><a class="page-link" href="/introduction.html">Anatomy of a STARK, Part 0: Introduction</a><a class="page-link" href="/overview.html">Anatomy of a STARK, Part 1: STARK Overview</a><a class="page-link" href="/rescue-prime.html">Anatomy of a STARK, Part 5: A Rescue-Prime STARK</a><a class="page-link" href="/stark.html">Anatomy of a STARK, Part 4: The STARK Polynomial IOP</a></div>
+      </nav></div>
+</header>
+<main class="page-content" aria-label="Content">
+      <div class="wrapper">
+        <article class="post">
+
+  <header class="post-header">
+    <h1 class="post-title">Anatomy of a STARK, Part 2: Basic Tools</h1>
+  </header>
+
+  <div class="post-content">
+    <h1 id="anatomy-of-a-stark-part-2-basic-tools">Anatomy of a STARK, Part 2: Basic Tools</h1>
+
+<h2 id="finite-field-arithmetic">Finite Field Arithmetic</h2>
+
+<p><a href="https://en.wikipedia.org/wiki/Finite_field">Finite field</a>s are ubiquitous throughout cryptography because they are natively compatible with computers. For instance, they cannot generate overflow or underflow errors, and their elements have a finite representation in terms of bits.</p>
+
+<p>The easiest way to build a finite field is to select a prime number $p$, use the elements $\mathbb{F}_p \stackrel{\triangle}{=} {0, 1, \ldots, p-1}$, and define the usual addition and multiplication operations in terms of their counterparts for the integers, followed by reduction modulo $p$. Subtraction is equivalent to addition of the left hand side to the negation of the right hand side, and negation represents multiplication by $-1 \equiv p-1 \mod p$. Similarly, division is equivalent to multiplication of the left hand side by the multiplicative inverse of the right hand side. This inverse can be found using the <a href="https://en.wikipedia.org/wiki/Extended_Euclidean_algorithm">extended Euclidean algorithm</a>, which on input two integers $x$ and $y$, returns their greatest common divisor $g$ along with matching Bezout coefficients $a, b$ such that $ax + by = g$. Indeed, whenever $\gcd(x,p) = 1$ the inverse of $x \in \mathbb{F}_p$ is $a$ because $ax + bp \equiv 1 \mod p$. Powers of field elements can be computed with the <a href="https://en.wikipedia.org/wiki/Exponentiation_by_squaring">square-and-multiply</a> algorithm, which iterates over the bits in the expansion of the exponent, squares an accumulator variable in each iteration, and additionally multiplies it by the base element if the bit is set.</p>
+
+<p>For the purpose of building STARKs we need finite fields with a particular structure<sup id="fnref:1" role="doc-noteref"><a href="#fn:1" class="footnote">1</a></sup>: it needs to contain a substructure of order $2^k$ for some sufficiently large $k$. We consider prime fields whose defining modulus has the form $p = f \cdot 2^k + 1$, where $f$ is some cofactor that makes the number prime. In this case, the group $\mathbb{F}_p \backslash {0}, \times$ has a subgroup of order $2^k$. For all intents and purposes, one can identify this subgroup with $2^k$ evenly spaced points on the complex unit circle.</p>
+
+<p>An implementation starts with the extended Euclidean algorithm, for computing multiplicative inverses.</p>
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">def</span> <span class="nf">xgcd</span><span class="p">(</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span> <span class="p">):</span>
+    <span class="n">old_r</span><span class="p">,</span> <span class="n">r</span> <span class="o">=</span> <span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">)</span>
+    <span class="n">old_s</span><span class="p">,</span> <span class="n">s</span> <span class="o">=</span> <span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+    <span class="n">old_t</span><span class="p">,</span> <span class="n">t</span> <span class="o">=</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+
+    <span class="k">while</span> <span class="n">r</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="n">quotient</span> <span class="o">=</span> <span class="n">old_r</span> <span class="o">//</span> <span class="n">r</span>
+        <span class="n">old_r</span><span class="p">,</span> <span class="n">r</span> <span class="o">=</span> <span class="p">(</span><span class="n">r</span><span class="p">,</span> <span class="n">old_r</span> <span class="o">-</span> <span class="n">quotient</span> <span class="o">*</span> <span class="n">r</span><span class="p">)</span>
+        <span class="n">old_s</span><span class="p">,</span> <span class="n">s</span> <span class="o">=</span> <span class="p">(</span><span class="n">s</span><span class="p">,</span> <span class="n">old_s</span> <span class="o">-</span> <span class="n">quotient</span> <span class="o">*</span> <span class="n">s</span><span class="p">)</span>
+        <span class="n">old_t</span><span class="p">,</span> <span class="n">t</span> <span class="o">=</span> <span class="p">(</span><span class="n">t</span><span class="p">,</span> <span class="n">old_t</span> <span class="o">-</span> <span class="n">quotient</span> <span class="o">*</span> <span class="n">t</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">old_s</span><span class="p">,</span> <span class="n">old_t</span><span class="p">,</span> <span class="n">old_r</span> <span class="c1"># a, b, g
+</span></code></pre></div></div>
+
+<p>It makes sense to separate the logic concerning the field from the logic concerning the field elements. To this end, the field element contains a field object as a proper field; this field object implements the arithmetic. Furthermore, python supports operator overloading, so we can repurpose natural arithmetic operators to do field arithmetic instead.</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">class</span> <span class="nc">FieldElement</span><span class="p">:</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span> <span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">,</span> <span class="n">field</span> <span class="p">):</span>
+        <span class="bp">self</span><span class="p">.</span><span class="n">value</span> <span class="o">=</span> <span class="n">value</span>
+        <span class="bp">self</span><span class="p">.</span><span class="n">field</span> <span class="o">=</span> <span class="n">field</span>
+
+    <span class="k">def</span> <span class="nf">__add__</span><span class="p">(</span> <span class="bp">self</span><span class="p">,</span> <span class="n">right</span> <span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="p">.</span><span class="n">field</span><span class="p">.</span><span class="n">add</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">right</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">__mul__</span><span class="p">(</span> <span class="bp">self</span><span class="p">,</span> <span class="n">right</span> <span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="p">.</span><span class="n">field</span><span class="p">.</span><span class="n">multiply</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">right</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">__sub__</span><span class="p">(</span> <span class="bp">self</span><span class="p">,</span> <span class="n">right</span> <span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="p">.</span><span class="n">field</span><span class="p">.</span><span class="n">subtract</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">right</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">__truediv__</span><span class="p">(</span> <span class="bp">self</span><span class="p">,</span> <span class="n">right</span> <span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="p">.</span><span class="n">field</span><span class="p">.</span><span class="n">divide</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">right</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">__neg__</span><span class="p">(</span> <span class="bp">self</span> <span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="p">.</span><span class="n">field</span><span class="p">.</span><span class="n">negate</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">inverse</span><span class="p">(</span> <span class="bp">self</span> <span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="p">.</span><span class="n">field</span><span class="p">.</span><span class="n">inverse</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+
+    <span class="c1"># modular exponentiation -- be sure to encapsulate in parentheses!
+</span>    <span class="k">def</span> <span class="nf">__xor__</span><span class="p">(</span> <span class="bp">self</span><span class="p">,</span> <span class="n">exponent</span> <span class="p">):</span>
+        <span class="n">acc</span> <span class="o">=</span> <span class="n">FieldElement</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="bp">self</span><span class="p">.</span><span class="n">field</span><span class="p">)</span>
+        <span class="n">val</span> <span class="o">=</span> <span class="n">FieldElement</span><span class="p">(</span><span class="bp">self</span><span class="p">.</span><span class="n">value</span><span class="p">,</span> <span class="bp">self</span><span class="p">.</span><span class="n">field</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">reversed</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="nb">bin</span><span class="p">(</span><span class="n">exponent</span><span class="p">)[</span><span class="mi">2</span><span class="p">:]))):</span>
+            <span class="n">acc</span> <span class="o">=</span> <span class="n">acc</span> <span class="o">*</span> <span class="n">acc</span>
+            <span class="k">if</span> <span class="p">(</span><span class="mi">1</span> <span class="o">&lt;&lt;</span> <span class="n">i</span><span class="p">)</span> <span class="o">&amp;</span> <span class="n">exponent</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="n">acc</span> <span class="o">=</span> <span class="n">acc</span> <span class="o">*</span> <span class="n">val</span>
+        <span class="k">return</span> <span class="n">acc</span>
+
+    <span class="k">def</span> <span class="nf">__eq__</span><span class="p">(</span> <span class="bp">self</span><span class="p">,</span> <span class="n">other</span> <span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="p">.</span><span class="n">value</span> <span class="o">==</span> <span class="n">other</span><span class="p">.</span><span class="n">value</span>
+
+    <span class="k">def</span> <span class="nf">__neq__</span><span class="p">(</span> <span class="bp">self</span><span class="p">,</span> <span class="n">other</span> <span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="p">.</span><span class="n">value</span> <span class="o">!=</span> <span class="n">other</span><span class="p">.</span><span class="n">value</span>
+
+    <span class="k">def</span> <span class="nf">__str__</span><span class="p">(</span> <span class="bp">self</span> <span class="p">):</span>
+        <span class="k">return</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="p">.</span><span class="n">value</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">__bytes__</span><span class="p">(</span> <span class="bp">self</span> <span class="p">):</span>
+        <span class="k">return</span> <span class="nb">bytes</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="p">).</span><span class="n">encode</span><span class="p">())</span>
+
+    <span class="k">def</span> <span class="nf">is_zero</span><span class="p">(</span> <span class="bp">self</span> <span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="p">.</span><span class="n">value</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">True</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">False</span>
+
+<span class="k">class</span> <span class="nc">Field</span><span class="p">:</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span> <span class="bp">self</span><span class="p">,</span> <span class="n">p</span> <span class="p">):</span>
+        <span class="bp">self</span><span class="p">.</span><span class="n">p</span> <span class="o">=</span> <span class="n">p</span>
+
+    <span class="k">def</span> <span class="nf">zero</span><span class="p">(</span> <span class="bp">self</span> <span class="p">):</span>
+        <span class="k">return</span> <span class="n">FieldElement</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">one</span><span class="p">(</span> <span class="bp">self</span> <span class="p">):</span>
+        <span class="k">return</span> <span class="n">FieldElement</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">multiply</span><span class="p">(</span> <span class="bp">self</span><span class="p">,</span> <span class="n">left</span><span class="p">,</span> <span class="n">right</span> <span class="p">):</span>
+        <span class="k">return</span> <span class="n">FieldElement</span><span class="p">((</span><span class="n">left</span><span class="p">.</span><span class="n">value</span> <span class="o">*</span> <span class="n">right</span><span class="p">.</span><span class="n">value</span><span class="p">)</span> <span class="o">%</span> <span class="bp">self</span><span class="p">.</span><span class="n">p</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">add</span><span class="p">(</span> <span class="bp">self</span><span class="p">,</span> <span class="n">left</span><span class="p">,</span> <span class="n">right</span> <span class="p">):</span>
+        <span class="k">return</span> <span class="n">FieldElement</span><span class="p">((</span><span class="n">left</span><span class="p">.</span><span class="n">value</span> <span class="o">+</span> <span class="n">right</span><span class="p">.</span><span class="n">value</span><span class="p">)</span> <span class="o">%</span> <span class="bp">self</span><span class="p">.</span><span class="n">p</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">subtract</span><span class="p">(</span> <span class="bp">self</span><span class="p">,</span> <span class="n">left</span><span class="p">,</span> <span class="n">right</span> <span class="p">):</span>
+        <span class="k">return</span> <span class="n">FieldElement</span><span class="p">((</span><span class="bp">self</span><span class="p">.</span><span class="n">p</span> <span class="o">+</span> <span class="n">left</span><span class="p">.</span><span class="n">value</span> <span class="o">-</span> <span class="n">right</span><span class="p">.</span><span class="n">value</span><span class="p">)</span> <span class="o">%</span> <span class="bp">self</span><span class="p">.</span><span class="n">p</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">negate</span><span class="p">(</span> <span class="bp">self</span><span class="p">,</span> <span class="n">operand</span> <span class="p">):</span>
+        <span class="k">return</span> <span class="n">FieldElement</span><span class="p">((</span><span class="bp">self</span><span class="p">.</span><span class="n">p</span> <span class="o">-</span> <span class="n">operand</span><span class="p">.</span><span class="n">value</span><span class="p">)</span> <span class="o">%</span> <span class="bp">self</span><span class="p">.</span><span class="n">p</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">inverse</span><span class="p">(</span> <span class="bp">self</span><span class="p">,</span> <span class="n">operand</span> <span class="p">):</span>
+        <span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">,</span> <span class="n">g</span> <span class="o">=</span> <span class="n">xgcd</span><span class="p">(</span><span class="n">operand</span><span class="p">.</span><span class="n">value</span><span class="p">,</span> <span class="bp">self</span><span class="p">.</span><span class="n">p</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">FieldElement</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">divide</span><span class="p">(</span> <span class="bp">self</span><span class="p">,</span> <span class="n">left</span><span class="p">,</span> <span class="n">right</span> <span class="p">):</span>
+        <span class="k">assert</span><span class="p">(</span><span class="ow">not</span> <span class="n">right</span><span class="p">.</span><span class="n">is_zero</span><span class="p">()),</span> <span class="s">"divide by zero"</span>
+        <span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">,</span> <span class="n">g</span> <span class="o">=</span> <span class="n">xgcd</span><span class="p">(</span><span class="n">right</span><span class="p">.</span><span class="n">value</span><span class="p">,</span> <span class="bp">self</span><span class="p">.</span><span class="n">p</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">FieldElement</span><span class="p">(</span><span class="n">left</span><span class="p">.</span><span class="n">value</span> <span class="o">*</span> <span class="n">a</span> <span class="o">%</span> <span class="bp">self</span><span class="p">.</span><span class="n">p</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span>
+</code></pre></div></div>
+
+<p>Implementing fields generically is nice. However, in this tutorial we will not use any other field than the one with $1+407 \cdot 2^{119}$ elements. This field has a sufficiently large subgroup of power-of-two order.</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code>    <span class="k">def</span> <span class="nf">main</span><span class="p">():</span>
+        <span class="n">p</span> <span class="o">=</span> <span class="mi">1</span> <span class="o">+</span> <span class="mi">407</span> <span class="o">*</span> <span class="p">(</span> <span class="mi">1</span> <span class="o">&lt;&lt;</span> <span class="mi">119</span> <span class="p">)</span> <span class="c1"># 1 + 11 * 37 * 2^119
+</span>        <span class="k">return</span> <span class="n">Field</span><span class="p">(</span><span class="n">p</span><span class="p">)</span>
+</code></pre></div></div>
+
+<p>Besides ensuring that the subgroup of power-of-two order exists, the code also needs to supply the user with a generator for the entire multiplicative group, as well as the power-of-two subgroups. A generator for such a subgroup of order $n$ will be called a primitive $n$th root.</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code>    <span class="k">def</span> <span class="nf">generator</span><span class="p">(</span> <span class="bp">self</span> <span class="p">):</span>
+        <span class="k">assert</span><span class="p">(</span><span class="bp">self</span><span class="p">.</span><span class="n">p</span> <span class="o">==</span> <span class="mi">1</span> <span class="o">+</span> <span class="mi">407</span> <span class="o">*</span> <span class="p">(</span> <span class="mi">1</span> <span class="o">&lt;&lt;</span> <span class="mi">119</span> <span class="p">)),</span> <span class="s">"Do not know generator for other fields beyond 1+407*2^119"</span>
+        <span class="k">return</span> <span class="n">FieldElement</span><span class="p">(</span><span class="mi">85408008396924667383611388730472331217</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span>
+        
+    <span class="k">def</span> <span class="nf">primitive_nth_root</span><span class="p">(</span> <span class="bp">self</span><span class="p">,</span> <span class="n">n</span> <span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="p">.</span><span class="n">p</span> <span class="o">==</span> <span class="mi">1</span> <span class="o">+</span> <span class="mi">407</span> <span class="o">*</span> <span class="p">(</span> <span class="mi">1</span> <span class="o">&lt;&lt;</span> <span class="mi">119</span> <span class="p">):</span>
+            <span class="k">assert</span><span class="p">(</span><span class="n">n</span> <span class="o">&lt;=</span> <span class="mi">1</span> <span class="o">&lt;&lt;</span> <span class="mi">119</span> <span class="ow">and</span> <span class="p">(</span><span class="n">n</span> <span class="o">&amp;</span> <span class="p">(</span><span class="n">n</span><span class="o">-</span><span class="mi">1</span><span class="p">))</span> <span class="o">==</span> <span class="mi">0</span><span class="p">),</span> <span class="s">"Field does not have nth root of unity where n &gt; 2^119 or not power of two."</span>
+            <span class="n">root</span> <span class="o">=</span> <span class="n">FieldElement</span><span class="p">(</span><span class="mi">85408008396924667383611388730472331217</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span>
+            <span class="n">order</span> <span class="o">=</span> <span class="mi">1</span> <span class="o">&lt;&lt;</span> <span class="mi">119</span>
+            <span class="k">while</span> <span class="n">order</span> <span class="o">!=</span> <span class="n">n</span><span class="p">:</span>
+                <span class="n">root</span> <span class="o">=</span> <span class="n">root</span><span class="o">^</span><span class="mi">2</span>
+                <span class="n">order</span> <span class="o">=</span> <span class="n">order</span><span class="o">/</span><span class="mi">2</span>
+            <span class="k">return</span> <span class="n">root</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">assert</span><span class="p">(</span><span class="bp">False</span><span class="p">),</span> <span class="s">"Unknown field, can't return root of unity."</span>
+</code></pre></div></div>
+
+<p>Lastly, the protocol requires the ability to sample field elements randomly and pseudorandomly. To do this, the user supplies random bytes and the field logic turns them into a field element. The user should take care to provide enough random bytes.</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code>    <span class="k">def</span> <span class="nf">sample</span><span class="p">(</span> <span class="bp">self</span><span class="p">,</span> <span class="n">byte_array</span> <span class="p">):</span>
+        <span class="n">acc</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="k">for</span> <span class="n">b</span> <span class="ow">in</span> <span class="n">byte_array</span><span class="p">:</span>
+            <span class="n">acc</span> <span class="o">=</span> <span class="p">(</span><span class="n">acc</span> <span class="o">&lt;&lt;</span> <span class="mi">8</span><span class="p">)</span> <span class="o">^</span> <span class="nb">int</span><span class="p">(</span><span class="n">b</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">FieldElement</span><span class="p">(</span><span class="n">acc</span> <span class="o">%</span> <span class="bp">self</span><span class="p">.</span><span class="n">p</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span>
+</code></pre></div></div>
+
+<h2 id="univariate-polynomials">Univariate Polynomials</h2>
+
+<p>A <em>univariate polynomial</em> is a weighted sum of non-negative powers of a single formal indeterminate. We write polynomials as a formal sum of terms, <em>i.e.</em>, $f(X) = c_0 + c_1 \cdot X + \cdots + c_d X^d$ or $f(X) = \sum_{i=0}^d c_i X^i$ because a) the value of the indeterminate $X$ is generally unknown and b) this form emphasises the polynomial’s semantic origin and is thus more conducive to building intuition. In these expressions, the $c_i$ are called <em>coefficients</em> and $d$ is the polynomial’s <em>degree</em>.</p>
+
+<p>Univariate polynomials are immensely useful in proof systems because relations that apply to their coefficient vectors extend to their values on a potentially much larger domain. If polynomials are equal, they are equal everywhere; whereas if they are unequal, they are unequal almost everywhere. By this feature, univariate polynomials reduce claims about large vectors to claims about the values of their corresponding polynomials in a small selection of sufficiently random points.</p>
+
+<p>An implementation of univariate polynomial algebra starts with overloading the standard arithmetic operators to compute the right function of the polynomials’ coefficient vectors. One important point requires special attention. It is impossible for the <em>leading coefficient</em> of a polynomial to be zero, since the leading coefficient means the coefficient of the highest-degree <em>non-zero</em> term. However, the implemented vector of coefficients might have trailing zeros, which should be ignored for all intents and purposes. The degree function comes in handy; it is defined here as one less than the length of the vector of coefficients after ignoring trailing zeros. This also means that the zero polynomial has degree $-1$ even though $-\infty$ makes more sense.</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kn">from</span> <span class="nn">algebra</span> <span class="kn">import</span> <span class="o">*</span>
+
+<span class="k">class</span> <span class="nc">Polynomial</span><span class="p">:</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span> <span class="bp">self</span><span class="p">,</span> <span class="n">coefficients</span> <span class="p">):</span>
+        <span class="bp">self</span><span class="p">.</span><span class="n">coefficients</span> <span class="o">=</span> <span class="p">[</span><span class="n">c</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">coefficients</span><span class="p">]</span>
+
+    <span class="k">def</span> <span class="nf">degree</span><span class="p">(</span> <span class="bp">self</span> <span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="p">.</span><span class="n">coefficients</span> <span class="o">==</span> <span class="p">[]:</span>
+            <span class="k">return</span> <span class="o">-</span><span class="mi">1</span>
+        <span class="n">zero</span> <span class="o">=</span> <span class="bp">self</span><span class="p">.</span><span class="n">coefficients</span><span class="p">[</span><span class="mi">0</span><span class="p">].</span><span class="n">field</span><span class="p">.</span><span class="n">zero</span><span class="p">()</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="p">.</span><span class="n">coefficients</span> <span class="o">==</span> <span class="p">[</span><span class="n">zero</span><span class="p">]</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="p">.</span><span class="n">coefficients</span><span class="p">):</span>
+            <span class="k">return</span> <span class="o">-</span><span class="mi">1</span>
+        <span class="n">maxindex</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="p">.</span><span class="n">coefficients</span><span class="p">)):</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="p">.</span><span class="n">coefficients</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">!=</span> <span class="n">zero</span><span class="p">:</span>
+                <span class="n">maxindex</span> <span class="o">=</span> <span class="n">i</span>
+        <span class="k">return</span> <span class="n">maxindex</span>
+
+    <span class="k">def</span> <span class="nf">__neg__</span><span class="p">(</span> <span class="bp">self</span> <span class="p">):</span>
+        <span class="k">return</span> <span class="n">Polynomial</span><span class="p">([</span><span class="o">-</span><span class="n">c</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="bp">self</span><span class="p">.</span><span class="n">coefficients</span><span class="p">])</span>
+
+    <span class="k">def</span> <span class="nf">__add__</span><span class="p">(</span> <span class="bp">self</span><span class="p">,</span> <span class="n">other</span> <span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="p">.</span><span class="n">degree</span><span class="p">()</span> <span class="o">==</span> <span class="o">-</span><span class="mi">1</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">other</span>
+        <span class="k">elif</span> <span class="n">other</span><span class="p">.</span><span class="n">degree</span><span class="p">()</span> <span class="o">==</span> <span class="o">-</span><span class="mi">1</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span>
+        <span class="n">field</span> <span class="o">=</span> <span class="bp">self</span><span class="p">.</span><span class="n">coefficients</span><span class="p">[</span><span class="mi">0</span><span class="p">].</span><span class="n">field</span>
+        <span class="n">coeffs</span> <span class="o">=</span> <span class="p">[</span><span class="n">field</span><span class="p">.</span><span class="n">zero</span><span class="p">()]</span> <span class="o">*</span> <span class="nb">max</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="p">.</span><span class="n">coefficients</span><span class="p">),</span> <span class="nb">len</span><span class="p">(</span><span class="n">other</span><span class="p">.</span><span class="n">coefficients</span><span class="p">))</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="p">.</span><span class="n">coefficients</span><span class="p">)):</span>
+            <span class="n">coeffs</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">coeffs</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">+</span> <span class="bp">self</span><span class="p">.</span><span class="n">coefficients</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">other</span><span class="p">.</span><span class="n">coefficients</span><span class="p">)):</span>
+            <span class="n">coeffs</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">coeffs</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">+</span> <span class="n">other</span><span class="p">.</span><span class="n">coefficients</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+        <span class="k">return</span> <span class="n">Polynomial</span><span class="p">(</span><span class="n">coeffs</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">__sub__</span><span class="p">(</span> <span class="bp">self</span><span class="p">,</span> <span class="n">other</span> <span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="p">.</span><span class="n">__add__</span><span class="p">(</span><span class="o">-</span><span class="n">other</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">__mul__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span> <span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="p">.</span><span class="n">coefficients</span> <span class="o">==</span> <span class="p">[]</span> <span class="ow">or</span> <span class="n">other</span><span class="p">.</span><span class="n">coefficients</span> <span class="o">==</span> <span class="p">[]:</span>
+            <span class="k">return</span> <span class="n">Polynomial</span><span class="p">([])</span>
+        <span class="n">zero</span> <span class="o">=</span> <span class="bp">self</span><span class="p">.</span><span class="n">coefficients</span><span class="p">[</span><span class="mi">0</span><span class="p">].</span><span class="n">field</span><span class="p">.</span><span class="n">zero</span><span class="p">()</span>
+        <span class="n">buf</span> <span class="o">=</span> <span class="p">[</span><span class="n">zero</span><span class="p">]</span> <span class="o">*</span> <span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="p">.</span><span class="n">coefficients</span><span class="p">)</span> <span class="o">+</span> <span class="nb">len</span><span class="p">(</span><span class="n">other</span><span class="p">.</span><span class="n">coefficients</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="p">.</span><span class="n">coefficients</span><span class="p">)):</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="p">.</span><span class="n">coefficients</span><span class="p">[</span><span class="n">i</span><span class="p">].</span><span class="n">is_zero</span><span class="p">():</span>
+                <span class="k">continue</span> <span class="c1"># optimization for sparse polynomials
+</span>            <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">other</span><span class="p">.</span><span class="n">coefficients</span><span class="p">)):</span>
+                <span class="n">buf</span><span class="p">[</span><span class="n">i</span><span class="o">+</span><span class="n">j</span><span class="p">]</span> <span class="o">=</span> <span class="n">buf</span><span class="p">[</span><span class="n">i</span><span class="o">+</span><span class="n">j</span><span class="p">]</span> <span class="o">+</span> <span class="bp">self</span><span class="p">.</span><span class="n">coefficients</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">*</span> <span class="n">other</span><span class="p">.</span><span class="n">coefficients</span><span class="p">[</span><span class="n">j</span><span class="p">]</span>
+        <span class="k">return</span> <span class="n">Polynomial</span><span class="p">(</span><span class="n">buf</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">__eq__</span><span class="p">(</span> <span class="bp">self</span><span class="p">,</span> <span class="n">other</span> <span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="p">.</span><span class="n">degree</span><span class="p">()</span> <span class="o">!=</span> <span class="n">other</span><span class="p">.</span><span class="n">degree</span><span class="p">():</span>
+            <span class="k">return</span> <span class="bp">False</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="p">.</span><span class="n">degree</span><span class="p">()</span> <span class="o">==</span> <span class="o">-</span><span class="mi">1</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">True</span>
+        <span class="k">return</span> <span class="nb">all</span><span class="p">(</span><span class="bp">self</span><span class="p">.</span><span class="n">coefficients</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">==</span> <span class="n">other</span><span class="p">.</span><span class="n">coefficients</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="p">.</span><span class="n">coefficients</span><span class="p">)))</span>
+
+    <span class="k">def</span> <span class="nf">__neq__</span><span class="p">(</span> <span class="bp">self</span><span class="p">,</span> <span class="n">other</span> <span class="p">):</span>
+        <span class="k">return</span> <span class="ow">not</span> <span class="bp">self</span><span class="p">.</span><span class="n">__eq__</span><span class="p">(</span><span class="n">other</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">is_zero</span><span class="p">(</span> <span class="bp">self</span> <span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="p">.</span><span class="n">degree</span><span class="p">()</span> <span class="o">==</span> <span class="o">-</span><span class="mi">1</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">True</span>
+        <span class="k">return</span> <span class="bp">False</span>
+
+    <span class="k">def</span> <span class="nf">leading_coefficient</span><span class="p">(</span> <span class="bp">self</span> <span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="p">.</span><span class="n">coefficients</span><span class="p">[</span><span class="bp">self</span><span class="p">.</span><span class="n">degree</span><span class="p">()]</span>
+</code></pre></div></div>
+
+<p>This always get a little tricky when implementing division of polynomials. The intuition behind the schoolbook algorithm is that in every iteration you multiply the dividend by the correct term so as to generate a cancellation of leading terms. Once no such term exists, you have your remainder.</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code>    <span class="k">def</span> <span class="nf">divide</span><span class="p">(</span> <span class="n">numerator</span><span class="p">,</span> <span class="n">denominator</span> <span class="p">):</span>
+        <span class="k">if</span> <span class="n">denominator</span><span class="p">.</span><span class="n">degree</span><span class="p">()</span> <span class="o">==</span> <span class="o">-</span><span class="mi">1</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">None</span>
+        <span class="k">if</span> <span class="n">numerator</span><span class="p">.</span><span class="n">degree</span><span class="p">()</span> <span class="o">&lt;</span> <span class="n">denominator</span><span class="p">.</span><span class="n">degree</span><span class="p">():</span>
+            <span class="k">return</span> <span class="p">(</span><span class="n">Polynomial</span><span class="p">([]),</span> <span class="n">numerator</span><span class="p">)</span>
+        <span class="n">field</span> <span class="o">=</span> <span class="n">denominator</span><span class="p">.</span><span class="n">coefficients</span><span class="p">[</span><span class="mi">0</span><span class="p">].</span><span class="n">field</span>
+        <span class="n">remainder</span> <span class="o">=</span> <span class="n">Polynomial</span><span class="p">([</span><span class="n">n</span> <span class="k">for</span> <span class="n">n</span> <span class="ow">in</span> <span class="n">numerator</span><span class="p">.</span><span class="n">coefficients</span><span class="p">])</span>
+        <span class="n">quotient_coefficients</span> <span class="o">=</span> <span class="p">[</span><span class="n">field</span><span class="p">.</span><span class="n">zero</span><span class="p">()</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">numerator</span><span class="p">.</span><span class="n">degree</span><span class="p">()</span><span class="o">-</span><span class="n">denominator</span><span class="p">.</span><span class="n">degree</span><span class="p">()</span><span class="o">+</span><span class="mi">1</span><span class="p">)]</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">numerator</span><span class="p">.</span><span class="n">degree</span><span class="p">()</span><span class="o">-</span><span class="n">denominator</span><span class="p">.</span><span class="n">degree</span><span class="p">()</span><span class="o">+</span><span class="mi">1</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">remainder</span><span class="p">.</span><span class="n">degree</span><span class="p">()</span> <span class="o">&lt;</span> <span class="n">denominator</span><span class="p">.</span><span class="n">degree</span><span class="p">():</span>
+                <span class="k">break</span>
+            <span class="n">coefficient</span> <span class="o">=</span> <span class="n">remainder</span><span class="p">.</span><span class="n">leading_coefficient</span><span class="p">()</span> <span class="o">/</span> <span class="n">denominator</span><span class="p">.</span><span class="n">leading_coefficient</span><span class="p">()</span>
+            <span class="n">shift</span> <span class="o">=</span> <span class="n">remainder</span><span class="p">.</span><span class="n">degree</span><span class="p">()</span> <span class="o">-</span> <span class="n">denominator</span><span class="p">.</span><span class="n">degree</span><span class="p">()</span>
+            <span class="n">subtractee</span> <span class="o">=</span> <span class="n">Polynomial</span><span class="p">([</span><span class="n">field</span><span class="p">.</span><span class="n">zero</span><span class="p">()]</span> <span class="o">*</span> <span class="n">shift</span> <span class="o">+</span> <span class="p">[</span><span class="n">coefficient</span><span class="p">])</span> <span class="o">*</span> <span class="n">denominator</span>
+            <span class="n">quotient_coefficients</span><span class="p">[</span><span class="n">shift</span><span class="p">]</span> <span class="o">=</span> <span class="n">coefficient</span>
+            <span class="n">remainder</span> <span class="o">=</span> <span class="n">remainder</span> <span class="o">-</span> <span class="n">subtractee</span>
+        <span class="n">quotient</span> <span class="o">=</span> <span class="n">Polynomial</span><span class="p">(</span><span class="n">quotient_coefficients</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">quotient</span><span class="p">,</span> <span class="n">remainder</span>
+
+    <span class="k">def</span> <span class="nf">__truediv__</span><span class="p">(</span> <span class="bp">self</span><span class="p">,</span> <span class="n">other</span> <span class="p">):</span>
+        <span class="n">quo</span><span class="p">,</span> <span class="n">rem</span> <span class="o">=</span> <span class="n">Polynomial</span><span class="p">.</span><span class="n">divide</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">)</span>
+        <span class="k">assert</span><span class="p">(</span><span class="n">rem</span><span class="p">.</span><span class="n">is_zero</span><span class="p">()),</span> <span class="s">"cannot perform polynomial division because remainder is not zero"</span>
+        <span class="k">return</span> <span class="n">quo</span>
+
+    <span class="k">def</span> <span class="nf">__mod__</span><span class="p">(</span> <span class="bp">self</span><span class="p">,</span> <span class="n">other</span> <span class="p">):</span>
+        <span class="n">quo</span><span class="p">,</span> <span class="n">rem</span> <span class="o">=</span> <span class="n">Polynomial</span><span class="p">.</span><span class="n">divide</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">rem</span>
+</code></pre></div></div>
+
+<p>In terms of basic arithmetic operations, it is worth including a powering map, although mostly for notational easy rather than performance.</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code>    <span class="k">def</span> <span class="nf">__xor__</span><span class="p">(</span> <span class="bp">self</span><span class="p">,</span> <span class="n">exponent</span> <span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="p">.</span><span class="n">is_zero</span><span class="p">():</span>
+            <span class="k">return</span> <span class="n">Polynomial</span><span class="p">([])</span>
+        <span class="k">if</span> <span class="n">exponent</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">Polynomial</span><span class="p">([</span><span class="bp">self</span><span class="p">.</span><span class="n">coefficients</span><span class="p">[</span><span class="mi">0</span><span class="p">].</span><span class="n">field</span><span class="p">.</span><span class="n">one</span><span class="p">()])</span>
+        <span class="n">acc</span> <span class="o">=</span> <span class="n">Polynomial</span><span class="p">([</span><span class="bp">self</span><span class="p">.</span><span class="n">coefficients</span><span class="p">[</span><span class="mi">0</span><span class="p">].</span><span class="n">field</span><span class="p">.</span><span class="n">one</span><span class="p">()])</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">reversed</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="nb">bin</span><span class="p">(</span><span class="n">exponent</span><span class="p">)[</span><span class="mi">2</span><span class="p">:]))):</span>
+            <span class="n">acc</span> <span class="o">=</span> <span class="n">acc</span> <span class="o">*</span> <span class="n">acc</span>
+            <span class="k">if</span> <span class="p">(</span><span class="mi">1</span> <span class="o">&lt;&lt;</span> <span class="n">i</span><span class="p">)</span> <span class="o">&amp;</span> <span class="n">exponent</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="n">acc</span> <span class="o">=</span> <span class="n">acc</span> <span class="o">*</span> <span class="bp">self</span>
+        <span class="k">return</span> <span class="n">acc</span>
+</code></pre></div></div>
+
+<p>A polynomial is quite pointless if it does not admit the computation of its value in a given arbitrary point. For STARKs we need someting more general – polynomial evaluation on a <em>domain</em> of values, rather in a single point. Performance is not a concern at this point so the following implementation follows a straightforward iterative method. Conversely, STARKs also require polynomial interpolation where the x-coordinates are another known range of values. Once again, performance is not an immediate issue so for the time being standard <a href="https://en.wikipedia.org/wiki/Lagrange_polynomial">Lagrange interpolation</a> suffices.</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code>    <span class="k">def</span> <span class="nf">evaluate</span><span class="p">(</span> <span class="bp">self</span><span class="p">,</span> <span class="n">point</span> <span class="p">):</span>
+        <span class="n">xi</span> <span class="o">=</span> <span class="n">point</span><span class="p">.</span><span class="n">field</span><span class="p">.</span><span class="n">one</span><span class="p">()</span>
+        <span class="n">value</span> <span class="o">=</span> <span class="n">point</span><span class="p">.</span><span class="n">field</span><span class="p">.</span><span class="n">zero</span><span class="p">()</span>
+        <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="bp">self</span><span class="p">.</span><span class="n">coefficients</span><span class="p">:</span>
+            <span class="n">value</span> <span class="o">=</span> <span class="n">value</span> <span class="o">+</span> <span class="n">c</span> <span class="o">*</span> <span class="n">xi</span>
+            <span class="n">xi</span> <span class="o">=</span> <span class="n">xi</span> <span class="o">*</span> <span class="n">point</span>
+        <span class="k">return</span> <span class="n">value</span>
+
+    <span class="k">def</span> <span class="nf">evaluate_domain</span><span class="p">(</span> <span class="bp">self</span><span class="p">,</span> <span class="n">domain</span> <span class="p">):</span>
+        <span class="k">return</span> <span class="p">[</span><span class="bp">self</span><span class="p">.</span><span class="n">evaluate</span><span class="p">(</span><span class="n">d</span><span class="p">)</span> <span class="k">for</span> <span class="n">d</span> <span class="ow">in</span> <span class="n">domain</span><span class="p">]</span>
+
+    <span class="k">def</span> <span class="nf">interpolate_domain</span><span class="p">(</span> <span class="n">domain</span><span class="p">,</span> <span class="n">values</span> <span class="p">):</span>
+        <span class="k">assert</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">domain</span><span class="p">)</span> <span class="o">==</span> <span class="nb">len</span><span class="p">(</span><span class="n">values</span><span class="p">)),</span> <span class="s">"number of elements in domain does not match number of values -- cannot interpolate"</span>
+        <span class="k">assert</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">domain</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">),</span> <span class="s">"cannot interpolate between zero points"</span>
+        <span class="n">field</span> <span class="o">=</span> <span class="n">domain</span><span class="p">[</span><span class="mi">0</span><span class="p">].</span><span class="n">field</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="n">Polynomial</span><span class="p">([</span><span class="n">field</span><span class="p">.</span><span class="n">zero</span><span class="p">(),</span> <span class="n">field</span><span class="p">.</span><span class="n">one</span><span class="p">()])</span>
+        <span class="n">acc</span> <span class="o">=</span> <span class="n">Polynomial</span><span class="p">([])</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">domain</span><span class="p">)):</span>
+            <span class="n">prod</span> <span class="o">=</span> <span class="n">Polynomial</span><span class="p">([</span><span class="n">values</span><span class="p">[</span><span class="n">i</span><span class="p">]])</span>
+            <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">domain</span><span class="p">)):</span>
+                <span class="k">if</span> <span class="n">j</span> <span class="o">==</span> <span class="n">i</span><span class="p">:</span>
+                    <span class="k">continue</span>
+                <span class="n">prod</span> <span class="o">=</span> <span class="n">prod</span> <span class="o">*</span> <span class="p">(</span><span class="n">x</span> <span class="o">-</span> <span class="n">Polynomial</span><span class="p">([</span><span class="n">domain</span><span class="p">[</span><span class="n">j</span><span class="p">]]))</span> <span class="o">*</span> <span class="n">Polynomial</span><span class="p">([(</span><span class="n">domain</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">-</span> <span class="n">domain</span><span class="p">[</span><span class="n">j</span><span class="p">]).</span><span class="n">inverse</span><span class="p">()])</span>
+            <span class="n">acc</span> <span class="o">=</span> <span class="n">acc</span> <span class="o">+</span> <span class="n">prod</span>
+        <span class="k">return</span> <span class="n">acc</span>
+</code></pre></div></div>
+
+<p>Speaking of domains: one thing that recurs time and again is the computation of polynomials that vanish on them. Any such polynomial is the multiple of $Z_D(X) = \prod_{d \in D} (X-d)$, the unique monic<sup id="fnref:2" role="doc-noteref"><a href="#fn:2" class="footnote">2</a></sup> lowest-degree polynomial that takes the value 0 in all the points of $D$. This polynomial is usually called the <em>vanishing polynomial</em> and sometimes the <em>zerofier</em>. This tutorial prefers the second term.</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code>    <span class="k">def</span> <span class="nf">zerofier_domain</span><span class="p">(</span> <span class="n">domain</span> <span class="p">):</span>
+        <span class="n">field</span> <span class="o">=</span> <span class="n">domain</span><span class="p">[</span><span class="mi">0</span><span class="p">].</span><span class="n">field</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="n">Polynomial</span><span class="p">([</span><span class="n">field</span><span class="p">.</span><span class="n">zero</span><span class="p">(),</span> <span class="n">field</span><span class="p">.</span><span class="n">one</span><span class="p">()])</span>
+        <span class="n">acc</span> <span class="o">=</span> <span class="n">Polynomial</span><span class="p">([</span><span class="n">field</span><span class="p">.</span><span class="n">one</span><span class="p">()])</span>
+        <span class="k">for</span> <span class="n">d</span> <span class="ow">in</span> <span class="n">domain</span><span class="p">:</span>
+            <span class="n">acc</span> <span class="o">=</span> <span class="n">acc</span> <span class="o">*</span> <span class="p">(</span><span class="n">x</span> <span class="o">-</span> <span class="n">Polynomial</span><span class="p">([</span><span class="n">d</span><span class="p">]))</span>
+        <span class="k">return</span> <span class="n">acc</span>
+</code></pre></div></div>
+
+<p>Another useful tool is the ability to <em>scale</em> polynomials. Specifically, this means obtaining the vector of coefficients of $f(c \cdot X)$ from that of $f(X)$. This function is particularly useful when $f(X)$ is defined to take a sequence of values on the powers of $c$: $v_i = f(c^i)$. Then $f(c \cdot X)$ represents the same sequence of values but shifted by one position.</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code>    <span class="k">def</span> <span class="nf">scale</span><span class="p">(</span> <span class="bp">self</span><span class="p">,</span> <span class="n">factor</span> <span class="p">):</span>
+        <span class="k">return</span> <span class="n">Polynomial</span><span class="p">([(</span><span class="n">factor</span><span class="o">^</span><span class="n">i</span><span class="p">)</span> <span class="o">*</span> <span class="bp">self</span><span class="p">.</span><span class="n">coefficients</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="p">.</span><span class="n">coefficients</span><span class="p">))])</span>
+</code></pre></div></div>
+
+<p>The last function that belongs to the univariate polynomial module anticipates a key operations in the FRI protocol, namely testing whether a triple of points fall on the same line – a fancy word for which is <em>colinearity</em>.</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">def</span> <span class="nf">test_colinearity</span><span class="p">(</span> <span class="n">points</span> <span class="p">):</span>
+    <span class="n">domain</span> <span class="o">=</span> <span class="p">[</span><span class="n">p</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">points</span><span class="p">]</span>
+    <span class="n">values</span> <span class="o">=</span> <span class="p">[</span><span class="n">p</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">points</span><span class="p">]</span>
+    <span class="n">polynomial</span> <span class="o">=</span> <span class="n">Polynomial</span><span class="p">.</span><span class="n">interpolate_domain</span><span class="p">(</span><span class="n">domain</span><span class="p">,</span> <span class="n">values</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">polynomial</span><span class="p">.</span><span class="n">degree</span><span class="p">()</span> <span class="o">==</span> <span class="mi">1</span>
+</code></pre></div></div>
+
+<p>Before moving on to the next section, it is worth pausing to note that all ingredients are in place for <em>finite extension fields</em>, or simply <em>extension fields</em>. A finite field is simply a set equipped with addition and multiplication operators that behave according to high school algebra rules, <em>e.g.</em> every nonzero element has an inverse, or no two nonzero elements multiplied give zero. There are two ways to obtain them:</p>
+<ol>
+  <li>Start with the set of integers, and reduce the result of any addition or multiplication modulo a given prime number $p$.</li>
+  <li>Start with the set of polynomials over a finite field, and reduce the result of any addition or multiplication modulo a given <em>irreducible polynomial</em> $p(X)$. A polynomial is <em>irreducible</em> when it cannot be decomposed as the product of two smaller polynomials, analogously to prime numbers.</li>
+</ol>
+
+<p>The point is that it is possible to do the arithmetization in a smaller field than cryptographic compilation step, as long as the latter step uses an extension field of that of the former. Specifically and for example, <a href="https://github.com/GuildOfWeavers/distaff">Distaff VM</a> operates over the finite field defined by a 64-bit prime, but the FRI step operates over an extension field thereof in order to target 128 bits of security.</p>
+
+<p>This tutorial will not use extension fields, and so an elaborate discussion of the topic is out of scope.</p>
+
+<h2 id="multivariate-polynomials">Multivariate Polynomials</h2>
+
+<p><em>Multivariate polynomials</em> generalize univariate polynomials to many indeterminates – not just $X$, but $X, Y, Z, \ldots$. Where univariate polynomials are useful for reducing big claims about large vectors to small claims about scalar values in random points, multivariate polynomials are useful for articulating the arithmetic constraints that an integral computation satisfies.</p>
+
+<p>For example, consider the <a href="https://en.wikipedia.org/wiki/Arithmetic%E2%80%93geometric_mean">arithmetic-geometric mean</a>, which is defined as the limit of either the first or second coordinate (which are equal in the limit) of the sequence $(a, b) \mapsto \left( \frac{a+b}{2}, \sqrt{a \cdot b} \right)$, for a giving starting point $(a_0, b_0)$. In order to prove the integrity of several iterations of this process<sup id="fnref:3" role="doc-noteref"><a href="#fn:3" class="footnote">3</a></sup>, what is needed is a set of multivariate polynomials that capture the constraint of the correct application of a single iteration relates the current state, $X_0, X_1$ to the next state, $Y_0, Y_1$. In this phrase, the word <em>capture</em> means that the polynomial evaluates to zero if the computation is integral. These polynomials might be $m_0(X_0, X_1, Y_0, Y_1) = Y_0 - \frac{X_0 + X_1}{2}$ and $m_1(X_0, X_1, Y_0, Y_1) = Y_1^2 - X_0 \cdot X_1$. (Note that the natural choice $m_1(X_0, X_1, Y_0, Y_1) = Y_1 - \sqrt{X_0 \cdot X_1}$ is not in fact a polynomial, but has the same zeros.)</p>
+
+<p>Where the natural structure for implementing univariate polynomials is a list of coefficients, the natural structure for multivariate polynomials is a dictionary mapping exponent vectors to coefficients. Whenever this dictionary contains zero coefficients, these should be ignored. As usual, the first step is to overload the standard arithmetic operators, basic constructors, and standard functionalities.</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">class</span> <span class="nc">MPolynomial</span><span class="p">:</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span> <span class="bp">self</span><span class="p">,</span> <span class="n">dictionary</span> <span class="p">):</span>
+        <span class="bp">self</span><span class="p">.</span><span class="n">dictionary</span> <span class="o">=</span> <span class="n">dictionary</span>
+
+    <span class="k">def</span> <span class="nf">zero</span><span class="p">():</span>
+        <span class="k">return</span> <span class="n">MPolynomial</span><span class="p">(</span><span class="nb">dict</span><span class="p">())</span>
+
+    <span class="k">def</span> <span class="nf">__add__</span><span class="p">(</span> <span class="bp">self</span><span class="p">,</span> <span class="n">other</span> <span class="p">):</span>
+        <span class="n">dictionary</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>
+        <span class="n">num_variables</span> <span class="o">=</span> <span class="nb">max</span><span class="p">([</span><span class="nb">len</span><span class="p">(</span><span class="n">k</span><span class="p">)</span> <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="bp">self</span><span class="p">.</span><span class="n">dictionary</span><span class="p">.</span><span class="n">keys</span><span class="p">()]</span> <span class="o">+</span> <span class="p">[</span><span class="nb">len</span><span class="p">(</span><span class="n">k</span><span class="p">)</span> <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">other</span><span class="p">.</span><span class="n">dictionary</span><span class="p">.</span><span class="n">keys</span><span class="p">()])</span>
+        <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="bp">self</span><span class="p">.</span><span class="n">dictionary</span><span class="p">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="n">pad</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">k</span><span class="p">)</span> <span class="o">+</span> <span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">*</span> <span class="p">(</span><span class="n">num_variables</span> <span class="o">-</span> <span class="nb">len</span><span class="p">(</span><span class="n">k</span><span class="p">))</span>
+            <span class="n">pad</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">pad</span><span class="p">)</span>
+            <span class="n">dictionary</span><span class="p">[</span><span class="n">pad</span><span class="p">]</span> <span class="o">=</span> <span class="n">v</span>
+        <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">other</span><span class="p">.</span><span class="n">dictionary</span><span class="p">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="n">pad</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">k</span><span class="p">)</span> <span class="o">+</span> <span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">*</span> <span class="p">(</span><span class="n">num_variables</span> <span class="o">-</span> <span class="nb">len</span><span class="p">(</span><span class="n">k</span><span class="p">))</span>
+            <span class="n">pad</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">pad</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">pad</span> <span class="ow">in</span> <span class="n">dictionary</span><span class="p">.</span><span class="n">keys</span><span class="p">():</span>
+                <span class="n">dictionary</span><span class="p">[</span><span class="n">pad</span><span class="p">]</span> <span class="o">=</span> <span class="n">dictionary</span><span class="p">[</span><span class="n">pad</span><span class="p">]</span> <span class="o">+</span> <span class="n">v</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">dictionary</span><span class="p">[</span><span class="n">pad</span><span class="p">]</span> <span class="o">=</span> <span class="n">v</span>
+        <span class="k">return</span> <span class="n">MPolynomial</span><span class="p">(</span><span class="n">dictionary</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">__mul__</span><span class="p">(</span> <span class="bp">self</span><span class="p">,</span> <span class="n">other</span> <span class="p">):</span>
+        <span class="n">dictionary</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>
+        <span class="n">num_variables</span> <span class="o">=</span> <span class="nb">max</span><span class="p">([</span><span class="nb">len</span><span class="p">(</span><span class="n">k</span><span class="p">)</span> <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="bp">self</span><span class="p">.</span><span class="n">dictionary</span><span class="p">.</span><span class="n">keys</span><span class="p">()]</span> <span class="o">+</span> <span class="p">[</span><span class="nb">len</span><span class="p">(</span><span class="n">k</span><span class="p">)</span> <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">other</span><span class="p">.</span><span class="n">dictionary</span><span class="p">.</span><span class="n">keys</span><span class="p">()])</span>
+        <span class="k">for</span> <span class="n">k0</span><span class="p">,</span> <span class="n">v0</span> <span class="ow">in</span> <span class="bp">self</span><span class="p">.</span><span class="n">dictionary</span><span class="p">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="k">for</span> <span class="n">k1</span><span class="p">,</span> <span class="n">v1</span> <span class="ow">in</span> <span class="n">other</span><span class="p">.</span><span class="n">dictionary</span><span class="p">.</span><span class="n">items</span><span class="p">():</span>
+                <span class="n">exponent</span> <span class="o">=</span> <span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">*</span> <span class="n">num_variables</span>
+                <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">k0</span><span class="p">)):</span>
+                    <span class="n">exponent</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">+=</span> <span class="n">k0</span><span class="p">[</span><span class="n">k</span><span class="p">]</span>
+                <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">k1</span><span class="p">)):</span>
+                    <span class="n">exponent</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">+=</span> <span class="n">k1</span><span class="p">[</span><span class="n">k</span><span class="p">]</span>
+                <span class="n">exponent</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">exponent</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">exponent</span> <span class="ow">in</span> <span class="n">dictionary</span><span class="p">.</span><span class="n">keys</span><span class="p">():</span>
+                    <span class="n">dictionary</span><span class="p">[</span><span class="n">exponent</span><span class="p">]</span> <span class="o">=</span> <span class="n">dictionary</span><span class="p">[</span><span class="n">exponent</span><span class="p">]</span> <span class="o">+</span> <span class="n">v0</span> <span class="o">*</span> <span class="n">v1</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">dictionary</span><span class="p">[</span><span class="n">exponent</span><span class="p">]</span> <span class="o">=</span> <span class="n">v0</span> <span class="o">*</span> <span class="n">v1</span>
+        <span class="k">return</span> <span class="n">MPolynomial</span><span class="p">(</span><span class="n">dictionary</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">__sub__</span><span class="p">(</span> <span class="bp">self</span><span class="p">,</span> <span class="n">other</span> <span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span> <span class="o">+</span> <span class="p">(</span><span class="o">-</span><span class="n">other</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">__neg__</span><span class="p">(</span> <span class="bp">self</span> <span class="p">):</span>
+        <span class="n">dictionary</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>
+        <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="bp">self</span><span class="p">.</span><span class="n">dictionary</span><span class="p">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="n">dictionary</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">=</span> <span class="o">-</span><span class="n">v</span>
+        <span class="k">return</span> <span class="n">MPolynomial</span><span class="p">(</span><span class="n">dictionary</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">__xor__</span><span class="p">(</span> <span class="bp">self</span><span class="p">,</span> <span class="n">exponent</span> <span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="p">.</span><span class="n">is_zero</span><span class="p">():</span>
+            <span class="k">return</span> <span class="n">MPolynomial</span><span class="p">(</span><span class="nb">dict</span><span class="p">())</span>
+        <span class="n">field</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="p">.</span><span class="n">dictionary</span><span class="p">.</span><span class="n">values</span><span class="p">())[</span><span class="mi">0</span><span class="p">].</span><span class="n">field</span>
+        <span class="n">num_variables</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="p">.</span><span class="n">dictionary</span><span class="p">.</span><span class="n">keys</span><span class="p">())[</span><span class="mi">0</span><span class="p">])</span>
+        <span class="n">exp</span> <span class="o">=</span> <span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">*</span> <span class="n">num_variables</span>
+        <span class="n">acc</span> <span class="o">=</span> <span class="n">MPolynomial</span><span class="p">({</span><span class="nb">tuple</span><span class="p">(</span><span class="n">exp</span><span class="p">):</span> <span class="n">field</span><span class="p">.</span><span class="n">one</span><span class="p">()})</span>
+        <span class="k">for</span> <span class="n">b</span> <span class="ow">in</span> <span class="nb">bin</span><span class="p">(</span><span class="n">exponent</span><span class="p">)[</span><span class="mi">2</span><span class="p">:]:</span>
+            <span class="n">acc</span> <span class="o">=</span> <span class="n">acc</span> <span class="o">*</span> <span class="n">acc</span>
+            <span class="k">if</span> <span class="n">b</span> <span class="o">==</span> <span class="s">'1'</span><span class="p">:</span>
+                <span class="n">acc</span> <span class="o">=</span> <span class="n">acc</span> <span class="o">*</span> <span class="bp">self</span>
+        <span class="k">return</span> <span class="n">acc</span>
+
+    <span class="k">def</span> <span class="nf">constant</span><span class="p">(</span> <span class="n">element</span> <span class="p">):</span>
+        <span class="k">return</span> <span class="n">MPolynomial</span><span class="p">({</span><span class="nb">tuple</span><span class="p">([</span><span class="mi">0</span><span class="p">]):</span> <span class="n">element</span><span class="p">})</span>
+
+    <span class="k">def</span> <span class="nf">is_zero</span><span class="p">(</span> <span class="bp">self</span> <span class="p">):</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="p">.</span><span class="n">dictionary</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">True</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="bp">self</span><span class="p">.</span><span class="n">dictionary</span><span class="p">.</span><span class="n">values</span><span class="p">():</span>
+                <span class="k">if</span> <span class="n">v</span><span class="p">.</span><span class="n">is_zero</span><span class="p">()</span> <span class="o">==</span> <span class="bp">False</span><span class="p">:</span>
+                    <span class="k">return</span> <span class="bp">False</span>
+            <span class="k">return</span> <span class="bp">True</span>
+
+    <span class="k">def</span> <span class="nf">variables</span><span class="p">(</span> <span class="n">num_variables</span><span class="p">,</span> <span class="n">field</span> <span class="p">):</span>
+        <span class="n">variables</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">num_variables</span><span class="p">):</span>
+            <span class="n">exponent</span> <span class="o">=</span> <span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">*</span> <span class="n">i</span> <span class="o">+</span> <span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">*</span> <span class="p">(</span><span class="n">num_variables</span> <span class="o">-</span> <span class="n">i</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span>
+            <span class="n">variables</span> <span class="o">=</span> <span class="n">variables</span> <span class="o">+</span> <span class="p">[</span><span class="n">MPolynomial</span><span class="p">({</span><span class="nb">tuple</span><span class="p">(</span><span class="n">exponent</span><span class="p">):</span> <span class="n">field</span><span class="p">.</span><span class="n">one</span><span class="p">()})]</span>
+        <span class="k">return</span> <span class="n">variables</span>
+</code></pre></div></div>
+
+<p>Since multivariate polynomials are a generalization of univariate polynomials, there needs to be a way to inherit the logic that was already defined for the former class. The function <code class="language-plaintext highlighter-rouge">lift</code> does this by lifting a univariate polynomial to the multivariate polynomials. The second argument is the index of the indeterminate that corresponds to the univariate indeterminate.</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code>    <span class="k">def</span> <span class="nf">lift</span><span class="p">(</span> <span class="n">polynomial</span><span class="p">,</span> <span class="n">variable_index</span> <span class="p">):</span>
+        <span class="k">if</span> <span class="n">polynomial</span><span class="p">.</span><span class="n">is_zero</span><span class="p">():</span>
+            <span class="k">return</span> <span class="n">MPolynomial</span><span class="p">({})</span>
+        <span class="n">field</span> <span class="o">=</span> <span class="n">polynomial</span><span class="p">.</span><span class="n">coefficients</span><span class="p">[</span><span class="mi">0</span><span class="p">].</span><span class="n">field</span>
+        <span class="n">variables</span> <span class="o">=</span> <span class="n">MPolynomial</span><span class="p">.</span><span class="n">variables</span><span class="p">(</span><span class="n">variable_index</span><span class="o">+</span><span class="mi">1</span><span class="p">,</span> <span class="n">field</span><span class="p">)</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="n">variables</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+        <span class="n">acc</span> <span class="o">=</span> <span class="n">MPolynomial</span><span class="p">({})</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">polynomial</span><span class="p">.</span><span class="n">coefficients</span><span class="p">)):</span>
+            <span class="n">acc</span> <span class="o">=</span> <span class="n">acc</span> <span class="o">+</span> <span class="n">MPolynomial</span><span class="p">.</span><span class="n">constant</span><span class="p">(</span><span class="n">polynomial</span><span class="p">.</span><span class="n">coefficients</span><span class="p">[</span><span class="n">i</span><span class="p">])</span> <span class="o">*</span> <span class="p">(</span><span class="n">x</span><span class="o">^</span><span class="n">i</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">acc</span>
+</code></pre></div></div>
+
+<p>Next up is evaluation. The argument to this method needs to be a tuple of scalars since it needs to assign a value to every indeterminate. However, it is worth anticipating a feature used in the STARK whereby the evaluation is <em>symbolic</em>: instead of evaluating the multivariate polynomial in a tuple of scalars, it is evaluated in a tuple of <em>univariate polynomials</em>. The result is not a scalar, but a new univariate polynomial.</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code>    <span class="k">def</span> <span class="nf">evaluate</span><span class="p">(</span> <span class="bp">self</span><span class="p">,</span> <span class="n">point</span> <span class="p">):</span>
+        <span class="n">acc</span> <span class="o">=</span> <span class="n">point</span><span class="p">[</span><span class="mi">0</span><span class="p">].</span><span class="n">field</span><span class="p">.</span><span class="n">zero</span><span class="p">()</span>
+        <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="bp">self</span><span class="p">.</span><span class="n">dictionary</span><span class="p">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="n">prod</span> <span class="o">=</span> <span class="n">v</span>
+            <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">k</span><span class="p">)):</span>
+                <span class="n">prod</span> <span class="o">=</span> <span class="n">prod</span> <span class="o">*</span> <span class="p">(</span><span class="n">point</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">^</span><span class="n">k</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
+            <span class="n">acc</span> <span class="o">=</span> <span class="n">acc</span> <span class="o">+</span> <span class="n">prod</span>
+        <span class="k">return</span> <span class="n">acc</span>
+
+    <span class="k">def</span> <span class="nf">evaluate_symbolic</span><span class="p">(</span> <span class="bp">self</span><span class="p">,</span> <span class="n">point</span> <span class="p">):</span>
+        <span class="n">acc</span> <span class="o">=</span> <span class="n">Polynomial</span><span class="p">([])</span>
+        <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="bp">self</span><span class="p">.</span><span class="n">dictionary</span><span class="p">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="n">prod</span> <span class="o">=</span> <span class="n">Polynomial</span><span class="p">([</span><span class="n">v</span><span class="p">])</span>
+            <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">k</span><span class="p">)):</span>
+                <span class="n">prod</span> <span class="o">=</span> <span class="n">prod</span> <span class="o">*</span> <span class="p">(</span><span class="n">point</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">^</span><span class="n">k</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
+            <span class="n">acc</span> <span class="o">=</span> <span class="n">acc</span> <span class="o">+</span> <span class="n">prod</span>
+        <span class="k">return</span> <span class="n">acc</span>
+</code></pre></div></div>
+
+<h2 id="the-fiat-shamir-transform">The Fiat-Shamir Transform</h2>
+
+<p>In an interactive public coin protocol, the verifier’s messages are pure randomness sampled from a distribution that <em>anyone</em> can sample from. The objective is to obtain a non-interactive protocol that proves the same thing, without sacrificing security. The Fiat-Shamir transform achieves this.</p>
+
+<p><img src="/graphics/interactive-proof.svg" alt="Interactive proof, before Fiat-Shamir transform" /></p>
+
+<p>It turns out that for generating security against malicious provers, generating the verifier’s messages randomly as the interactive protocol stipulates, is overkill. It is sufficient that the verifier’s messages be difficult to predict by the prover. Hash functions are deterministic but still satisfy this property of outputs being difficult to predict. So intuitively, the protocol remains secure if the verifier’s authentic randomness is replaced a hash function’s pseudorandom output. It is necessary to restrict the prover’s control over what input goes into the hash function, because otherwise he can grind until he finds a suitable output. It suffices to set the input to the transcript of the protocol up until the point where the verifier’s message is needed.</p>
+
+<p>This is exactly the intuition behind the Fiat-Shamir transform: replace the verifier’s random messages by the hash of the transcript of the protocol up until those points. The <em>Fiat-Shamir heuristic</em> states that this transform retains security. In an idealized model of the hash function called the <em>random oracle model</em>, this security is provable.</p>
+
+<p>The Fiat-Shamir transform presents the first engineering challenge. The interactive protocol is described in terms of a <em>channel</em> which passes messages from prover to receiver or the other way around. The transform serializes this communication while enabling a description of the prover that makes abstraction of it. The transform does modify the description of the verifier, which becomes deterministic.</p>
+
+<p>A <em>proof stream</em> is a useful concept to simulate this channel. The difference with respect to regular streams in programming is that there is no actual transmission to another process or computer taking place, and nor do sender and receiver need to operate simultaneously. It is not a simple queue either because the prover and the verifier have access to a function that computes pseudorandomness by hashing their view of the channel. For the prover, this view is the entire list of all messages <em>sent</em> so far. For the verifier, this view is the sublist of messages <em>read</em> so far. The verifier’s messages are not added to the list because they can be deterministically computed from them. Given the list of prover’s messages, serialization is straightforward. The non-interactive proof is exactly this serialization.</p>
+
+<p><img src="/graphics/proof-stream.svg" alt="Non-interactive proof, after Fiat-Shamir transform" /></p>
+
+<p>In terms of implementation, what is needed is a class <code class="language-plaintext highlighter-rouge">ProofStream</code> that supports 3 functionalities.</p>
+<ol>
+  <li>Pushing and pulling objects to and from a queue. The queue is simulated by a list with a read index. Whenever an item is pushed, it is appended. Whenever an item is pulled, the read index is incremented by one.</li>
+  <li>Serialization and deserialization. The amazing python library <code class="language-plaintext highlighter-rouge">pickle</code> does this.</li>
+  <li>Fiat-Shamir. Hashing is done below by first serializing the queue or the first part of it, and then applying SHAKE-256. SHAKE-256 admits a variable output length, which the particular application may want to set. By default the output length is set to 32 bytes.</li>
+</ol>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kn">from</span> <span class="nn">hashlib</span> <span class="kn">import</span> <span class="n">shake_256</span>
+<span class="kn">import</span> <span class="nn">pickle</span> <span class="k">as</span> <span class="n">pickle</span> <span class="c1"># serialization
+</span>
+<span class="k">class</span> <span class="nc">ProofStream</span><span class="p">:</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span> <span class="bp">self</span> <span class="p">):</span>
+        <span class="bp">self</span><span class="p">.</span><span class="n">objects</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="bp">self</span><span class="p">.</span><span class="n">read_index</span> <span class="o">=</span> <span class="mi">0</span>
+
+    <span class="k">def</span> <span class="nf">push</span><span class="p">(</span> <span class="bp">self</span><span class="p">,</span> <span class="n">obj</span> <span class="p">):</span>
+        <span class="bp">self</span><span class="p">.</span><span class="n">objects</span> <span class="o">+=</span> <span class="p">[</span><span class="n">obj</span><span class="p">]</span>
+
+    <span class="k">def</span> <span class="nf">pull</span><span class="p">(</span> <span class="bp">self</span> <span class="p">):</span>
+        <span class="k">assert</span><span class="p">(</span><span class="bp">self</span><span class="p">.</span><span class="n">read_index</span> <span class="o">&lt;</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="p">.</span><span class="n">objects</span><span class="p">)),</span> <span class="s">"ProofStream: cannot pull object; queue empty."</span>
+        <span class="n">obj</span> <span class="o">=</span> <span class="bp">self</span><span class="p">.</span><span class="n">objects</span><span class="p">[</span><span class="bp">self</span><span class="p">.</span><span class="n">read_index</span><span class="p">]</span>
+        <span class="bp">self</span><span class="p">.</span><span class="n">read_index</span> <span class="o">+=</span> <span class="mi">1</span>
+        <span class="k">return</span> <span class="n">obj</span>
+
+    <span class="k">def</span> <span class="nf">serialize</span><span class="p">(</span> <span class="bp">self</span> <span class="p">):</span>
+        <span class="k">return</span> <span class="n">pickle</span><span class="p">.</span><span class="n">dumps</span><span class="p">(</span><span class="bp">self</span><span class="p">.</span><span class="n">objects</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">deserialize</span><span class="p">(</span> <span class="n">bb</span> <span class="p">):</span>
+        <span class="n">ps</span> <span class="o">=</span> <span class="n">ProofStream</span><span class="p">()</span>
+        <span class="n">ps</span><span class="p">.</span><span class="n">objects</span> <span class="o">=</span> <span class="n">pickle</span><span class="p">.</span><span class="n">loads</span><span class="p">(</span><span class="n">bb</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">ps</span>
+
+    <span class="k">def</span> <span class="nf">prover_fiat_shamir</span><span class="p">(</span> <span class="bp">self</span><span class="p">,</span> <span class="n">num_bytes</span><span class="o">=</span><span class="mi">32</span> <span class="p">):</span>
+        <span class="k">return</span> <span class="n">shake_256</span><span class="p">(</span><span class="bp">self</span><span class="p">.</span><span class="n">serialize</span><span class="p">()).</span><span class="n">digest</span><span class="p">(</span><span class="n">num_bytes</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">verifier_fiat_shamir</span><span class="p">(</span> <span class="bp">self</span><span class="p">,</span> <span class="n">num_bytes</span><span class="o">=</span><span class="mi">32</span> <span class="p">):</span>
+        <span class="k">return</span> <span class="n">shake_256</span><span class="p">(</span><span class="n">pickle</span><span class="p">.</span><span class="n">dumps</span><span class="p">(</span><span class="bp">self</span><span class="p">.</span><span class="n">objects</span><span class="p">[:</span><span class="bp">self</span><span class="p">.</span><span class="n">read_index</span><span class="p">])).</span><span class="n">digest</span><span class="p">(</span><span class="n">num_bytes</span><span class="p">)</span>
+</code></pre></div></div>
+
+<h2 id="merkle-tree">Merkle Tree</h2>
+
+<p>A <a href="https://en.wikipedia.org/wiki/Merkle_tree">Merkle tree</a> is a vector commitment scheme built from a collision-resistant hash function<sup id="fnref:4" role="doc-noteref"><a href="#fn:4" class="footnote">4</a></sup>. Specifically, it allows the user to commit to an array of $2^N$ items such that</p>
+<ul>
+  <li>the commitment is a single hash digest and this commitment is <em>binding</em> – it represents the array in a way that prevents the user from changing it without first breaking the hash function;</li>
+  <li>for any index $i \in {0, \ldots, 2^N-1}$, the value in location $i$ of the array represented by the commitment can be proven with $N$ more hash digests.</li>
+</ul>
+
+<p>Specifically, every leaf of the binary tree represents the hash of a data element. Every non-leaf node represents the hash of the concatenation of its two children. The root of the tree is the commitment. A membership proof consists of all siblings of nodes on a path from the indicated leaf to the root. This list of siblings is called an <em>authentication path</em>, and provides the verifier with $N$ complete preimages to the hash function at every step of the path, leading to a final test in the root node.</p>
+
+<p><img src="/graphics/merkle-tree.svg" alt="Merkle tree" /></p>
+
+<p>An implementation of this construct needs to provide three functionalities:</p>
+<ol>
+  <li>$\mathsf{commit}$ – computes the Merkle root of a given array.</li>
+  <li>$\mathsf{open}$ – computes the authentication path of an indicated leaf in the Merkle tree.</li>
+  <li>$\mathsf{verify}$ – verifies that a given leaf is an element of the committed vector at the given index.</li>
+</ol>
+
+<p>If performance is not an issue (and for this tutorial it is not), the recursive nature of these functionalities gives rise to a wonderful functional implementation.</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kn">from</span> <span class="nn">hashlib</span> <span class="kn">import</span> <span class="n">blake2b</span>
+
+<span class="k">class</span> <span class="nc">Merkle</span><span class="p">:</span>
+    <span class="n">H</span> <span class="o">=</span> <span class="n">blake2b</span>
+
+    <span class="k">def</span> <span class="nf">commit_</span><span class="p">(</span> <span class="n">leafs</span> <span class="p">):</span>
+        <span class="k">assert</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">leafs</span><span class="p">)</span> <span class="o">&amp;</span> <span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">leafs</span><span class="p">)</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">),</span> <span class="s">"length must be power of two"</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">leafs</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">leafs</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">Merkle</span><span class="p">.</span><span class="n">H</span><span class="p">(</span><span class="n">Merkle</span><span class="p">.</span><span class="n">commit_</span><span class="p">(</span><span class="n">leafs</span><span class="p">[:</span><span class="nb">len</span><span class="p">(</span><span class="n">leafs</span><span class="p">)</span><span class="o">//</span><span class="mi">2</span><span class="p">])</span> <span class="o">+</span> <span class="n">Merkle</span><span class="p">.</span><span class="n">commit_</span><span class="p">(</span><span class="n">leafs</span><span class="p">[</span><span class="nb">len</span><span class="p">(</span><span class="n">leafs</span><span class="p">)</span><span class="o">//</span><span class="mi">2</span><span class="p">:])).</span><span class="n">digest</span><span class="p">()</span>
+    
+    <span class="k">def</span> <span class="nf">open_</span><span class="p">(</span> <span class="n">index</span><span class="p">,</span> <span class="n">leafs</span> <span class="p">):</span>
+        <span class="k">assert</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">leafs</span><span class="p">)</span> <span class="o">&amp;</span> <span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">leafs</span><span class="p">)</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">),</span> <span class="s">"length must be power of two"</span>
+        <span class="k">assert</span><span class="p">(</span><span class="mi">0</span> <span class="o">&lt;=</span> <span class="n">index</span> <span class="ow">and</span> <span class="n">index</span> <span class="o">&lt;</span> <span class="nb">len</span><span class="p">(</span><span class="n">leafs</span><span class="p">)),</span> <span class="s">"cannot open invalid index"</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">leafs</span><span class="p">)</span> <span class="o">==</span> <span class="mi">2</span><span class="p">:</span>
+            <span class="k">return</span> <span class="p">[</span><span class="n">leafs</span><span class="p">[</span><span class="mi">1</span> <span class="o">-</span> <span class="n">index</span><span class="p">]]</span>
+        <span class="k">elif</span> <span class="n">index</span> <span class="o">&lt;</span> <span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">leafs</span><span class="p">)</span><span class="o">/</span><span class="mi">2</span><span class="p">):</span>
+            <span class="k">return</span> <span class="n">Merkle</span><span class="p">.</span><span class="n">open_</span><span class="p">(</span><span class="n">index</span><span class="p">,</span> <span class="n">leafs</span><span class="p">[:</span><span class="nb">len</span><span class="p">(</span><span class="n">leafs</span><span class="p">)</span><span class="o">//</span><span class="mi">2</span><span class="p">])</span> <span class="o">+</span> <span class="p">[</span><span class="n">Merkle</span><span class="p">.</span><span class="n">commit_</span><span class="p">(</span><span class="n">leafs</span><span class="p">[</span><span class="nb">len</span><span class="p">(</span><span class="n">leafs</span><span class="p">)</span><span class="o">//</span><span class="mi">2</span><span class="p">:])]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">Merkle</span><span class="p">.</span><span class="n">open_</span><span class="p">(</span><span class="n">index</span> <span class="o">-</span> <span class="nb">len</span><span class="p">(</span><span class="n">leafs</span><span class="p">)</span><span class="o">//</span><span class="mi">2</span><span class="p">,</span> <span class="n">leafs</span><span class="p">[</span><span class="nb">len</span><span class="p">(</span><span class="n">leafs</span><span class="p">)</span><span class="o">//</span><span class="mi">2</span><span class="p">:])</span> <span class="o">+</span> <span class="p">[</span><span class="n">Merkle</span><span class="p">.</span><span class="n">commit_</span><span class="p">(</span><span class="n">leafs</span><span class="p">[:</span><span class="nb">len</span><span class="p">(</span><span class="n">leafs</span><span class="p">)</span><span class="o">//</span><span class="mi">2</span><span class="p">])]</span>
+    
+    <span class="k">def</span> <span class="nf">verify_</span><span class="p">(</span> <span class="n">root</span><span class="p">,</span> <span class="n">index</span><span class="p">,</span> <span class="n">path</span><span class="p">,</span> <span class="n">leaf</span> <span class="p">):</span>
+        <span class="k">assert</span><span class="p">(</span><span class="mi">0</span> <span class="o">&lt;=</span> <span class="n">index</span> <span class="ow">and</span> <span class="n">index</span> <span class="o">&lt;</span> <span class="p">(</span><span class="mi">1</span> <span class="o">&lt;&lt;</span> <span class="nb">len</span><span class="p">(</span><span class="n">path</span><span class="p">))),</span> <span class="s">"cannot verify invalid index"</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">path</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">index</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="k">return</span> <span class="n">root</span> <span class="o">==</span> <span class="n">Merkle</span><span class="p">.</span><span class="n">H</span><span class="p">(</span><span class="n">leaf</span> <span class="o">+</span> <span class="n">path</span><span class="p">[</span><span class="mi">0</span><span class="p">]).</span><span class="n">digest</span><span class="p">()</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">return</span> <span class="n">root</span> <span class="o">==</span> <span class="n">Merkle</span><span class="p">.</span><span class="n">H</span><span class="p">(</span><span class="n">path</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">+</span> <span class="n">leaf</span><span class="p">).</span><span class="n">digest</span><span class="p">()</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">index</span> <span class="o">%</span> <span class="mi">2</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="k">return</span> <span class="n">Merkle</span><span class="p">.</span><span class="n">verify_</span><span class="p">(</span><span class="n">root</span><span class="p">,</span> <span class="n">index</span> <span class="o">&gt;&gt;</span> <span class="mi">1</span><span class="p">,</span> <span class="n">path</span><span class="p">[</span><span class="mi">1</span><span class="p">:],</span> <span class="n">Merkle</span><span class="p">.</span><span class="n">H</span><span class="p">(</span><span class="n">leaf</span> <span class="o">+</span> <span class="n">path</span><span class="p">[</span><span class="mi">0</span><span class="p">]).</span><span class="n">digest</span><span class="p">())</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">return</span> <span class="n">Merkle</span><span class="p">.</span><span class="n">verify_</span><span class="p">(</span><span class="n">root</span><span class="p">,</span> <span class="n">index</span> <span class="o">&gt;&gt;</span> <span class="mi">1</span><span class="p">,</span> <span class="n">path</span><span class="p">[</span><span class="mi">1</span><span class="p">:],</span> <span class="n">Merkle</span><span class="p">.</span><span class="n">H</span><span class="p">(</span><span class="n">path</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">+</span> <span class="n">leaf</span><span class="p">).</span><span class="n">digest</span><span class="p">())</span>
+</code></pre></div></div>
+
+<p>This functional implementation overlooks one important aspect: the data objects are rarely hash digests. So in order to use these functions in combination with real-world data, the real-world data elements must be hashed first. This hashing for preprocessing is part of the Merkle tree logic, so the Merkle tree module needs to be extended to accomodate this.</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code>    <span class="k">def</span> <span class="nf">commit</span><span class="p">(</span> <span class="n">data_array</span> <span class="p">):</span>
+        <span class="k">return</span> <span class="n">Merkle</span><span class="p">.</span><span class="n">commit_</span><span class="p">([</span><span class="n">Merkle</span><span class="p">.</span><span class="n">H</span><span class="p">(</span><span class="nb">bytes</span><span class="p">(</span><span class="n">da</span><span class="p">)).</span><span class="n">digest</span><span class="p">()</span> <span class="k">for</span> <span class="n">da</span> <span class="ow">in</span> <span class="n">data_array</span><span class="p">])</span>
+
+    <span class="k">def</span> <span class="nf">open</span><span class="p">(</span> <span class="n">index</span><span class="p">,</span> <span class="n">data_array</span> <span class="p">):</span>
+        <span class="k">return</span> <span class="n">Merkle</span><span class="p">.</span><span class="n">open_</span><span class="p">(</span><span class="n">index</span><span class="p">,</span> <span class="p">[</span><span class="n">Merkle</span><span class="p">.</span><span class="n">H</span><span class="p">(</span><span class="nb">bytes</span><span class="p">(</span><span class="n">da</span><span class="p">)).</span><span class="n">digest</span><span class="p">()</span> <span class="k">for</span> <span class="n">da</span> <span class="ow">in</span> <span class="n">data_array</span><span class="p">])</span>
+
+    <span class="k">def</span> <span class="nf">verify</span><span class="p">(</span> <span class="n">root</span><span class="p">,</span> <span class="n">index</span><span class="p">,</span> <span class="n">path</span><span class="p">,</span> <span class="n">data_element</span> <span class="p">):</span>
+        <span class="k">return</span> <span class="n">Merkle</span><span class="p">.</span><span class="n">verify_</span><span class="p">(</span><span class="n">root</span><span class="p">,</span> <span class="n">index</span><span class="p">,</span> <span class="n">path</span><span class="p">,</span> <span class="n">Merkle</span><span class="p">.</span><span class="n">H</span><span class="p">(</span><span class="nb">bytes</span><span class="p">(</span><span class="n">data_element</span><span class="p">)).</span><span class="n">digest</span><span class="p">())</span>
+</code></pre></div></div>
+
+<div class="footnotes" role="doc-endnotes">
+  <ol>
+    <li id="fn:1" role="doc-endnote">
+      <p>Actually, an <a href="https://arxiv.org/pdf/2107.08473.pdf">amazing new paper</a> by the StarkWare team shows how to apply the same techniques in <em>any</em> finite field, whether it has the requisite structure or not. This tutorial explains the construction the simple way, using structured finite fields. <a href="#fnref:1" class="reversefootnote" role="doc-backlink">&#8617;</a></p>
+    </li>
+    <li id="fn:2" role="doc-endnote">
+      <p>A <em>monic</em> polynomial is one whose leading coefficient is one. <a href="#fnref:2" class="reversefootnote" role="doc-backlink">&#8617;</a></p>
+    </li>
+    <li id="fn:3" role="doc-endnote">
+      <p>Never mind that it does not make any sense to prove the correct computation of the algebraic-geometric mean of finite field elements; it serves the purpose of illustration. <a href="#fnref:3" class="reversefootnote" role="doc-backlink">&#8617;</a></p>
+    </li>
+    <li id="fn:4" role="doc-endnote">
+      <p>In some cases, such as hash-based signatures, collision-resistance may be overkill and more basic security notion such as second-preimage resistance may suffice. <a href="#fnref:4" class="reversefootnote" role="doc-backlink">&#8617;</a></p>
+    </li>
+  </ol>
+</div>
+
+  </div>
+
+</article>
+
+      </div>
+    </main><!-- Parse the Latex divs with Katex-->
+<script type="text/javascript">
+  $("script[type='math/tex']").replaceWith(
+    function(){
+      var tex = $(this).text();
+      return katex.renderToString(tex, {displayMode: false});
+  });
+  
+  $("script[type='math/tex; mode=display']").replaceWith(
+    function(){
+      var tex = $(this).text();
+      return katex.renderToString(tex.replace(/%.*/g, ''), {displayMode: true});
+  });
+</script>
+
+</body>
+
+</html>
