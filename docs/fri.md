@@ -1,8 +1,8 @@
 # Anatomy of a STARK, Part 3: FRI
 
-FRI stands for *Fast Reed-Solomon IOP of Proximity*, where IOP stands for *interactive oracle proof*. FRI is presented in the language of codewords: the prover sends codewords to the verifier who does not read them whole but who makes oracle-queries to read them in select locations. The codewords in this protocol are *Reed-Solomon codewords*, meaning that their values correspond to the evaluation of some low-degree polynomial in a list of points called the domain $D$. The length of this list is larger than the number of possibly nonzero coefficients in the polynomial by a factor called the *expansion factor* (also *blowup factor*), which is the reciprocal of the code's *rate* $\rho$.
+FRI is a protocol that establishes that a committed polynomial has a bounded degree. The acronym FRI stands for *Fast Reed-Solomon IOP of Proximity*, where IOP stands for *interactive oracle proof*. FRI is presented in the language of codewords: the prover sends codewords to the verifier who does not read them whole but who makes oracle-queries to read them in select locations. The codewords in this protocol are *Reed-Solomon codewords*, meaning that their values correspond to the evaluation of some low-degree polynomial in a list of points called the domain $D$. The length of this list is larger than the number of possibly nonzero coefficients in the polynomial by a factor called the *expansion factor* (also *blowup factor*), which is the reciprocal of the code's *rate* $\rho$.
 
-Since the codewords represent low-degree polynomials, and since the codewords are hidden behind Merkle trees in any real-world deployment, it is arguably more natural to present FRI from the point of view of a polynomial commitment scheme, with some caveats. While there is scientific merit in separating the type of codewords from the IOP, and those two from the Merkle tree that simulates the oracles, from an accessibility point of view it is beneficial to consider them as three components of one basic primitive that relates to polynomial commitment schemes. For the remainder of this tutorial, we will use the term FRI in this sense.
+Since the codewords represent low-degree polynomials, and since the codewords are hidden behind Merkle trees in any real-world deployment, it is arguably more natural to present FRI from the point of view of a polynomial commitment scheme, with some caveats. There is scientific merit in separating the type of codewords from the IOP, and those two from the Merkle tree that simulates the oracles. However, from an accessibility point of view, it is beneficial to consider them as three components of one basic primitive that relates to polynomial commitment schemes. For the remainder of this tutorial, we will use the term FRI in this sense.
 
 In a regular polynomial commitment scheme, a prover commits to a polynomial $f(X)$ that is later opens in a given point $z$ such that it cannot equivocate between two different values of $f(z)$. The scheme consists of three algorithms, but with a different description:
  - $\mathsf{commit}$, which computes a binding commitment from the polynomial;
@@ -25,22 +25,31 @@ and
 $$f_O(X^2) = \frac{f(X) - f(-X)}{2X} = \sum_{i=0}^{\frac{d+1}{2}-1} c_{2i+1} X^{2i} \enspace .$$
 To see that this decomposition is correct, observe that for $f_E(X)$, the odd terms cancel; whereas for $f_O(X)$, it is the even terms that cancel. The key step of the protocol derives a codeword for $f^\star(X) = f_E(X) + \alpha \cdot f_O(X)$ from the codeword for $f(X)$, where $\alpha$ is a random scalar supplied by the verifier.
 
-Let $D$ be a subgroup of even order $N$ of the multiplicative group of the field, and let $\omega$ generate this subgroup:
-$$\langle \omega \rangle = D \subset \mathbb{F}_p \backslash\{0\} \enspace .$$
-Let $\{f(\omega^i)\}_{i=0}^{N-1}$ be the codeword for $f(X)$, corresponding with evaluation on $D$. Let $D^\star = \langle \omega^2 \rangle$ be another domain, of half the length, and $\{f_E(\omega^{2i})\}_{i=0}^{N/2-1}$, $\{f_O(\omega^{2i})\}_{i=0}^{N/2-1}$, and $\{f^\star(\omega^{2i})\}_{i=0}^{N/2-1}$ be the codewords for $f_E(X)$, $f_O(X)$, and $f^\star(X)$, respectively, corresponding to evaluation on $D^\star$.
+Let $D$ be a subgroup of even order $N$ of the multiplicative group of the field, and let $\omega$ generate this subgroup: $\langle \omega \rangle = D \subset \mathbb{F}_p \backslash\lbrace 0\rbrace.$
+
+Let $\lbrace f(\omega^i)\rbrace_{i=0}^{N-1}$ be the codeword for $f(X)$, corresponding with evaluation on $D$. Let $D^\star = \langle \omega^2 \rangle$ be another domain, of half the length, and
+ - $\lbrace f_E(\omega^{2i})\rbrace_{i=0}^{N/2-1}$,
+ - $\lbrace f_O(\omega^{2i})\rbrace_{i=0}^{N/2-1}$, and
+ - $\lbrace f^\star(\omega^{2i})\rbrace_{i=0}^{N/2-1}$
+be the codewords for $f_E(X)$, $f_O(X)$, and $f^\star(X)$, respectively, corresponding to evaluation on $D^\star$.
 
 Expanding the definition of $f^\star(X)$ gives
-$$ \{f^\star(\omega^{2i})\}_{i=0}^{N/2-1} = \{f_E(\omega^{2i}) + \alpha \cdot f_O(\omega^{2i})\}_{i=0}^{N/2-1} . $$
+$$ \lbrace f^\star(\omega^{2i})\rbrace_{i=0}^{N/2-1} = \lbrace f_E(\omega^{2i}) + \alpha \cdot f_O(\omega^{2i})\rbrace_{i=0}^{N/2-1} . $$
 
 
 Expand again, this time with the definition of $f_E(X^2)$ and $f_O(X^2)$.
-$$ \{f^\star(\omega^{2i})\}_{i=0}^{N/2-1} = \left\{ \frac{f(\omega^i) + f(-\omega^i)}{2} + \alpha \cdot \frac{f(\omega^i) - f(-\omega^i)}{2 \omega^i} \right\}_{i=0}^{N/2-1} \\ = \{ 2^{-1} \cdot \left( ( 1 + \alpha \cdot \omega^{-i} ) \cdot f(\omega^i) + (1 - \alpha \cdot \omega^{-i} ) \cdot f(-\omega^i) \right) \}_{i=0}^{N/2-1} $$
 
-Since the order of $\omega$ is $N$, we have $\omega^{N/2} = -1$, and therefore $f(-\omega^i) = f(\omega^{N/2 + i})$. This substitution makes it clear that even though the index iterates over half the range (from $0$ to $N/2-1$), all the points of $\{f(\omega^i)\}_{i=0}^{N-1}$ are involved in the derivation of $\{f^\star(\omega^{2i})\}_{i=0}^{N/2-1}$. It does not matter that the latter codeword has half the length; its polynomial has half the degree.
+$$ \lbrace f^\star(\omega^{2i})\rbrace_{i=0}^{N/2-1} $$
+$$ = \left\lbrace  \frac{f(\omega^i) + f(-\omega^i)}{2} + \alpha \cdot \frac{f(\omega^i) - f(-\omega^i)}{2 \omega^i} \right\rbrace_{i=0}^{N/2-1} $$
+$$ = \lbrace  2^{-1} \cdot \left( ( 1 + \alpha \cdot \omega^{-i} ) \cdot f(\omega^i) + (1 - \alpha \cdot \omega^{-i} ) \cdot f(-\omega^i) \right) \rbrace_{i=0}^{N/2-1} $$
 
-At this point it is possible to describe the mechanics for one round of the FRI protocol. The prover commits to $f(X)$ by sending the Merkle root of its codeword to the verifier. The verifier responds with the random challenge $\alpha$. The prover computes $f^\star(X)$ and commits to it by sending the Merkle root of $\{f^\star(\omega^{2i})\}_{i=0}^{N/2-1}$ to the verifier.
+Since the order of $\omega$ is $N$, we have $\omega^{N/2} = -1$, and therefore $f(-\omega^i) = f(\omega^{N/2 + i})$. This substitution makes it clear that even though the index iterates over half the range (from $0$ to $N/2-1$), all the points of $\lbrace f(\omega^i)\rbrace_{i=0}^{N-1}$
 
-The verifier now has two commitments to polynomials and his task is to verify that their correct relation holds. Specifically, the verifier should reject the proof if $f^\star(X) \neq 2^{-1} \cdot \left( (1 + \alpha X^{-1}) \cdot f(X) + (1 - \alpha X^{-1} ) \cdot f(-X) \right)$. (Ignore the values left and right hand sides take in 0.) To do this, the verifier randomly samples an index $i \xleftarrow{\$} \{0, \ldots, N/2-1\}$, which defines 3 points:
+are involved in the derivation of $\lbrace f^\star(\omega^{2i})\rbrace_{i=0}^{N/2-1}$. It does not matter that the latter codeword has half the length; its polynomial has half the degree.
+
+At this point it is possible to describe the mechanics for one round of the FRI protocol. The prover commits to $f(X)$ by sending the Merkle root of its codeword to the verifier. The verifier responds with the random challenge $\alpha$. The prover computes $f^\star(X)$ and commits to it by sending the Merkle root of $\lbrace f^\star(\omega^{2i})\rbrace_{i=0}^{N/2-1}$ to the verifier.
+
+The verifier now has two commitments to polynomials and his task is to verify that their correct relation holds. Specifically, the verifier should reject the proof if $f^\star(X) \neq 2^{-1} \cdot \left( (1 + \alpha X^{-1}) \cdot f(X) + (1 - \alpha X^{-1} ) \cdot f(-X) \right)$. (Ignore the values left and right hand sides take in 0.) To do this, the verifier randomly samples an index $i \xleftarrow{\$} \lbrace 0, \ldots, N/2-1\rbrace$, which defines 3 points:
  - $A: (\omega^i, f(\omega^i))$,
  - $B: (\omega^{N/2+i}, f(\omega^{N/2+i}))$,
  - $C: (\alpha, f^\star(\omega^{2i}))$.
@@ -76,11 +85,11 @@ The attack is thwarted when the same indices are used. The hybrid codeword neces
 
 The polynomial $f^\star(X^2)$ is a random linear combination of $f(X)$ and $f(-X)$. Clearly, if the prover is honest, then $f^\star(X)$ and its codeword satisfy this relation. What is less intuitive is when the prover is dishonest in more subtle ways than the hybrid codeword attack -- what is it about this colinearity check that makes the verifier likely to notice the fraud?
 
-A fraudulent prover is successful when the verifier accepts a codeword that does not correspond to a low degree polynomial. Let $\{f(\omega^i)\}_{i=0}^{N-1}$ be such a fraudulent codeword, corresponding to a polynomial $f(X)$ of degree $N-1$. Then $f_E(X)$ and $f_O(X)$ will be of degree at most $N/2 - 1$, and so will their linear combination $f^\star(X) = f_E(X) + \alpha \cdot f_O(X)$. At this point the malicious prover has two options.
- 1. He computes the codeword $\{f^\star(\omega^{2i})\}_{i=0}^{N/2-1}$ honestly by evaluating $f^\star(X)$ on $L^\star = \langle \omega^2 \rangle$. This does not improve his situation because instead of "proving" that a codeword of length $N$ corresponds to a polynomial of degree less than $\rho \cdot N$, he now has to "prove" that this codeword of length $N/2$ corresponds to a polynomial of degree less than $\rho \cdot N/2$. There is no reason to assume this false claim is any easier to prove than the one he started out with.
- 2. He sends a different codeword $\{v_i\}_{i=0}^{N/2-1}$ that disagrees with $f^\star(X)$ in *enough* points of $L^\star = \langle \omega^2 \rangle$. This is exactly the type of fraud that is likely to be exposed by the verifier's colinearity checks.
+A fraudulent prover is successful when the verifier accepts a codeword that does not correspond to a low degree polynomial. Let $\lbrace f(\omega^i)\rbrace_{i=0}^{N-1}$ be such a fraudulent codeword, corresponding to a polynomial $f(X)$ of degree $N-1$. Then $f_E(X)$ and $f_O(X)$ will be of degree at most $N/2 - 1$, and so will their linear combination $f^\star(X) = f_E(X) + \alpha \cdot f_O(X)$. At this point the malicious prover has two options.
+ 1. He computes the codeword $\lbrace f^\star(\omega^{2i})\rbrace_{i=0}^{N/2-1}$ honestly by evaluating $f^\star(X)$ on $L^\star = \langle \omega^2 \rangle$. This does not improve his situation because instead of "proving" that a codeword of length $N$ corresponds to a polynomial of degree less than $\rho \cdot N$, he now has to "prove" that this codeword of length $N/2$ corresponds to a polynomial of degree less than $\rho \cdot N/2$. There is no reason to assume this false claim is any easier to prove than the one he started out with.
+ 2. He sends a different codeword $\lbrace v_i\rbrace_{i=0}^{N/2-1}$ that disagrees with $f^\star(X)$ in *enough* points of $L^\star = \langle \omega^2 \rangle$. This is exactly the type of fraud that is likely to be exposed by the verifier's colinearity checks.
 
-Intuitively, a prover who lies in one location is hardly cheating, because it is a single error in an error-correcting code. The other $N/2-1$ values of the codeword still uniquely identify the codeword's defining polynomial. A cheating prover needs the fraudulent codeword $\{v_i\}_{i=0}^{N/2-1}$ to correspond to a polynomial of degree less than $\rho \cdot N/2$, and for that to be the case it needs to agree with this low degree polynomial in many more points than just one. But as the number of points where the malicious prover is being dishonest increases, so too does the probability of this fraud being exposed by the colinearity check.
+Intuitively, a prover who lies in one location is hardly cheating, because it is a single error in an error-correcting code. The other $N/2-1$ values of the codeword still uniquely identify the codeword's defining polynomial. A cheating prover needs the fraudulent codeword $\lbrace v_i\rbrace_{i=0}^{N/2-1}$ to correspond to a polynomial of degree less than $\rho \cdot N/2$, and for that to be the case it needs to agree with this low degree polynomial in many more points than just one. But as the number of points where the malicious prover is being dishonest increases, so too does the probability of this fraud being exposed by the colinearity check.
 
 ### Security Level
 
@@ -95,7 +104,7 @@ The [FRI paper](https://eccc.weizmann.ac.il/report/2017/134/revision/1/download/
 
 The description of the FRI protocol up until now involves codewords defined as the list of values taken by a polynomial of low degree on a given *evaluation domain* $D$, where $D$ is a subgroup of order $2^k$ spanned by some subgroup generator $\omega$. This leads to problems later on, when linking the FRI together with the STARK machinery. Specifically, the STARK protocol is *also* defined in terms of Reed-Solomon codewords. It is worthwhile to anticipate the problems that can occur when the points of evaluation concide, by choosing two disjoint sets.
 
-Specifically, let the new evaluation domain by a *coset* of the subgroup of order $2^k$ defined by some *offset* $g$ which is not a member of the subgroup $\langle \omega \rangle, \cdot$. Specifically, $D = \{ g \cdot \omega^i | i \in \mathbb{Z}\}$. The most straightforward choice is to set $g$ to a generator of the entire multiplicative group $\mathbb{F} \backslash \{0\}, \cdot$. The evaluation domain for the next codeword is given by the set of squares of $D$: $D^\star = \{d^2 | d \in D\} = \{g^2 \cdot \omega^{2i} | i \in \mathbb{Z}\}$.
+Specifically, let the new evaluation domain by a *coset* of the subgroup of order $2^k$ defined by some *offset* $g$ which is not a member of the subgroup $\langle \omega \rangle, \cdot$. Specifically, $D = \lbrace  g \cdot \omega^i \vert i \in \mathbb{Z}\rbrace$. The most straightforward choice is to set $g$ to a generator of the entire multiplicative group $\mathbb{F} \backslash \lbrace  0\rbrace, \cdot$. The evaluation domain for the next codeword is given by the set of squares of $D$: $D^\star = \lbrace  d^2 \vert d \in D\rbrace = \lbrace  g^2 \cdot \omega^{2i} \vert i \in \mathbb{Z}\rbrace$.
 
 ## Implementation
 
@@ -158,7 +167,7 @@ The commit phase consists of several rounds in which:
  - The Merkle root is sent to the verifier.
  - The verifier supplies a random challenge $\alpha$.
  - The prover applies the split-and-fold formula to derive a codeword for the next round.
- - The prover squares both the offset $g$ and generator $\omega$ such that $\{g \cdot \omega^i \vert i \in \mathbb{Z}\}$ always corresponds to the working codeword's evaluation domain.
+ - The prover squares both the offset $g$ and generator $\omega$ such that $\lbrace  g \cdot \omega^i \vert i \in \mathbb{Z}\rbrace$ always corresponds to the working codeword's evaluation domain.
 
 After running the loop, the prover is left with a codeword. It sends this codeword to the verifier in the clear. Lastly, the prover needs to keep track of the codewords computed in every round in order to open the Merkle trees generated from them in the next phase.
 
@@ -380,7 +389,7 @@ Let $f(X)$ be a polynomial of degree at most $d$, and let $y$ be the purported v
 
 This is useful for FRI because the codeword for $f(X)$ corresponds to a low degree polynomial. Furthermore, the verifier who inspects this codeword in a given point $x$ can compute the value of $\frac{f(X) - y}{X-z}$, giving rise to a new codeword. This derived codeword corresponds to a low degree polynomial if and only if $f(z) = y$. So the prover who lies about $y = f(z)$ will be exposed when trying to use FRI to "prove" that $\frac{f(X) - y}{X-z}$ has degree at most $d-1$.
 
-This process can be repeated any number of times. Suppose the verifier asks for the values of $f(X)$ in $z_0, \ldots, z_{n-1}$. The prover responds with $y_0, \ldots, y_n$, supposedly the values of $f(X)$ in these points. Let $p(X)$ be the polynomial of minimal degree that interpolates between $(z_0, y_0), \ldots, (z_{n-1}, y_{n-1})$. Then $f(X) - p(X)$ has zeros at $X \in \{z_0, \ldots, z_{n-1}\}$, and so $\prod_{i=0}^{n-1} X - z_i$ divides $f(X) - p(X)$. The verifier who authenticates a Merkle leaf of the tree associated with $f(X)$ can compute the matching value of $\frac{f(X) - p(X)}{\prod_{i=0}^{n-1} X-z_i}$. FRI will establish that this codeword corresponds to a polynomial of degree at most $d-n$ if and only if the prover was honest about all the values of $f(X)$.
+This process can be repeated any number of times. Suppose the verifier asks for the values of $f(X)$ in $z_0, \ldots, z_{n-1}$. The prover responds with $y_0, \ldots, y_n$, supposedly the values of $f(X)$ in these points. Let $p(X)$ be the polynomial of minimal degree that interpolates between $(z_0, y_0), \ldots, (z_{n-1}, y_{n-1})$. Then $f(X) - p(X)$ has zeros at $X \in \lbrace z_0, \ldots, z_{n-1}\rbrace$, and so $\prod_{i=0}^{n-1} X - z_i$ divides $f(X) - p(X)$. The verifier who authenticates a Merkle leaf of the tree associated with $f(X)$ can compute the matching value of $\frac{f(X) - p(X)}{\prod_{i=0}^{n-1} X-z_i}$. FRI will establish that this codeword corresponds to a polynomial of degree at most $d-n$ if and only if the prover was honest about all the values of $f(X)$.
 
 So where's the code implementing this logic? Other Polynomial IOPs do rely on the verifier asking for the values of committed polynomials in arbitrary points, but it turns out that the STARK Polynomial IOP does not. Nevertheless, it does implicitly rely on much of the same logic as was described here.
 
