@@ -22,7 +22,7 @@ $$ f(X) = f_E(X^2) + X \cdot f_O(X^2) $$
 where
 $$ f_E(X^2) = \frac{f(X) + f(-X)}{2} = \sum_{i=0}^{\frac{d+1}{2}-1} c_{2i} X^{2i} $$
 and
-$$f_O(X^2) = \frac{f(X) - f(-X)}{2X} = \sum_{i=0}^{{\frac{d+1}{2}-1}} c_{2i+1} X^{2i} \enspace .$$
+$$f_O(X^2) = \frac{f(X) - f(-X)}{2X} = \sum_{i=0}^{\frac{d+1}{2}-1} c_{2i+1} X^{2i} \enspace .$$
 To see that this decomposition is correct, observe that for $f_E(X)$, the odd terms cancel; whereas for $f_O(X)$, it is the even terms that cancel. The key step of the protocol derives a codeword for $f^\star(X) = f_E(X) + \alpha \cdot f_O(X)$ from the codeword for $f(X)$, where $\alpha$ is a random scalar supplied by the verifier.
 
 Let $D$ be a subgroup of even order $N$ of the multiplicative group of the field, and let $\omega$ generate this subgroup: $\langle \omega \rangle = D \subset \mathbb{F}_p \backslash\{0\}$. Let $\{f(\omega^i)\}_{i=0}^{N-1}$ be the codeword for $f(X)$, corresponding with evaluation on $D$. Let $D^\star = \langle \omega^2 \rangle$ be another domain, of half the length, and $\{f_E(\omega^{2i})\}_{i=0}^{N/2-1}$, $\{f_O(\omega^{2i})\}_{i=0}^{N/2-1}$, and $\{f^\star(\omega^{2i})\}_{i=0}^{N/2-1}$ be the codewords for $f_E(X)$, $f_O(X)$, and $f^\star(X)$, respectively, corresponding to evaluation on $D^\star$.
