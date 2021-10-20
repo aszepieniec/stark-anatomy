@@ -1,6 +1,5 @@
 highlighter: rouge
 markdown: kramdown
-math: mathjax
-theme: minima
+theme: architect
 include: _includes
 
