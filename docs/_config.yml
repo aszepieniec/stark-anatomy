@@ -1,5 +1,5 @@
 highlighter: rouge
 markdown: kramdown
-theme: minima
+theme: jekyll-theme-minimal
 include: _includes
 
