@@ -1,5 +1,7 @@
 highlighter: rouge
 markdown: kramdown
+kramdown:
+    math_engine: mathjax
 theme: jekyll-theme-minimal
 include: _includes
 
