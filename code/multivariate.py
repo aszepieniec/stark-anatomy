@@ -74,6 +74,9 @@ class MPolynomial:
                     return False
             return True
 
+    # Returns the multivariate polynomials representing each indeterminates linear function
+    # with a leading coefficient of one. For three indeterminates, returns:
+    # [f(x,y,z) = x, f(x,y,z) = y, f(x,y,z) = z]
     def variables( num_variables, field ):
         variables = []
         for i in range(num_variables):
