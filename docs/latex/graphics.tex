@@ -374,6 +374,47 @@ zerofier
 \begin{frame}{}
 \centering
 \begin{tikzpicture}
+\node[color=red!50!black] (execution trace) at (0,0) {\begin{tabular}{c}
+execution \\
+trace
+\end{tabular}};
+
+\node[color=red!50!black, scale=0.9] (transition constraints) at (3, 0) {\begin{tabular}{c}
+\textsc{AIR} \\
+\textsc{Constraints}
+\end{tabular}};
+
+\node[] (trace polynomials) at (0, -3) {\begin{tabular}{c}
+\textcolor{blue!50!black}{trace} \\
+\textcolor{blue!50!black}{polynomials}
+\end{tabular}};
+\draw[dashed, color=green!50!black] (trace polynomials.north west) -- (trace polynomials.north east) -- (trace polynomials.south east) -- (trace polynomials.south west) -- (trace polynomials.north west) {};
+
+\draw[->] (execution trace) -- (trace polynomials) node[above, midway, sloped, color=gray, scale=0.75] {\textit{interpolation}};
+
+\node[color=blue!50!black] (composition polynomials) at (3 ,-5) {\begin{tabular}{c}
+composition \\
+polynomials
+\end{tabular}};
+
+\draw[->] (transition constraints) -- (composition polynomials) node[above, midway, sloped, color=gray, scale=0.75] {\textit{symbolic evaluation}};
+\draw[->] (trace polynomials) -- (3, -3) {};
+
+\node[draw, color=green!50!black] (transition quotients) at (3, -7.5) {\textcolor{blue!50!black}{\begin{tabular}{c}
+quotients
+\end{tabular}}};
+
+\draw[<->] (composition polynomials) -- (transition quotients) node[midway, right, color=gray, scale=0.75] {\begin{tabular}{l}
+multiply or \\
+divide by \\
+zerofier
+\end{tabular}};
+\end{tikzpicture}
+\end{frame}
+
+\begin{frame}{}
+\centering
+\begin{tikzpicture}
 \node[color=red!50!black] (witness) at (-3, 0) {witness};
 \node[color=red!50!black] (index) at (0, 0) {index};
 \node[color=red!50!black] (instance) at (3, 0) {instance};
