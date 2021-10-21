@@ -1,12 +1,12 @@
 # Anatomy of a STARK, Part 1: STARK Overview
 
-In the terminology of this tutorial, a STARK is a particular SNARK where
+STARKs are a class of interactive proof systems, but for the purpose of this tutorial it's good to think of them as a special case of SNARKs in which
  - hash functions are the only cryptographic ingredient,
  - arithmetization is based on AIR (algebraic intermediate representation [^1]), and reduces the claim about computational integrity to one about the low degree of certain polynomials
  - the low degree of polynomials is proven by using FRI as a subprotocol, and FRI itself is instantiated with Merkle trees [^2];
  - zero-knowledge is optional.
 
- This part of the tutorial is about explaining the key terms in this definition of STARKs.
+This part of the tutorial is about explaining the key terms in this definition of STARKs.
 
 ## Interactive Proof Systems
 
@@ -17,16 +17,16 @@ In the terminology of this tutorial, a STARK is a particular SNARK where
   - There are two parties to the protocol, the prover and the verifier. Without loss of generality the messages sent by the verifier to the prover consist of unadulterated randomness and in this case (so: almost always) the proof system can be made non-interactive with the *Fiat-Shamir transform*. Non-interactive proof systems consist of a single message from the prover to the verifier.
   - Instead of perfect security, it is acceptable for the verifier to have a nonzero but negligibly small false positive or false negative rate. Alternatively, it is acceptable for the proof system to offer security only against provers whose computational power is bounded. After all, all computers are computationally bounded in practice. Sometimes authors use the term *argument system* to distinguish the protocol from a proof system that offers security against computationally unbounded provers, and *argument* for the transcript resulting from the non-interactivity transform.
   - There has to be a compelling reason why the verifier cannot naïvely re-run the computation whose integrity is asserted by the computational integrity claim. This is because the prover has access to resources that the verifier does not have access to.
-    - When the restricted resource is time, the verifier should run an order of magnitude faster than a naïve re-execution of the program. Proof systems that achieve this are said to be *succinct* or have *succinct verification*.
+    - When the restricted resource is time, the verifier should run an order of magnitude faster than a naïve re-execution of the program. Proof systems that achieve this property are said to be *succinct* or have *succinct verification*.
     - Succinct verification requires short proofs, but some proof systems like [Bulletproofs](https://eprint.iacr.org/2017/1066.pdf) or [Aurora](https://eprint.iacr.org/2018/828.pdf) feature compact proofs but still have slow verifiers.
     - When the verifier has no access to secret information that is available to the prover, and when the proof system protects the confidentiality of this secret, the proof system satisfies *zero-knowledge*. The verifier is convinced of the truth of a computational claim while learning no information about some or all of the inputs to that computation.
- - Especially in the context of zero-knowledge proof systems, the computational integrity claim may need a subtle amendment. In some contexts it is not enough to prove the correctness of a claim, but the prover must additionally prove that he *knows* the secret additional input, and could as well have outputted the secret directly instead of producing the proof. Proof systems that achieve this stronger notion of soundness called knowledge-soundness are called *proofs (or arguments) of knowledge*.
+ - Especially in the context of zero-knowledge proof systems, the computational integrity claim may need a subtle amendment. In some contexts it is not enough to prove the correctness of a claim, but the prover must additionally prove that he *knows* the secret additional input, and could as well have outputted the secret directly instead of producing the proof.[^3] Proof systems that achieve this stronger notion of soundness called knowledge-soundness are called *proofs (or arguments) of knowledge*.
 
 A SNARK is a *Succinct Non-interactive ARgument of Knowledge*. The [paper](https://eprint.iacr.org/2011/443.pdf) that coined the term SNARK used *succinct* to denote proof system with efficient verifiers. However, in recent years the meaning of the term has been diluted to include any system whose proofs are compact. This tutorial takes the side of the original definition.
 
 ## STARK Overview
 
-The acronym STARK stands for Scalable Transparent ARgument of Knowledge. *Scalable* refers to the fact that the prover has a running time that is at most quasilinear in the size of the computation, in contrast to SNARKs where the prover is allowed to have a prohibitively expensive complexity. *Transparent* refers to the fact that no trusted setup procedure is needed to instantiate the proof system, and hence there is no cryptographic toxic waste. The acronym's denotation suggests that STARKs are a subclass of SNARKs, and indeed they are, but the term is generally used to refer to a specific construction for scalable transparent SNARKs.
+The acronym STARK stands for Scalable Transparent ARgument of Knowledge. *Scalable* refers to the fact that that two things occur simultaneously: (1) the prover has a running time that is at most quasilinear in the size of the computation, in contrast to SNARKs where the prover is allowed to have a prohibitively expensive complexity, and (2) verification time is poly-logarithmic in the size of the computation. *Transparent* refers to the fact that all verifier messages are just publicly sampled random coins. In particular, no trusted setup procedure is needed to instantiate the proof system, and hence there is no cryptographic toxic waste. The acronym's denotation suggests that non-interactive STARKs are a subclass of SNARKs, and indeed they are, but the term is generally used to refer to a *specific* construction for scalable transparent SNARKs.
 
 The particular qualities of this construction are best illustrated in the context of the compilation pipeline. Depending on the level of granularity, one might opt to subdivide this process into more or fewer steps. For the purpose of introducing STARKs, the compilation pipeline is divided into four stages and three transformations. Later on in this tutorial there will be a much more fine-grained pipeline and diagram.
 
@@ -77,3 +77,4 @@ This description glosses over many details. The remainder of this tutorial will 
 
 [^1]: Also, algebraic *internal* representation.
 [^2]: Note that FRI is defined in terms of abstract oracles which can be queried in arbitrary locations; a FRI protocol can thus be compiled into a concrete protocol by simulating the oracles with any cryptographic vector commitment scheme. Merkle trees provide this functionality but are not the only cryptographic primitive to do it.
+[^3]: Formally, *knowledge* is defines as follows: an extractor algorithm must exist which has oracle access to a possibly-malicious prover, pretends to be the matching verifier (and in particular reads the messages coming from the prover and sends its own via the same interface), has the power to rewind the possibly-malicious prover to any earlier point in time, runs in polynomial time, and outputs the witness. STARKs have been shown to satisfy this property, see section 5 of the [EthSTARK documentation](https://eprint.iacr.org/2021/582.pdf).
