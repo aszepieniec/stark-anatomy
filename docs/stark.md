@@ -110,6 +110,20 @@ Verifier:
      - Divide by the value of the transition zerofier in $x$.
      - Verify that the resulting value equals $y$.
 
+## Generalized AIR Constraints
+
+The description so far makes a clear distinction between transition constraints on the one hand, and boundary constraints on the other hand. However, there is a unifying perspective that characterizes both as cleanly dividing ratios of polynomials. More accurately, the denominator divides the numerator cleanly if the computation is integral; otherwise, there is a nonzero remainder.
+
+Such a generalized AIR constraint is given by two polynomials.
+ - The *numerator* determines which equations between elements of the algebraic execution trace hold, in a manner that is independent of the cycle. For transition constraints, the numerator is exactly the transition constraint polynomial. For boundary constraints, the numerator is simply $t_ i(X) - y$ where $y$ is supposedly the value of $t_ i(X)$ at the given boundary.
+ - The *denominator* is a zerofier that determines *where* the equality is supposed to hold, by vanishing (*i.e.*, evaluating to zero) in those points. For transition constraints, this zerofier vanishes on all points of the trace evaluation domain. For the boundary constraints, this zerofier vanishes only on the boundary.
+
+Treating boundary constraints and transition constraints as subclasses of generalized AIR constraints, leads to a simpler workflow diagram. Now, the prover commits to the raw trace polynomials, but these polynomials are not input to the FRI subprotocol. Instead, they are used to only verify that the leafs of the first Merkle tree of FRI were computed correctly.
+
+![STARK workflow for generalized AIR constraints](graphics/generalized-air-workflow.svg)
+
+The implementation of this tutorial follows the earlier workflow, which separates boundary constraints from transition constraints, rather than the workflow informed by a generalized notion of AIR constraints.
+
 ## Adding Zero-Knowledge
 
 Formally, an interactive proof system is *zero-knowledge* if the distribution of transcripts arising from authentic executions of the protocol is independent of the witness and can be sampled efficiently with public information only. In practice, this means that the prover randomizes the data structures and proof arithmetic using randomness that also remains secret. The transcript is independent of the witness because *any* transcript can be explained by the right choice of randomizers.
