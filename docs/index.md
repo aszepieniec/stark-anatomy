@@ -10,6 +10,7 @@ One of the most exciting recent advances in the field of cryptographic proof sys
 
 Zk-SNARKs have existed for a while, but the STARK proof system is a relatively new thing. It stands out for several reasons:
  - While traditional zk-SNARKs rely on cutting-edge cryptographic hard problems and assumptions, the only cryptographic ingredient in a STARK proof system is a collision-resistant hash function. As a result, the proof system is provably post-quantum under an idealized model of the hash function [^1]. This stands in contrast to the first generation of SNARKs which use bilinear maps and are only provably secure under unfalsifiable assumptions.
+ - The field of arithmetization for STARKs is independent of the cryptographic hard problem, and so this field can be chosen specifically to optimize performance. As a result, STARKs promise concretely fast provers.
  - Traditional zk-SNARKs rely on a trusted setup ceremony to produce public parameters. After the ceremony, the used randomness must be securely forgotten. The ceremony is trusted because if the participants refuse or neglect to delete this cryptographic toxic waste, they retain the ability to forge proofs. In contrast, STARKs have no trusted setup and hence no cryptographic toxic waste.
 
  ![Eli Ben-Sasson likes STARKs better](graphics/twitter-eli.png "STARKs will beat SNARKs")
@@ -19,7 +20,7 @@ In this tutorial I attempt to explain how many of the pieces work together. This
 ## Why?
 
 It should be noted early on that there are a variety of sources for learning about STARKs. Here is an incomplete list.
- - The scientific papers on [FRI](https://eccc.weizmann.ac.il/report/2017/134/revision/1/download/), [STARK](https://eprint.iacr.org/2018/046.pdf), [DEEP-FRI](https://eprint.iacr.org/2019/336.pdf)
+ - The scientific papers on [FRI](https://eccc.weizmann.ac.il/report/2017/134/revision/1/download/), [STARK](https://eprint.iacr.org/2018/046.pdf), [DEEP-FRI](https://eprint.iacr.org/2019/336.pdf), and the latest [soundness analysis for FRI](https://eccc.weizmann.ac.il/report/2020/083/)
  - A multi-part tutorial by Vitalik Buterin (parts [I](https://vitalik.ca/general/2017/11/09/starks_part_1.html)/[II](https://vitalik.ca/general/2017/11/22/starks_part_2.html)/[3](https://vitalik.ca/general/2018/07/21/starks_part_3.html))
  - A series of blog posts by StarkWare (parts [1](https://medium.com/starkware/stark-math-the-journey-begins-51bd2b063c71), [2](https://medium.com/starkware/arithmetization-i-15c046390862), [3](https://medium.com/starkware/arithmetization-ii-403c3b3f4355), [4](https://medium.com/starkware/low-degree-testing-f7614f5172db), [5](https://medium.com/starkware/a-framework-for-efficient-starks-19608ba06fbe))
  - The [STARK @ Home](https://www.youtube.com/playlist?list=PLcIyXLwiPilUFGw7r2uyWerOkbx4GFMXq) webcasts by StarkWare
