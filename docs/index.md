@@ -16,7 +16,7 @@ Zk-SNARKs have existed for a while, but the STARK proof system is a relatively n
 
 In this tutorial I attempt to explain how many of the pieces work together. This textual explanation is supported by a python implementation for proving and verifying a simple computation based on the [Rescue-Prime](https://eprint.iacr.org/2020/1143.pdf) hash function. After reading or studying this tutorial, you should be able to write your own zero-knowledge STARK prover and verifier for a computation of your choice.
 
-## Why another tutorial?
+## Why?
 
 It should be noted early on that there are a variety of sources for learning about STARKs. Here is an incomplete list.
  - The scientific papers on [FRI](https://eccc.weizmann.ac.il/report/2017/134/revision/1/download/), [STARK](https://eprint.iacr.org/2018/046.pdf), [DEEP-FRI](https://eprint.iacr.org/2019/336.pdf)
