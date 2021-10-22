@@ -60,7 +60,7 @@ This tutorial does re-hash the background material when it is needed. However, t
 
 ## Acknowledgements
 
-The author wishes to thank Bobbin Threadbare and Thorkil Værge for useful feedback and comments, as well as [Nervos](https://nervos.org) Foundation for financial support. Send him an email at `alan@nervos.org` or follow `aszepieniec` on twitter or Github.
+The author wishes to thank Bobbin Threadbare, Thorkil Værge, and Eli Ben-Sasson for useful feedback and comments, as well as [Nervos](https://nervos.org) Foundation for financial support. Send him an email at `alan@nervos.org` or follow `aszepieniec` on twitter or Github.
 
 **0** - [1](overview) - [2](basic-tools) - [3](fri) - [4](stark) - [5](rescue-prime) - [6](faster)
 
