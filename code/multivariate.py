@@ -2,7 +2,7 @@ from univariate import *
 
 class MPolynomial:
     def __init__( self, dictionary ):
-        # Multivariate polynomials are represented as dictionaries with indeterminate exponents
+        # Multivariate polynomials are represented as dictionaries with exponent vectors
         # as keys and coefficients as values. E.g.:
         # f(x,y,z) = 17 + 2xy + 42z - 19x^6*y^3*z^12 is represented as:
         # {
