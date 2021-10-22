@@ -10,7 +10,7 @@ Outline:
  - STARK information theoretical protocol
  - speeding things up with NTT and preprocessing
 
-Visit the Github Pages website here: [https://aszepieniec.github.io/stark-anatomy/]
+Visit the Github Pages website here: https://aszepieniec.github.io/stark-anatomy/
 
 ## Running locally
 
