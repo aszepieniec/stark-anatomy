@@ -53,5 +53,7 @@ MathJax.Hub.Register.MessageHook("TeX Jax - parse error",function (message) {
 
 Jekyll, the site engine used by Github Pages, will load this header automatically. There is no need to change the `_config.yml` file.
 
-Note that Kramdown interprets every underscore (`_`) that is followed by a non-whitespace character, as starting an emphasised piece of text. This interpretation interfereces with subscript in LaTeX formulae, which also uses underscores. The workaround is to re-write the LaTeX formulas by introducing a space after every underscore.
+Note that Kramdown interprets every underscore (`_`) that is followed by a non-whitespace character, as starting an emphasised piece of text. This interpretation interfereces with subscript in LaTeX formulae, which also uses underscores. The workaround is to re-write the LaTeX formulas by introducing a space after every underscore. Also, consider replacing:
+ - `\{` by `\lbrace` and `\}` by `\rbrace`,
+ - `|` by `\vert`.
 
