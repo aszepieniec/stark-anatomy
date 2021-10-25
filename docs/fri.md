@@ -71,7 +71,7 @@ In production systems the length of the codeword is often reduced not by a facto
 
 ### Index Folding
 
-The above description glosses over a counter-intuitive point but highly subtle: *the random indices are not independent between rounds*. Instead, the same index is re-used across all rounds, with reductions modulo the codeword length when necessary.
+The above description glosses over a counter-intuitive but highly subtle point: *the random indices are not independent between rounds*. Instead, the same index is re-used across all rounds, with reductions modulo the codeword length when necessary.
 
 The reason why sampling the indices independently in each round less insecure, is because it is likely to fail to catch hybrid codewords, as the next picture shows.
 
@@ -79,7 +79,7 @@ The reason why sampling the indices independently in each round less insecure, i
 
 The blue codeword is far from any codeword that matches with a low degree polynomial, whereas the green codeword does correspond to a low degree polynomial. In order to switch from blue to green, the malicious prover uses a hybrid codeword in the second round. This hybrid codeword is obtained by selecting the values from the one codeword or the other based on a randomly chosen partition. The malicious prover succeeds when all colinearity checks involve points of the same color.
 
-The attack is thwarted when the same indices are used. The hybrid codeword necessarily generates a colinearity test of mismatching colors in at least one round.
+The attack is thwarted when the same indices are used. The hybrid codeword necessarily generates a colinearity test of mismatching colors -- either in the current or in the next round.
 
 ### Intuition for Security
 
@@ -374,7 +374,7 @@ The verifier runs through the same checklist as the prover but runs the dual ste
 
 ## Simulating a Polynomial Commitment Scheme
 
-FRI establishes that a given Merkle root decommits to a polynomial of degree less than $2^k$. The Merkle root can double as the commitment of a polynomial commitment scheme, but how to realize the $\mathsf{open}$ and $\mathsf{verify}$ procedures? Two steps achieve this transformation.
+FRI establishes that a given Merkle root decommits to (the evaluations of) a polynomial of degree less than $2^k$. The Merkle root can therefore double as the commitment of a polynomial commitment scheme. But then how to realize the $\mathsf{open}$ and $\mathsf{verify}$ procedures? Two steps achieve this transformation.
 
 **One:** arbitrary degree bounds. If the prover instead wants to prove that a committed polynomial has degree at most $d$, where $d+1$ is not a power of two, can he use FRI? The answer is yes!
 
