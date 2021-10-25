@@ -280,15 +280,15 @@ The algorithms described above chiefly apply to the prover, whose complexity dro
 
 ## Sparse Zerofiers with Group Theory
 
-It is an elementary fact of group theory that every element raised to its order gives the identity. For example, an element $x$ of the subgroup of order $r$ of the multiplicative group of a finite field $\mathbb{F}_ p \backslash \lbrace 0 \rbrace$ satisfies $x^r = x$. Rearranging, and replacing $x$ with a formal indeterminate $X$, we get a polynomial
-$$ X^r - X $$
+It is an elementary fact of group theory that every element raised to its order gives the identity. For example, an element $x$ of the subgroup of order $r$ of the multiplicative group of a finite field $\mathbb{F}_ p \backslash \lbrace 0 \rbrace$ satisfies $x^r = 1$. Rearranging, and replacing $x$ with a formal indeterminate $X$, we get a polynomial
+$$ X^r - 1 $$
 that is guaranteed to evaluate to zero in every element of the order-$r$ subgroup. Furthermore, this polynomial is monic (*i.e.*, the leading coefficient is one) and of minimal degree (across all polynomials that vanish on all $r$ points of the subgroup). Therefore, this sparse polynomial is exactly the zerofier for the subgroup!
 
-For STARKs, we are already using finite fields that come with subgroups of order $2^k$ for many $k$. Therefore, if the execution trace is interpolated over $\lbrace \omicron^i \vert 0 \leq i < 2^k \rbrace$ where $\omicron$ is a generator of the subgroup of order $2^k$, then the zerofier is equivalent to the rational expression
-$$ \frac{X^{2^k} - X}{X - \omicron^{-1}} \enspace .$$
-Performing the division gives
-$$ (X - 1) (X - \omicron) (X - \omicron^2) \cdots (X - \omicron^{2^{k}-2}) \enspace ,$$
-which is exactly the zerofier for $\lbrace \omicron^i \vert 0 \leq i < 2^k - 1\rbrace$ -- the missing point resulting from having only $2^k-1$ transitions. The verifier obviously does not perform the division because it turns a dense polynomial into a sparse one. Instead, the verifier evaluates the numerator sparsely and divides it by the value of the denominator. This works as long as the verifier does not need to evaluate the zerofier in $\omicron^{-1}$, which is precisely what the coset-trick of FRI guarantees.
+For STARKs, we are already using finite fields that come with subgroups of order $2^k$ for many $k$. Therefore, if the execution trace is interpolated over $\lbrace \omicron^i \, \vert \, 0 \leq i < 2^k \rbrace$ where $\omicron$ is a generator of the subgroup of order $2^k$, then the zerofier for $\lbrace \omicron^i \, \vert \, 0 \leq i < 2^k - 1\rbrace$ is equal to the rational expression
+$$ \frac{X^{2^k-1} - 1}{X - \omicron^{-1}} $$
+in all points $X$ except for $X = \omicron^{-1}$, where the rational expression is undefined.
+
+The verifier obviously does not perform the division because it turns a dense polynomial into a sparse one. Instead, the verifier evaluates the numerator sparsely and divides it by the value of the denominator. This works as long as the verifier does not need to evaluate the zerofier in $\omicron^{-1}$, which is precisely what the coset-trick of FRI guarantees.
 
 To apply this strategy, the STARK trace length must be a power of 2. If the trace is far from a power of two, say by a difference of $d$, then the verifier needs to evaluate a zerofier that has $d-1$ factors in the denominator. In other words, *the trace length must be a power of two in order for the verifier to be fast*.
 
