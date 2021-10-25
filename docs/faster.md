@@ -298,8 +298,6 @@ The solution is to pad the trace until its length is the next power of 2. Clearl
    - over a distinct domain it evaluates to the uniformly random randomizers.
  - If the randomizers are appended before padding, then the transition constraints must by compatible with this operation, or else the composition polynomials will not evaluate to zero in the entire power-of-two subgroup. This option requires changing the AIR.
 
-I am not sure which of the options is the standard solution. Both strike me as hacky workarounds for a problem in need of a more elegant solution. Preprocessing offers this solution, obviates padding, and serves a dual didactical purpose particularly relevant for this tutorial.
-
 ### Preprocessing
 
 Where a standard Polynomial IOP consists of two parties, the prover and the verifier, a *Preprocessing Polynomial IOP* consists if three: a prover, a verifier, and an *indexer*. (The indexer is sometimes also called the *preprocessor* or the *helper*.)
@@ -308,7 +306,13 @@ The role of the indexer is to perform computations that help the verifier (not t
 
 ![Information flow in a proof system with preprocessing.](graphics/preprocessing.svg)
 
+The formal definition of STARKs does not capture proof systems with preprocessing, and when counting the indexer's work as verifier work, a proof system with preprocessing is arguably not scalable. Nevertheless, a preprocessing proof system can be scalable in the English sense of the word if the verifier's work (not counting that of the indexer) is polylogarithmic in the size of the computation.
+
+### Preprocessed Dense Zerofiers
+
 Concretely, the indexer's output to the verifier will be a commitment to the zerofier $Z(X) = \prod_{i=0}^{T-1} (X-\omicron^i)$ via the familiar Merkle root of Reed-Solomon codeword construction. Whenever the verifier needs the value of this zerofier in a point, the prover provides him with this leaf along with an authentication path. Note that the verifier does not need evaluate the zerofier in points outside the FRI domain. As a result, there is no need to prove that the zerofier has a low degree; it comes straight from the trusted indexer.
+
+This description highlights the main drawback of using preprocessing to achieve scalability: the proof is larger because it includes more Merkle authentication paths. Another drawback is the slightly stronger security model: the verifier needs to trust the indexer's output. Even though the preprocessing is transparent here, re-running the indexer in order to justify this trust might be prohibitively expensive. The code supporting this tutorial achieves scalability through preprocessing as opposed to group theory.
 
 ### Variable Execution Times
 
