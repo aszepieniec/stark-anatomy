@@ -336,7 +336,7 @@ Before moving on to the next section, it is worth pausing to note that all ingre
  1. Start with the set of integers, and reduce the result of any addition or multiplication modulo a given prime number $p$.
  2. Start with the set of polynomials over a finite field, and reduce the result of any addition or multiplication modulo a given *irreducible polynomial* $p(X)$. A polynomial is *irreducible* when it cannot be decomposed as the product of two smaller polynomials, analogously to prime numbers.
 
- The point is that it is possible to do the arithmetization in a smaller field than cryptographic compilation step, as long as the latter step uses an extension field of that of the former. Specifically and for example, [Distaff VM](https://github.com/GuildOfWeavers/distaff) operates over the finite field defined by a 64-bit prime, but the FRI step operates over an extension field thereof in order to target 128 bits of security.
+ The point is that it is possible to do the arithmetization in a smaller field than cryptographic compilation step, as long as the latter step uses an extension field of that of the former. Specifically and for example, [EthSTARK](https://github.com/starkware-libs/ethSTARK) operates over the finite field defined by a 62-bit prime, but the FRI step operates over a quadratic extension field thereof in order to target a higher security level.
 
  This tutorial will not use extension fields, and so an elaborate discussion of the topic is out of scope.
 
@@ -526,7 +526,7 @@ class ProofStream:
 
 A [Merkle tree](https://en.wikipedia.org/wiki/Merkle_tree) is a vector commitment scheme built from a collision-resistant hash function[^4]. Specifically, it allows the user to commit to an array of $2^N$ items such that
  - the commitment is a single hash digest and this commitment is *binding* -- it represents the array in a way that prevents the user from changing it without first breaking the hash function;
- - for any index $i \in \{0, \ldots, 2^N-1\}$, the value in location $i$ of the array represented by the commitment can be proven with $N$ more hash digests.
+ - for any index $i \in \lbrace0, \ldots, 2^N-1\rbrace$, the value in location $i$ of the array represented by the commitment can be proven with $N$ more hash digests.
 
 Specifically, every leaf of the binary tree represents the hash of a data element. Every non-leaf node represents the hash of the concatenation of its two children. The root of the tree is the commitment. A membership proof consists of all siblings of nodes on a path from the indicated leaf to the root. This list of siblings is called an *authentication path*, and provides the verifier with $N$ complete preimages to the hash function at every step of the path, leading to a final test in the root node.
 
@@ -537,7 +537,7 @@ An implementation of this construct needs to provide three functionalities:
  2. $\mathsf{open}$ -- computes the authentication path of an indicated leaf in the Merkle tree.
  3. $\mathsf{verify}$ -- verifies that a given leaf is an element of the committed vector at the given index.
 
-If performance is not an issue (and for this tutorial it is not), the recursive nature of these functionalities gives rise to a wonderful functional implementation.
+If performance is not an issue (and for this tutorial it is not), the recursive nature of these functionalities gives rise to a wonderfully functional implementation.
 
 ```python
 from hashlib import blake2b
