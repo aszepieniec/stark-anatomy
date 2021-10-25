@@ -115,7 +115,7 @@ The description so far makes a clear distinction between transition constraints 
 
 Such a generalized AIR constraint is given by two polynomials.
  - The *numerator* determines which equations between elements of the algebraic execution trace hold, in a manner that is independent of the cycle. For transition constraints, the numerator is exactly the transition constraint polynomial. For boundary constraints, the numerator is simply $t_ i(X) - y$ where $y$ is supposedly the value of $t_ i(X)$ at the given boundary.
- - The *denominator* is a zerofier that determines *where* the equality is supposed to hold, by vanishing (*i.e.*, evaluating to zero) in those points. For transition constraints, this zerofier vanishes on all points of the trace evaluation domain. For the boundary constraints, this zerofier vanishes only on the boundary.
+ - The *denominator* is a zerofier that determines *where* the equality is supposed to hold, by vanishing (*i.e.*, evaluating to zero) in those points. For transition constraints, this zerofier vanishes on all points of the trace evaluation domain except the last. For the boundary constraints, this zerofier vanishes only on the boundary.
 
 Treating boundary constraints and transition constraints as subclasses of generalized AIR constraints, leads to a simpler workflow diagram. Now, the prover commits to the raw trace polynomials, but these polynomials are not input to the FRI subprotocol. Instead, they are used to only verify that the leafs of the first Merkle tree of FRI were computed correctly.
 
