@@ -1,7 +1,6 @@
 # Anatomy of a STARK, Part 4: The STARK Polynomial IOP
 
-This part of the tutorial deals with the information-theoretic backbone of the STARK proof system, which you might call the STARK Polynomial IOP. 
-Recall that the compilation pipeline of SNARKs involves intermediate stages, the first two of which are the *arithmetic constraint system* and the *Polynomial IOP*. This tutorial describes the properties of the arithmetic constraint system but a discussion about the *arithmetization* step, which transforms the initial computation into an arithmetic constraint system, is out of scope. However, *interpolation* step, which transforms this arithmetic constraint system into a Polynomial IOP, is discussed at length. The final Polynomial IOP can be compiled into a concrete proof system using the FRI-based compiler described in [part 3](fri).
+This part of the tutorial deals with the information-theoretic backbone of the STARK proof system, which you might call the STARK Polynomial IOP. Recall that the compilation pipeline of SNARKs involves intermediate stages, the first two of which are the *arithmetic constraint system* and the *Polynomial IOP*. This tutorial does describe the properties of the arithmetic constraint system. However, a discussion about the *arithmetization* step, which transforms the initial computation into an arithmetic constraint system, is out of scope. The *interpolation* step, which transforms this arithmetic constraint system into a Polynomial IOP, is discussed at length. The final Polynomial IOP can be compiled into a concrete proof system using the FRI-based compiler described in [part 3](fri).
 
 ## Arithmetic Intermediate Representation (AIR)
 
@@ -41,7 +40,7 @@ Not all lists of $\mathsf{w}$ represent valid states. For instance, some registe
 
 ## Interpolation
 
-The arithmetic constraint system described above already represents the computational integrity claim as a bunch polynomials. Transforming this constraint system into a Polynomial IOP requires extending this representation in terms of polynomials to the witness and its validity. Specifically, we need to represent the conditions for true computational integrity claims in terms of identities of polynomials.
+The arithmetic constraint system described above already represents the computational integrity claim as a bunch of polynomials; each such polynomial corresponds to a constraint. Transforming this constraint system into a Polynomial IOP requires extending this representation in terms of polynomials to the witness and extending the notion of *valid* witnesses to *witness polynomials*. Specifically, we need to represent the conditions for true computational integrity claims in terms of identities of polynomials.
 
 Let $D$ be a list of points referred to from here on out as the *trace evaluation domain*. Typically, $D$ is set to the span of a generator $\omicron$ of a subgroup of order $2^k \geq T+1$. So for the time being set $D = \lbrace \omicron^i \vert i \in \mathbb{Z}\rbrace$. The Greek letter $\omicron$ ("omicron") indicates that the trace evaluation domain is smaller than the FRI evaluation domain by a factor exactly equal to the expansion factor[^1].
 
@@ -133,6 +132,10 @@ With respect to randomizing the STARK proof system, it is worth separating the m
  2. The linking part that establishes that the boundary quotients are linked to the transition quotient(s). To randomize this, the execution trace for every register is extended with $4s$ uniformly random field elements. The number $4s$ comes from the number $s$ of colinearity checks in the FRI protocol: every colinearity check induces two queries in the initial codeword. The two values of the transition quotient codeword need to be linked two four values of the boundary quotient codewords.
 
 It is important to guarantee that none of the x-coordinates that are queried as part of FRI correspond to x-coordinates used for interpolating the execution trace. This is one of the reasons why coset-FRI comes in handy. Nevertheless, other solutions can address this problem.
+
+Lastly, if the field is not large enough (specifically, if its cardinality is significantly less than $2^\lambda$ for security level $\lambda$), then salts need to be appended to the leafs when building the Merkle tree. Specifically, every leaf needs $\lambda$ bits of randomness, and if it does not come from the field element then it must come from an explicit appendix.
+
+Without leaf salts, the Merkle tree and its paths are deterministic for a given codeword. This codeword is still somewhat random, because the polynomial that generates it has randomizers. However, every leaf has at most $\vert \mathbb{F}_ p \vert$ bits of entropy, and when this number of smaller than $\lambda$, the attacker is likely to find duplicate hash digests. In other words, he can notice, with less than $2^\lambda$ work, that the same value is being input to the hash function. This observation leads to a distinguisher between authentic and simulated transcript, which in turn undermines zero-knowledge.
 
 ## Implementation
 
