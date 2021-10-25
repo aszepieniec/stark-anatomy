@@ -137,6 +137,8 @@ Lastly, if the field is not large enough (specifically, if its cardinality is si
 
 Without leaf salts, the Merkle tree and its paths are deterministic for a given codeword. This codeword is still somewhat random, because the polynomial that generates it has randomizers. However, every leaf has at most $\vert \mathbb{F}_ p \vert$ bits of entropy, and when this number of smaller than $\lambda$, the attacker is likely to find duplicate hash digests. In other words, he can notice, with less than $2^\lambda$ work, that the same value is being input to the hash function. This observation leads to a distinguisher between authentic and simulated transcript, which in turn undermines zero-knowledge.
 
+The code presented here omits leaf salts because the field is large enough.
+
 ## Implementation
 
 Like the FRI module, the STARK module starts with an initializer function that sets the class's fields to the initialization arguments or values inferred from them.
