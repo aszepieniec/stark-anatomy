@@ -12,7 +12,7 @@ Outline:
 
 Visit the Github Pages website here: https://aszepieniec.github.io/stark-anatomy/
 
-## Running locally
+## Running locally (the website, not the tutorial)
 
  1. Install ruby
  2. Install bundler
