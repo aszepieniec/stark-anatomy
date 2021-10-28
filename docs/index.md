@@ -1,5 +1,17 @@
 # Anatomy of a STARK, Part 0: Introduction
 
+This series of articles is a six part tutorial explaining the mechanics of the STARK proof system. It is directed towards a technically-inclined audience with knowledge of basic maths and programming.
+
+ - Part 0: Introduction
+ - [Part 1: STARK Overview](overview)
+ - [Part 2: Basic Tools](basic-tools)
+ - [Part 3: FRI](fri)
+ - [Part 4: The STARK Polynomial IOP](stark)
+ - [Part 5: A Rescue-Prime STARK](rescue-prime)
+ - [Part 6: Speeding Things Up](faster)
+
+## What Are STARKs?
+
 One of the most exciting recent advances in the field of cryptographic proof systems is the development of STARKs. It comes in the wake of a booming blockchain industry, for which proof systems in general seem tailor-made: blockchain networks typically consist of *mutually distrusting parties* that wish to *transact*, or generally *update collective state* according to *state evolution rules*, using *secret information*. Since the participants are mutually distrusting, they require the means to verify the validity of transactions (or state updates) proposed by their peers. *Zk-SNARKs* are naturally equipped to provide assurance of computational integrity in this environment, as a consequence of their features:
  - zk-SNARKs are (typically) universal, meaning that they are capable of proving the integrity of arbitrary computations;
  - zk-SNARKs are non-interactive, meaning that the entire integrity proof consists of a single message;
@@ -40,7 +52,7 @@ With these sources available, why am I writing another tutorial?
 
 *It helps me to make sense of things.* Writing this tutorial helps me systematize my own knowledge and identify areas where it is shallow or wholly lacking. 
 
-## Required background knowledge
+## Required Background Knowledge
 
 This tutorial does re-hash the background material when it is needed. However, the reader might want to study up on the following topics because if they are unfamiliar with them, the presentation here might be too dense.
 
@@ -51,12 +63,12 @@ This tutorial does re-hash the background material when it is needed. However, t
 
 ## Roadmap
 
- - [Part 1: STARK Overview](overview)
- - [Part 2: Basic Tools](basic-tools)
- - [Part 3: FRI](fri)
- - [Part 4: The STARK Polynomial IOP](stark)
- - [Part 5: A Rescue-Prime STARK](rescue-prime)
- - [Part 6: Speeding Things Up](faster)
+ - [Part 1: STARK Overview](overview) paints a high-level picture of the concepts and workflow.
+ - [Part 2: Basic Tools](basic-tools) introduces the basic mathematical and cryptographic tools from which the proof system will be built.
+ - [Part 3: FRI](fri) covers the low degree test, which is the cryptographic heart of the proof system.
+ - [Part 4: The STARK Polynomial IOP](stark) explains the information-theoretical that generates an abstract proof system from arbitrary computational claims.
+ - [Part 5: A Rescue-Prime STARK](rescue-prime) puts the tools together and builds a transparent zero-knowledge proof system for a simple computation.
+ - [Part 6: Speeding Things Up](faster) introduces algorithms and techniques to make the whole thing faster, effectively putting the "S" into the STARK.
 
 ## Acknowledgements
 
