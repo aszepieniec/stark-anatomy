@@ -332,7 +332,7 @@ While this solution works adequately in the general case, for the Rescue-Prime c
 
 Now it is time to apply the developed tools to make the STARK algorithmically efficient.
 
-First, add a preprocessing function. This function is a member of the STARK class with access to its fields (such as the number of cycles). It produces two outputs: one for the prover, and one for the prover. In this concrete case, the prover receives the zerofier polynomial and zerofier codeword, and the verifier receives the zerofier Merkle root.
+First, add a preprocessing function. This function is a member of the STARK class with access to its fields (such as the number of cycles). It produces two outputs: one for the prover, and one for the verifier. In this concrete case, the prover receives the zerofier polynomial and zerofier codeword, and the verifier receives the zerofier Merkle root.
 
 ```python
 # class FastStark:
