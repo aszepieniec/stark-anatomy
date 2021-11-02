@@ -4,7 +4,7 @@ FRI is a protocol that establishes that a committed polynomial has a bounded deg
 
 Since the codewords represent low-degree polynomials, and since the codewords are hidden behind Merkle trees in any real-world deployment, it is arguably more natural to present FRI from the point of view of a polynomial commitment scheme, with some caveats. There is scientific merit in separating the type of codewords from the IOP, and those two from the Merkle tree that simulates the oracles. However, from an accessibility point of view, it is beneficial to consider them as three components of one basic primitive that relates to polynomial commitment schemes. For the remainder of this tutorial, we will use the term FRI in this sense.
 
-In a regular polynomial commitment scheme, a prover commits to a polynomial $f(X)$ that is later opens in a given point $z$ such that it cannot equivocate between two different values of $f(z)$. The scheme consists of three algorithms, but with a different description:
+In a regular polynomial commitment scheme, a prover commits to a polynomial $f(X)$ that is later opens in a given point $z$ such that it cannot equivocate between two different values of $f(z)$. The scheme consists of three algorithms:
  - $\mathsf{commit}$, which computes a binding commitment from the polynomial;
  - $\mathsf{open}$, which produces a proof that $f(z) = y$ for some $z$ and for the polynomial $f(X)$ that matches with the given commitment;
  - $\mathsf{verify}$, which verifies the proof produced by $\mathsf{open}$.
@@ -27,11 +27,7 @@ To see that this decomposition is correct, observe that for $f_E(X)$, the odd te
 
 Let $D$ be a subgroup of even order $N$ of the multiplicative group of the field, and let $\omega$ generate this subgroup: $\langle \omega \rangle = D \subset \mathbb{F}_p \backslash\lbrace 0\rbrace.$
 
-Let $\lbrace f(\omega^i)\rbrace_{i=0}^{N-1}$ be the codeword for $f(X)$, corresponding with evaluation on $D$. Let $D^\star = \langle \omega^2 \rangle$ be another domain, of half the length, and
- - $\lbrace f_E(\omega^{2i})\rbrace_{i=0}^{N/2-1}$,
- - $\lbrace f_O(\omega^{2i})\rbrace_{i=0}^{N/2-1}$, and
- - $\lbrace f^\star(\omega^{2i})\rbrace_{i=0}^{N/2-1}$
-be the codewords for $f_E(X)$, $f_O(X)$, and $f^\star(X)$, respectively, corresponding to evaluation on $D^\star$.
+Let $\lbrace f(\omega^i)\rbrace_{i=0}^{N-1}$ be the codeword for $f(X)$, corresponding with evaluation on $D$. Let $D^\star = \langle \omega^2 \rangle$ be another domain, of half the length, and $\lbrace f_ E(\omega^{2i})\rbrace_{i=0}^{N/2-1}$, $\lbrace f_ O(\omega^{2i})\rbrace_{i=0}^{N/2-1}$, and $\lbrace f^\star(\omega^{2i})\rbrace_ {i=0}^{N/2-1}$ be the codewords for $f_E(X)$, $f_O(X)$, and $f^\star(X)$, respectively, corresponding to evaluation on $D^\star$.
 
 Expanding the definition of $f^\star(X)$ gives
 $$ \lbrace f^\star(\omega^{2i})\rbrace_{i=0}^{N/2-1} = \lbrace f_E(\omega^{2i}) + \alpha \cdot f_O(\omega^{2i})\rbrace_{i=0}^{N/2-1} . $$
@@ -73,7 +69,7 @@ In production systems the length of the codeword is often reduced not by a facto
 
 The above description glosses over a counter-intuitive but highly subtle point: *the random indices are not independent between rounds*. Instead, the same index is re-used across all rounds, with reductions modulo the codeword length when necessary.
 
-The reason why sampling the indices independently in each round less insecure, is because it is likely to fail to catch hybrid codewords, as the next picture shows.
+The reason why sampling the indices independently in each round is less secure, is because it is likely to fail to catch hybrid codewords, as the next picture shows.
 
 ![Sampling indices in FRI. Left: less secure; right: more secure.](graphics/fri-attack.svg)
 
