@@ -336,15 +336,15 @@ polynomials
 dense trace \\
 polynomials
 \end{tabular}};
-\node[color=blue!50!black] (composition polynomials) at (3 ,-5) {\begin{tabular}{c}
-composition \\
+\node[color=blue!50!black] (transition polynomials) at (3 ,-5) {\begin{tabular}{c}
+transition \\
 polynomials
 \end{tabular}};
 
 \draw[->] (boundary constraints) -- (dense trace polynomials) node[below, midway, sloped, color=gray, scale=0.75] {\textit{interpolate and subtract}};
 \draw[<->] (trace polynomials) -- (-3, -3) {};
 
-\draw[->] (transition constraints) -- (composition polynomials) node[above, midway, sloped, color=gray, scale=0.75] {\textit{symbolic evaluation}};
+\draw[->] (transition constraints) -- (transition polynomials) node[above, midway, sloped, color=gray, scale=0.75] {\textit{symbolic evaluation}};
 \draw[->] (trace polynomials) -- (3, -3) {};
 
 \node[draw, color=green!50!black] (boundary quotients) at (-3, -7.5) {\textcolor{blue!50!black}{\begin{tabular}{c}
@@ -363,7 +363,7 @@ divide by \\
 zerofier
 \end{tabular}};
 
-\draw[<->] (composition polynomials) -- (transition quotients) node[midway, right, color=gray, scale=0.75] {\begin{tabular}{l}
+\draw[<->] (transition polynomials) -- (transition quotients) node[midway, right, color=gray, scale=0.75] {\begin{tabular}{l}
 multiply or \\
 divide by \\
 zerofier
@@ -392,19 +392,19 @@ trace
 
 \draw[->] (execution trace) -- (trace polynomials) node[above, midway, sloped, color=gray, scale=0.75] {\textit{interpolation}};
 
-\node[color=blue!50!black] (composition polynomials) at (3 ,-5) {\begin{tabular}{c}
-composition \\
+\node[color=blue!50!black] (transition polynomials) at (3 ,-5) {\begin{tabular}{c}
+transition \\
 polynomials
 \end{tabular}};
 
-\draw[->] (transition constraints) -- (composition polynomials) node[above, midway, sloped, color=gray, scale=0.75] {\textit{symbolic evaluation}};
+\draw[->] (transition constraints) -- (transition polynomials) node[above, midway, sloped, color=gray, scale=0.75] {\textit{symbolic evaluation}};
 \draw[->] (trace polynomials) -- (3, -3) {};
 
 \node[draw, color=green!50!black] (transition quotients) at (3, -7.5) {\textcolor{blue!50!black}{\begin{tabular}{c}
 quotients
 \end{tabular}}};
 
-\draw[<->] (composition polynomials) -- (transition quotients) node[midway, right, color=gray, scale=0.75] {\begin{tabular}{l}
+\draw[<->] (transition polynomials) -- (transition quotients) node[midway, right, color=gray, scale=0.75] {\begin{tabular}{l}
 multiply or \\
 divide by \\
 zerofier
