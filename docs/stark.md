@@ -224,7 +224,7 @@ The next function computes polynomials that interpolate through the (location,va
 
     def boundary_quotient_degree_bounds( self, randomized_trace_length, boundary ):
         randomized_trace_degree = randomized_trace_length - 1
-        return [randomized_trace_degree - bi.degree() for bi in self.boundary_interpolants(boundary)]
+        return [randomized_trace_degree - bz.degree() for bz in self.boundary_zerofiers(boundary)]
 ```
 
 The last helper function is used by prover and verifier when they want to transform a seed, obtained from the Fiat-Shamir transform, into a list of field elements. The resulting field elements are used as weights in the nonlinear combination of polynomials before starting FRI.
