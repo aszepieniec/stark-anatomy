@@ -65,7 +65,7 @@ class Stark:
 
     def boundary_quotient_degree_bounds( self, randomized_trace_length, boundary ):
         randomized_trace_degree = randomized_trace_length - 1
-        return [randomized_trace_degree - bi.degree() for bi in self.boundary_interpolants(boundary)]
+        return [randomized_trace_degree - bz.degree() for bz in self.boundary_zerofiers(boundary)]
 
     def sample_weights( self, number, randomness ):
         return [self.field.sample(blake2b(randomness + bytes(i)).digest()) for i in range(0, number)]
