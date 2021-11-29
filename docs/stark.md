@@ -61,7 +61,7 @@ This observation gives rise to the following high-level Polynomial IOP:
    - querying the values of $\boldsymbol{t}(X)$ in $z$ and $\omicron \cdot z$,
    - evaluating the transition verification polynomials $\mathbf{p}(X_1, \ldots, X_{\mathsf{w}-1}, Y_0, \ldots, Y_{\mathsf{w}-1})$ in these $2\mathsf{w}$ points, and
    - querying the values of $\mathbf{c}(X)$ in $z$,
-   - checking that the values obtained in the previous two steps match;
+   - checking that the values obtained in the previous two steps match.
  5. The verifier checks that the transition polynomials $\mathbf{c}(X)$ evaluate to zero in $\lbrace \omicron^i \vert i \in \lbrace 0, \ldots, T-1 \rbrace \rbrace$.
 
 In fact, the commitment of the transition polynomials can be omitted. Instead, the verifier uses the evaluation of $\boldsymbol{t}(X)$ in $z$ and $\omicron \cdot z$ to compute the value of $\mathbf{c}(X)$ in the one point needed to verify that $\mathbf{c}(X)$ evaluates to 0 in $\lbrace  \omicron^i \vert i \in \lbrace 0, \ldots, T-1 \rbrace \rbrace$.
