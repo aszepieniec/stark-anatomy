@@ -217,9 +217,9 @@ def fast_coset_evaluate( polynomial, offset, generator, order ):
     return values
 ```
 
-Fast evaluation on a coset allows us to answer a pesky problem that arises when adapting the fast multiplication procedure to divide instead of multiply. What happens when the divisor codeword is zero in a given location? If the numerator codeword is not zero in that location, then the division gives a nonzero remainder and the entire operation can be flagged as erroneous. But there can still be clean division if the numerator is also zero in the given location. This is exactly the problem that occurs when attempting to use NTTs to divide out the zerofiers.
+Fast evaluation on a coset allows us to answer a pesky problem that arises when adapting the fast multiplication procedure to divide instead of multiply. Where fast multiplication used element-wise multiplication on codewords, fast division uses element-wise division on codewords, where the codewords are obtained by applying the NTT to the polynomials' coefficient vectors. The problem is this: what happens when the divisor codeword is zero in a given location? If the numerator codeword is not zero in that location, then the division is unclean and has a nonzero remainder. In this case the entire operation can be flagged as erroneous. However, there can still be clean division if the numerator is also zero in the given location. The naïve fast division algorithm fails because of a zero-divided-by-zero error, even though the underlying polynomials generate a clean division. This is exactly the problem that occurs when attempting to use NTTs to divide out the zerofiers. We got around this problem in the previous part of the tutorial by using polynomial long division instead, but this solution has a *quadratic* running time. We want quasilinear!
 
-The solution is to perform the element-wise division one codewords arising from evaluation on a coset. Specifically, the procedure involves five steps:
+The solution is to perform the element-wise division on codewords arising from evaluation on a coset of the group over which the NTT is defined. Specifically, the procedure involves five steps:
  - scale
  - NTT
  - element-wise divide
