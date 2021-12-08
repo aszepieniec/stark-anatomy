@@ -70,6 +70,14 @@ This tutorial does re-hash the background material when it is needed. However, t
  - [Part 5: A Rescue-Prime STARK](rescue-prime) puts the tools together and builds a transparent zero-knowledge proof system for a simple computation.
  - [Part 6: Speeding Things Up](faster) introduces algorithms and techniques to make the whole thing faster, effectively putting the "S" into the STARK.
 
+## Supporting Python Code
+
+In addition to the code snippets contained in the text, there is full working python implementation. Clone the repository from [here](https://github.com/aszepieniec/stark-anatomy). Incidentally, if you find a bug or a typo, or if you have an improvement you would like to suggest, feel free to make a pull request.
+
+## Questions and Discussion
+
+The best place for questions and discussion is on the [community forum of the zero-knowledge podcast](https://community.zeroknowledge.fm). 
+
 ## Acknowledgements
 
 The author wishes to thank Bobbin Threadbare, Thorkil Værge, and Eli Ben-Sasson for useful feedback and comments, as well as [Nervos](https://nervos.org) Foundation for financial support. Send him an email at `alan@nervos.org` or follow `aszepieniec` on twitter or Github. Consider donating [btc](bitcoin:bc1qg32wme6sqltus5e9yzuq4y56xxc0rutly8ak7y), [ckb](nervos:ckb1qyq9s4rvld206a3rl6jmzxav4ffx58uj5prsv867ml) or [eth](ethereum:0x934B24cE32ceEDB38ce088Da1D9366Fa23F7B3f4).
