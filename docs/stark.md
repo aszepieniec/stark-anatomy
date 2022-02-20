@@ -34,7 +34,7 @@ $$ x \mapsto \left\lbrace  \begin{array}{l}
 x^{-1} & \Leftarrow x \neq 0 \\
 0 & \Leftarrow x = 0 
 \end{array} \right. $$
-can be represented as a computation polynomial $f(x) = x^{p-1}$ or as a pair of verification polynomials $\mathbf{p}(x,y) = (x(xy-1), y(xy-1))$. The degree drops from $p-1$ to 3.
+can be represented as a computation polynomial $f(x) = x^{p-2}$ or as a pair of verification polynomials $\mathbf{p}(x,y) = (x(xy-1), y(xy-1))$. The degree drops from $p-2$ to 3.
 
 Not all lists of $\mathsf{w}$ represent valid states. For instance, some registers may be constrained to bits and thus take only values from $\lbrace 0, 1\rbrace$. The state transition function is what guarantees that the next state is well-formed if the current state is. When translating to verification polynomials, these *consistency constraints* are polynomials in the first half of variables only ($X_0, \ldots, X_{\mathsf{w}-1}$) because they apply to every single row in the AET, as opposed to every consecutive pair of rows. For the sake of simplicity, this tutorial will ignore consistency constraints and pretend as though every $\mathsf{w}$-tuple of field elements represents a valid state.
 
