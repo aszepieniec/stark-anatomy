@@ -82,6 +82,13 @@ The best place for questions and discussion is on the [community forum of the ze
 
 The author wishes to thank Bobbin Threadbare, Thorkil Værge, and Eli Ben-Sasson for useful feedback and comments, as well as [Nervos](https://nervos.org) Foundation for financial support. Send him an email at `alan@nervos.org` or follow `aszepieniec` on twitter or Github. Consider donating [btc](bitcoin:bc1qg32wme6sqltus5e9yzuq4y56xxc0rutly8ak7y), [ckb](nervos:ckb1qyq9s4rvld206a3rl6jmzxav4ffx58uj5prsv867ml) or [eth](ethereum:0x934B24cE32ceEDB38ce088Da1D9366Fa23F7B3f4).
 
+## Mirrors
+
+This tutorial is hosted in several locations. If you're hosting an identical copy too, or a translation, let me know.
+
+ - [GitHub Pages](https://aszepieniec.github.io/stark-anatomy/)
+ - [Neptune Project Website](https://neptune.cash/learn/stark-anatomy/)
+
 **0** - [1](overview) - [2](basic-tools) - [3](fri) - [4](stark) - [5](rescue-prime) - [6](faster)
 
 [^1]: In the literature, this idealization is known as the quantum random oracle model.
