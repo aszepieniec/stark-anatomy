@@ -22,7 +22,9 @@ $$ f(X) = f_E(X^2) + X \cdot f_O(X^2) $$
 where
 $$ f_E(X^2) = \frac{f(X) + f(-X)}{2} = \sum_{i=0}^{\frac{d+1}{2}-1} c_{2i} X^{2i} $$
 and
-$$f_O(X^2) = \frac{f(X) - f(-X)}{2X} = \sum_{i=0}^{\frac{d+1}{2}-1} c_{2i+1} X^{2i} \enspace .$$
+$$f_O(X^2) = \frac{f(X) - f(-X)}{2X} = \sum_{i=0}^{\frac{d+1}{2}-1} c_{2i+1} X^{2i} \enspace ,$$
+where the expression $\frac{d+1}{2}-1$ is the number of possible even or odd terms in a degree $d$ polynomial counting from zero.
+Keep in mind that for our usecase $d=2^k-1$, for $k \in \mathbb{N_{+}}$ so the expression is always an integer.
 To see that this decomposition is correct, observe that for $f_E(X)$, the odd terms cancel; whereas for $f_O(X)$, it is the even terms that cancel. The key step of the protocol derives a codeword for $f^\star(X) = f_E(X) + \alpha \cdot f_O(X)$ from the codeword for $f(X)$, where $\alpha$ is a random scalar supplied by the verifier.
 
 Let $D$ be a subgroup of even order $N$ of the multiplicative group of the field, and let $\omega$ generate this subgroup: $\langle \omega \rangle = D \subset \mathbb{F}_p \backslash\lbrace 0\rbrace.$
@@ -45,7 +47,7 @@ are involved in the derivation of $\lbrace f^\star(\omega^{2i})\rbrace_{i=0}^{N/
 
 At this point it is possible to describe the mechanics for one round of the FRI protocol. The prover commits to $f(X)$ by sending the Merkle root of its codeword to the verifier. The verifier responds with the random challenge $\alpha$. The prover computes $f^\star(X)$ and commits to it by sending the Merkle root of $\lbrace f^\star(\omega^{2i})\rbrace_{i=0}^{N/2-1}$ to the verifier.
 
-The verifier now has two commitments to polynomials and his task is to verify that their correct relation holds. Specifically, the verifier should reject the proof if $f^\star(X) \neq 2^{-1} \cdot \left( (1 + \alpha X^{-1}) \cdot f(X) + (1 - \alpha X^{-1} ) \cdot f(-X) \right)$. (Ignore the values left and right hand sides take in 0.) To do this, the verifier randomly samples an index $i \xleftarrow{\$} \lbrace 0, \ldots, N/2-1\rbrace$, which defines 3 points:
+The verifier now has two commitments to polynomials and his task is to verify that their correct relation holds. Specifically, the verifier should reject the proof if $f^\star(X) \neq 2^{-1} \cdot \left( (1 + \alpha X^{-1}) \cdot f(X) + (1 - \alpha X^{-1} ) \cdot f(-X) \right)$. (Ignore the case where $X=0$.) To do this, the verifier randomly samples an index $i \xleftarrow{\$} \lbrace 0, \ldots, N/2-1\rbrace$, which defines 3 points:
  - $A: (\omega^i, f(\omega^i))$,
  - $B: (\omega^{N/2+i}, f(\omega^{N/2+i}))$,
  - $C: (\alpha, f^\star(\omega^{2i}))$.
@@ -56,7 +58,7 @@ Why would $A$, $B$, and $C$ lie on a straight line? Let's find the line that pas
 $$ y = \sum_i y_i \prod_{j \neq i} \frac{x - x_j}{x_i - x_j} \\
 = f(\omega^i) \cdot \frac{x - \omega^{N/2+i}}{\omega^{i} - \omega^{N/2+i}} + f(\omega^{N/2+i}) \cdot \frac{x - \omega^{i}}{\omega^{N/2+i} - \omega^{i}} \\
 =  f(\omega^i) \cdot 2^{-1} \cdot \omega^{-i} \cdot (x + \omega^i) - f(\omega^{N/2+i}) \cdot 2^{-1} \cdot \omega^{-i} (x - \omega^i) \\
-= 2^{-1} \cdot \left( (1 + x \cdot \omega^{-i}) \cdot f(\omega^i) + (1 - x \cdot \omega^i) \cdot f(\omega^{N/2 + i}) \right) \enspace .$$
+= 2^{-1} \cdot \left( (1 + x \cdot \omega^{-i}) \cdot f(\omega^i) + (1 - x \cdot \omega^{-i}) \cdot f(\omega^{N/2 + i}) \right) \enspace .$$
 By setting $x = \alpha$ we get exactly the y-coordinate of $C$.
 
 This description covers one round, at the end of which the prover and verifier are in the same position as they were at the start. The prover wishes to establish that a given Merkle root decommits to a codeword whose defining polynomial has a bounded degree. There is one important difference though: as a result of running one round of FRI, the length of the codeword as well as the number of possibly nonzero coefficients of the polynomial have halved. Prover and verifier can set $f = f^\star$, $D = d^\star$, and repeat the process. After running $\lceil \log_2 (d+1) \rceil - 1$ rounds of FRI, where $d$ is the degree of the original polynomial, prover and verifier end up with a constant polynomial whose codeword is also constant. At this point, the prover sends this constant[^3] instead of the codeword's Merkle root, making it abundantly clear that it corresponds to a polynomial of degree $0$.
