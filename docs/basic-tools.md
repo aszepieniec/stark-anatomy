@@ -329,7 +329,7 @@ def test_colinearity( points ):
     domain = [p[0] for p in points]
     values = [p[1] for p in points]
     polynomial = Polynomial.interpolate_domain(domain, values)
-    return polynomial.degree() == 1
+    return polynomial.degree() <= 1
 ```
 
 Before moving on to the next section, it is worth pausing to note that all ingredients are in place for *finite extension fields*, or simply *extension fields*. A finite field is simply a set equipped with addition and multiplication operators that behave according to high school algebra rules, *e.g.* every nonzero element has an inverse, or no two nonzero elements multiplied give zero. There are two ways to obtain them:
