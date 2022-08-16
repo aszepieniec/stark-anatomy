@@ -182,7 +182,7 @@ Next up are the helper functions. First are the degree bounds calculators for a)
 
 ```python
     def transition_degree_bounds( self, transition_constraints ):
-        point_degrees = [1] + [self.original_trace_length+self.num_randomizers-1] * 2*self.num_regisers
+        point_degrees = [1] + [self.original_trace_length+self.num_randomizers-1] * 2*self.num_registers
         return [max( sum(r*l for r, l in zip(point_degrees, k)) for k, v in a.dictionary.items()) for a in transition_constraints]
 
     def transition_quotient_degree_bounds( self, transition_constraints ):
@@ -204,7 +204,7 @@ Up next are zerofier polynomials, which come in two categories: boundary zerofie
 
     def boundary_zerofiers( self, boundary ):
         zerofiers = []
-        for s in range(self.num_regisers):
+        for s in range(self.num_registers):
             points = [self.omicron^c for c, r, v in boundary if r == s]
             zerofiers = zerofiers + [Polynomial.zerofier_domain(points)]
         return zerofiers
@@ -215,7 +215,7 @@ The next function computes polynomials that interpolate through the (location,va
 ```python
     def boundary_interpolants( self, boundary ):
         interpolants = []
-        for s in range(self.num_regisers):
+        for s in range(self.num_registers):
             points = [(c,v) for c, r, v in boundary if r == s]
             domain = [self.omicron^c for c,v in points]
             values = [v for c,v in points]
