@@ -39,6 +39,7 @@ It should be noted early on that there are a variety of sources for learning abo
  - The [STARK 101](https://starkware.co/developers-community/stark101-onlinecourse/) online course by StarkWare
  - The [EthStark documentation](https://eprint.iacr.org/2021/582.pdf) by StarkWare
  - generally speaking, anything put out by [StarkWare](https://starkware.co)
+ - [A summary on the FRI low degree test](https://eprint.iacr.org/2022/1216) by Ulrich Haböck
 
 With these sources available, why am I writing another tutorial?
 
