@@ -441,4 +441,4 @@ Last is the verifier. It comes with the same caveat and exercise.
 
 [0](index) - [1](overview) - [2](basic-tools) - [3](fri) - **4** - [5](rescue-prime) - [6](faster)
 
-[^1]: It is worth ensuring that the trace evaluation domain is disjoint from the FRI evaluation domain, for example by using the coset-trick. However, if overlapping subgroups are used for both domains, then $\omega^{1 / \rho} = \omicron$ and $\omega$ generates the larger domain whereas $\omicron$ generates the smaller one.
+[^1]: It is worth ensuring that the trace evaluation domain is disjoint from the FRI evaluation domain, for example by using the coset-trick. However, if overlapping subgroups are used for both domains, then $\omega^{\rho} = \omicron$ and $\omega$ generates the larger domain whereas $\omicron$ generates the smaller one.
