@@ -14,11 +14,11 @@ $$f : \mathbb{F}_p^\mathsf{w} \rightarrow \mathbb{F}_p^\mathsf{w} $$
 
 determines the state at the next cycle as a function of the state at the previous cycle. Furthermore, a list of boundary conditions 
 
-$$ \mathcal{B} : [\mathbb{Z}_T \times \mathbb{Z}_\mathsf{w} \times \mathbb{F}] $$
+$$ \mathcal{B} \subseteq \mathbb{Z}_T \times \mathbb{Z}_\mathsf{w} \times \mathbb{F}_p $$
 
 enforce the correct values of some or all registers at the first cycle, last cycle, or even at arbitrary cycles.
 
-The *computational integrity claim* consists of the state transition function and the boundary conditions. The *witness* to this claim is the algebraic execution trace. The claim is *true* if there is a witness $W \in \mathbb{G}^{T \times \mathsf{w}}$ such that:
+The *computational integrity claim* consists of the state transition function and the boundary conditions. The *witness* to this claim is the algebraic execution trace. The claim is *true* if there is a witness $W \in \mathbb{F}_p^{T \times \mathsf{w}}$ such that:
  - for every cycle, the state evolves correctly: $\forall i \in \lbrace 0, \ldots, T-1 \rbrace \, . \, f(W_{[i,:]}) = W_{[i+1,:]}$; and
  - all boundary conditions are satisfied: $\forall (i, w, e) \in \mathcal{B} \, . \, W_{[i,w]} = e$.
 
@@ -36,7 +36,7 @@ x^{-1} & \Leftarrow x \neq 0 \\
 \end{array} \right. $$
 can be represented as a computation polynomial $f(x) = x^{p-2}$ or as a pair of verification polynomials $\mathbf{p}(x,y) = (x(xy-1), y(xy-1))$. The degree drops from $p-2$ to 3.
 
-Not all lists of $\mathsf{w}$ represent valid states. For instance, some registers may be constrained to bits and thus take only values from $\lbrace 0, 1\rbrace$. The state transition function is what guarantees that the next state is well-formed if the current state is. When translating to verification polynomials, these *consistency constraints* are polynomials in the first half of variables only ($X_0, \ldots, X_{\mathsf{w}-1}$) because they apply to every single row in the AET, as opposed to every consecutive pair of rows. For the sake of simplicity, this tutorial will ignore consistency constraints and pretend as though every $\mathsf{w}$-tuple of field elements represents a valid state.
+Not all lists of $\mathsf{w}$ field elements represent valid states. For instance, some registers may be constrained to bits and thus take only values from $\lbrace 0, 1\rbrace$. The state transition function is what guarantees that the next state is well-formed if the current state is. When translating to verification polynomials, these *consistency constraints* are polynomials in the first half of variables only ($X_0, \ldots, X_{\mathsf{w}-1}$) because they apply to every single row in the AET, as opposed to every consecutive pair of rows. For the sake of simplicity, this tutorial will ignore consistency constraints and pretend as though every $\mathsf{w}$-tuple of field elements represents a valid state.
 
 ## Interpolation
 
