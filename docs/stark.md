@@ -18,7 +18,7 @@ $$ \mathcal{B} \subseteq \mathbb{Z}_T \times \mathbb{Z}_\mathsf{w} \times \mathb
 
 enforce the correct values of some or all registers at the first cycle, last cycle, or even at arbitrary cycles.
 
-The *computational integrity claim* consists of the state transition function and the boundary conditions. The *witness* to this claim is the algebraic execution trace. The claim is *true* if there is a witness $W \in \mathbb{G}^{T \times \mathsf{w}}$ such that:
+The *computational integrity claim* consists of the state transition function and the boundary conditions. The *witness* to this claim is the algebraic execution trace. The claim is *true* if there is a witness $W \in \mathbb{F}_p^{T \times \mathsf{w}}$ such that:
  - for every cycle, the state evolves correctly: $\forall i \in \lbrace 0, \ldots, T-1 \rbrace \, . \, f(W_{[i,:]}) = W_{[i+1,:]}$; and
  - all boundary conditions are satisfied: $\forall (i, w, e) \in \mathcal{B} \, . \, W_{[i,w]} = e$.
 
