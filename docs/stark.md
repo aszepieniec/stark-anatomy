@@ -14,7 +14,7 @@ $$f : \mathbb{F}_p^\mathsf{w} \rightarrow \mathbb{F}_p^\mathsf{w} $$
 
 determines the state at the next cycle as a function of the state at the previous cycle. Furthermore, a list of boundary conditions 
 
-$$ \mathcal{B} : [\mathbb{Z}_T \times \mathbb{Z}_\mathsf{w} \times \mathbb{F}] $$
+$$ \mathcal{B} \subseteq \mathbb{Z}_T \times \mathbb{Z}_\mathsf{w} \times \mathbb{F}_p $$
 
 enforce the correct values of some or all registers at the first cycle, last cycle, or even at arbitrary cycles.
 
