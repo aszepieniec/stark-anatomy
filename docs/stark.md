@@ -84,14 +84,14 @@ Prover:
  - Interpolate the execution trace to obtain the trace polynomials.
  - Interpolate the boundary points to obtain the boundary interpolants, and compute the boundary zerofiers along the way.
  - Subtract the boundary interpolants from the trace polynomials, giving rise to the dense trace polynomials.
- - Divide out the boundary zerofiers from the dense trace polynomials.
- - Commit to the dense trace polynomials.
+ - Divide out the boundary zerofiers from the dense trace polynomials to get the dense trace quotients.
+ - Commit to the dense trace quotients.
  - Get $r$ random coefficients from the verifier.
  - Compress the $r$ transition constraints into one master constraint that is the weighted sum.
  - Symbolically evaluate the master constraint in the trace polynomials, thus generating the transition polynomial.
  - Divide out the transition zerofier to get the transition quotient.
  - Commit to the transition zerofier.
- - Run FRI on all committed polynomials.
+ - Run FRI on the commitments viz. the dense trace quotients, the transition quotients, the transition zerofier polynomial.
  - Supply the Merkle leafs and authentication paths that are requested by the verifier.
 
 Verifier:
