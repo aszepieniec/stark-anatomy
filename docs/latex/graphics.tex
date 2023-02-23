@@ -332,8 +332,8 @@ polynomials
 
 \draw[->] (execution trace) -- (trace polynomials) node[above, midway, sloped, color=gray, scale=0.75] {\textit{interpolation}};
 
-\node[color=blue!50!black] (dense trace polynomials) at (-3 ,-5) {\begin{tabular}{c}
-dense trace \\
+\node[color=blue!50!black] (boundary polynomials) at (-3 ,-5) {\begin{tabular}{c}
+boundary \\
 polynomials
 \end{tabular}};
 \node[color=blue!50!black] (transition polynomials) at (3 ,-5) {\begin{tabular}{c}
@@ -341,7 +341,7 @@ transition \\
 polynomials
 \end{tabular}};
 
-\draw[->] (boundary constraints) -- (dense trace polynomials) node[below, midway, sloped, color=gray, scale=0.75] {\textit{interpolate and subtract}};
+\draw[->] (boundary constraints) -- (boundary polynomials) node[below, midway, sloped, color=gray, scale=0.75] {\textit{interpolate and subtract}};
 \draw[<->] (trace polynomials) -- (-3, -3) {};
 
 \draw[->] (transition constraints) -- (transition polynomials) node[above, midway, sloped, color=gray, scale=0.75] {\textit{symbolic evaluation}};
@@ -357,7 +357,7 @@ transition \\
 quotients
 \end{tabular}}};
 
-\draw[<->] (dense trace polynomials) -- (boundary quotients) node[midway, right, color=gray, scale=0.75] {\begin{tabular}{l}
+\draw[<->] (boundary polynomials) -- (boundary quotients) node[midway, right, color=gray, scale=0.75] {\begin{tabular}{l}
 multiply or \\
 divide by \\
 zerofier
@@ -393,7 +393,7 @@ trace
 \draw[->] (execution trace) -- (trace polynomials) node[above, midway, sloped, color=gray, scale=0.75] {\textit{interpolation}};
 
 \node[color=blue!50!black] (transition polynomials) at (3 ,-5) {\begin{tabular}{c}
-transition \\
+AIR evaluation \\
 polynomials
 \end{tabular}};
 

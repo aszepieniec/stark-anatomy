@@ -72,7 +72,7 @@ The redundancy comes from the fact that the trace polynomials relate to both quo
 
 ![Overview of the STARK workflow](graphics/stark-workflow.svg)
 
-At the top of this diagram in red are the objects associated with the arithmetic constraint system, with the constraints written in small caps font to indicate that they are known to the verifier. The prover interpolates the execution trace to obtain the trace polynomials, but it is not necessary to commit to these polynomials. Instead, the prover interpolates the boundary points and subtracts the resulting interpolants from the trace polynomials. This procedure produces the *dense trace polynomials*, for lack of a better name. To obtain the boundary quotients from the dense trace polynomials, the prover divides out the zerofier. Note that the boundary quotients and trace polynomials are equivalent in the following sense: if the verifier knows a value in a given point of one, he can compute the matching value of the other using only public information.
+At the top of this diagram in red are the objects associated with the arithmetic constraint system, with the constraints written in small caps font to indicate that they are known to the verifier. The prover interpolates the execution trace to obtain the trace polynomials, but it is not necessary to commit to these polynomials. Instead, the prover interpolates the boundary points and subtracts the resulting interpolants from the trace polynomials. This procedure produces the *boundary polynomials*, for lack of a better name. To obtain the *boundary quotients* from the boundary polynomials, the prover divides out the zerofier. Note that the boundary quotients and trace polynomials are equivalent in the following sense: if the verifier knows a value in a given point of one, he can compute the matching value of the other using only public information.
 
 To obtain the transition polynomials, the prover evaluates the transition constraints (recall, these are given as multivariate polynomials) symbolically in the trace polynomials. To get the transition quotients from the transition polynomials, divide out the zerofier. Assume for the time being that the verifier is capable of evaluating this zerofier efficiently. Note that the transition quotients and the trace polynomials are not equivalent -- the verifier cannot necessarily undo the symbolic evaluation. However, this non-equivalence does not matter. What the verifier needs to verify is that the boundary quotients and the transition quotients are linked. Traveling from the boundary quotients to the transition quotients, and performing the indicated arithmetic along the way, establishes this link. The remaining part of the entire computational integrity claim is the bounded degree of the quotient polynomials, and this is exactly what FRI already solves.
 
@@ -83,9 +83,8 @@ To summarize, this workflow generates two recipes: one for the prover and one fo
 Prover:
  - Interpolate the execution trace to obtain the trace polynomials.
  - Interpolate the boundary points to obtain the boundary interpolants, and compute the boundary zerofiers along the way.
- - Subtract the boundary interpolants from the trace polynomials, giving rise to the dense trace polynomials.
- - Divide out the boundary zerofiers from the dense trace polynomials.
- - Commit to the dense trace polynomials.
+ - Subtract the boundary interpolants from the trace polynomials, and divide out the boundary zerofier, giving rise to the boundary quotients.
+ - Commit to the boundary quotients.
  - Get $r$ random coefficients from the verifier.
  - Compress the $r$ transition constraints into one master constraint that is the weighted sum.
  - Symbolically evaluate the master constraint in the trace polynomials, thus generating the transition polynomial.
