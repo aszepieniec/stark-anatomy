@@ -243,8 +243,8 @@ In the above snippet, the sampling of indices is hidden away behind the argument
         return acc % size
 
     def sample_indices( self, seed, size, reduced_size, number ):
-        assert(number <= reduced_size), f"cannot sample more indices than available in last codeword; requested: {number}, available: {reduced_size}"
         assert(number <= 2*reduced_size), "not enough entropy in indices wrt last codeword"
+        assert(number <= reduced_size), f"cannot sample more indices than available in last codeword; requested: {number}, available: {reduced_size}"
 
         indices = []
         reduced_indices = []
