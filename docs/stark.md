@@ -59,7 +59,7 @@ This observation gives rise to the following high-level Polynomial IOP:
  4. The verifier checks that $\mathbf{c}(X)$ and $\boldsymbol{t}(X)$ are correctly related by:
    - choosing a random point $z$ drawn uniformly from the field excluding the element 0,
    - querying the values of $\boldsymbol{t}(X)$ in $z$ and $\omicron \cdot z$,
-   - evaluating the transition verification polynomials $\mathbf{p}(X_0, \ldots, X_{\mathsf{w}-1}, Y_0, \ldots, Y_{\mathsf{w}-1})$ in these $2\mathsf{w}$ points, and
+   - evaluating the transition verification polynomials $\mathbf{p}(t_0(z), \ldots, t_{\mathsf{w}-1}(z), t_0(\omicron \cdot z), \ldots, t_{\mathsf{w}-1} (\omicron \cdot z))$ in these $2\mathsf{w}$ points, and
    - querying the values of $\mathbf{c}(X)$ in $z$,
    - checking that the values obtained in the previous two steps match.
  5. The verifier checks that the transition polynomials $\mathbf{c}(X)$ evaluate to zero in $\lbrace \omicron^i \vert i \in \lbrace 0, \ldots, T-1 \rbrace \rbrace$.
