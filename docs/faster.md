@@ -49,7 +49,7 @@ Recall that the $i$th coefficient of the Fourier transform is $f(\omega^i) = \su
 $$ \sum_{i=0}^{2^k-1} f(\omega^i) \omega^{-il} = \sum_{i=0}^{2^k-1} \left( \sum_{j=0}^{2^k-1} f_j \omega^{ij} \right) \omega^{-il} \\
 = \sum_{j=0}^{2^k-1} f_j \sum_{i=0}^{2^k-1} \omega^{i(l-j)} \enspace .$$
 
-Whenever $l-j \neq 0$, the sum $\sum_{i=0}^{2^k-1} \omega^{i(l+j)}$ vanishes. To see this, recall that $\omega^{2^{k-1} + i} = -\omega^i$ for all $i$, so every term in this sum has an equal and opposite term that cancels it. So in the formula above, the only coefficient $f_j$ that is multiplied by a nonzero sum is $f_{l}$, and in fact this sum is $\sum_{i=0}^{1}1 = 2^k$. So in summary, the $l$th coefficient of the double Fourier transform of $\mathbf{f}$ is $2^k \cdot f_{l}$, which is the same as the $l$th coefficient of $\mathbf{f}$ but scaled by a factor $2^k$.
+Whenever $l-j \neq 0$, the sum $\sum_{i=0}^{2^k-1} \omega^{i(l+j)}$ vanishes. To see this, recall that $\omega^{2^{k-1} + i} = -\omega^i$ for all $i$, so every term in this sum has an equal and opposite term that cancels it. So in the formula above, the only coefficient $f_j$ that is multiplied by a nonzero sum is $f_{l}$, and in fact this sum is $\sum_{i=0}^{2^k-1}1 = 2^k$. So in summary, the $l$th coefficient of the double Fourier transform of $\mathbf{f}$ is $2^k \cdot f_{l}$, which is the same as the $l$th coefficient of $\mathbf{f}$ but scaled by a factor $2^k$.
 
 What was derived was an inverse fast Fourier transform. Specifically, this inverse is the same as the regular fast Fourier transform, except
  - it uses $\omega^{-1}$ instead of $\omega$; and
@@ -75,7 +75,7 @@ def intt( primitive_root, values ):
 
 The NTT is popular in computer algebra because the Fourier transform induces a homomorphism for polynomials and their values. Specifically, multiplication of polynomials corresponds to element-wise multiplication of their Fourier transforms. To see this, apply the formula for the Fourier transform to the formula for the product polynomial. To see why this is true, remember that the Fourier transform represents the *evaluations* of a polynomial. Clearly, the evaluation of $h(X) = f(X) \cdot g(X)$ in any point $z$ is the product of the evaluations of $f(X)$ and $g(X)$ in $z$. As long as $\mathsf{deg}(h(X)) < 2^k$, we can compute this product by:
  - computing the NTT; 
- - miltiplying the resulting vectors element-wise; and
+ - multiplying the resulting vectors element-wise; and
  - computing the inverse NTT.
 
 ```python
