@@ -208,7 +208,7 @@ After running the loop, the prover is left with a codeword. It sends this codewo
         return codewords
 ```
 
-The commit phase consists of the same number of iterations of a different loop:
+The query phase consists of the same number of iterations of a different loop:
  - The indices for the x-coordinates of the $A$ and $B$ points are derived from the set of indices for the x-coordinates of $C$ points.
  - The indicated codeword values are sent to the verifier, along with their authentication paths.
 
