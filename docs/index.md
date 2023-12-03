@@ -67,7 +67,7 @@ This tutorial does re-hash the background material when it is needed. However, t
  - [Part 1: STARK Overview](overview) paints a high-level picture of the concepts and workflow.
  - [Part 2: Basic Tools](basic-tools) introduces the basic mathematical and cryptographic tools from which the proof system will be built.
  - [Part 3: FRI](fri) covers the low degree test, which is the cryptographic heart of the proof system.
- - [Part 4: The STARK Polynomial IOP](stark) explains the information-theoretical that generates an abstract proof system from arbitrary computational claims.
+ - [Part 4: The STARK IOP](stark) explains the information-theoretical that generates an abstract proof system from arbitrary computational claims.
  - [Part 5: A Rescue-Prime STARK](rescue-prime) puts the tools together and builds a transparent zero-knowledge proof system for a simple computation.
  - [Part 6: Speeding Things Up](faster) introduces algorithms and techniques to make the whole thing faster, effectively putting the "S" into the STARK.
 
