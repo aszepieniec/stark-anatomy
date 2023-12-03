@@ -19,7 +19,7 @@ $$ \mathcal{B} \subseteq \mathbb{Z}_T \times \mathbb{Z}_\mathsf{w} \times \mathb
 enforce the correct values of some or all registers at the first cycle, last cycle, or even at arbitrary cycles.
 
 The *computational integrity claim* consists of the state transition function and the boundary conditions. The *witness* to this claim is the algebraic execution trace. The claim is *true* if there is a witness $W \in \mathbb{F}_p^{T \times \mathsf{w}}$ such that:
- - for every cycle, the state evolves correctly: $\forall i \in \lbrace 0, \ldots, T-1 \rbrace \, . \, f(W_{[i,:]}) = W_{[i+1,:]}$; and
+ - for every cycle, the state evolves correctly: $\forall i \in \lbrace 0, \ldots, T-2 \rbrace \, . \, f(W_{[i,:]}) = W_{[i+1,:]}$; and
  - all boundary conditions are satisfied: $\forall (i, w, e) \in \mathcal{B} \, . \, W_{[i,w]} = e$.
 
 The state transition function hides a lot of complexity. For the purpose of STARKs, it needs to be describable as low degree polynomials that are *independent of the cycle*. However, this list of polynomials does not need to compute the next state from the current one; it merely needs to distinguish correct evolutions from incorrect ones. Specifically, the function 
@@ -27,7 +27,7 @@ The state transition function hides a lot of complexity. For the purpose of STAR
 $$ f : \mathbb{F}_p^\mathsf{w} \rightarrow \mathbb{F}_p^\mathsf{w} $$
 
 is represented by a list of polynomials $\mathbf{p}(X_0, \ldots, X_{\mathsf{w}-1}, Y_{0}, \ldots, Y_{ \mathsf{w}-1})$ such that $f(\mathbf{x}) = \mathbf{y}$ if and only if $\mathbf{p}(\mathbf{x}, \mathbf{y}) = \mathbf{0}$. Say there are $r$ such state transition verification polynomials. Then the transition constraints become:
- - $\forall i \in \lbrace 0, \ldots, T - 1 \rbrace \, . \, \forall j \in \lbrace 0, \ldots, r-1\rbrace \, . \, p_j(W_{[i,0]}, \ldots, W_{[i, \mathsf{w}-1]}, W_{[i+1,0]}, \ldots, W_{[i+1, \mathsf{w}-1]}) = 0$.
+ - $\forall i \in \lbrace 0, \ldots, T - 2 \rbrace \, . \, \forall j \in \lbrace 0, \ldots, r-1\rbrace \, . \, p_j(W_{[i,0]}, \ldots, W_{[i, \mathsf{w}-1]}, W_{[i+1,0]}, \ldots, W_{[i+1, \mathsf{w}-1]}) = 0$.
 
 This representation admits *non-determinism*, which has the capacity to reduce high degree state transition *computation* polynomials with low degree state transition *verification* polynomials. For example: the state transition function $f : \mathbb{F}_p \rightarrow \mathbb{F}_p$ given by
 $$ x \mapsto \left\lbrace  \begin{array}{l}
@@ -48,23 +48,23 @@ Let $\boldsymbol{t}(X) \in (\mathbb{F}_p[X])^\mathsf{w}$ be a list of $\mathsf{w
 
 Translating the conditions for true computational integrity claims to the trace polynomials, one gets:
  - all boundary constraints are satisfied: $\forall (i, w, e) \in \mathcal{B} \, . \, t_w(\omicron^i) = e$; and
- - for all cycles, all transition constraints are satisfied: $\forall i \in \lbrace 0, \ldots, T-1 \rbrace \, . \, \forall j \in \lbrace 0, \ldots, r-1 \rbrace \, . \, p_j( t_0(\omicron^i), \ldots, t_{\mathsf{w}-1}(\omicron^i), t_0(\omicron^{i+1}), \ldots, t_{\mathsf{w}-1}(\omicron^{i+1})) = 0$.
+ - for all cycles, all transition constraints are satisfied: $\forall i \in \lbrace 0, \ldots, T-2 \rbrace \, . \, \forall j \in \lbrace 0, \ldots, r-1 \rbrace \, . \, p_j( t_0(\omicron^i), \ldots, t_{\mathsf{w}-1}(\omicron^i), t_0(\omicron^{i+1}), \ldots, t_{\mathsf{w}-1}(\omicron^{i+1})) = 0$.
 
-The last expression looks complicated. However, observe that the left hand side of the equation corresponds to the univariate polynomial $p_j(t_0(X)), \ldots, t_{\mathsf{w}-1}(X), t_0(\omicron \cdot X), \ldots, t_{\mathsf{w}-1}(\omicron \cdot X))$. The entire expression simply says that all $r$ of these *transition polynomials* evaluate to 0 in $\lbrace  \omicron^i \vert i \in \mathbb{Z}_T\rbrace$.
+The last expression looks complicated. However, observe that the left hand side of the equation corresponds to the univariate polynomial $p_j(t_0(X), \ldots, t_{\mathsf{w}-1}(X), t_0(\omicron \cdot X), \ldots, t_{\mathsf{w}-1}(\omicron \cdot X))$. The entire expression simply says that all $r$ of these *transition polynomials* evaluate to 0 in $\lbrace  \omicron^i \vert i \in \mathbb{Z}_T\rbrace$.
 
 This observation gives rise to the following high-level Polynomial IOP:
  1. The prover commits to the trace polynomials $\boldsymbol{t}(X)$.
  2. The verifier checks that $t_w(X)$ evaluates to $e$ in $\omicron^i$ for all $(i, w, e) \in \mathcal{B}$.
- 3. The prover commits to the transition polynomials $\mathbf{c}(X) = \mathbf{p}(t_0(X)), \ldots, t_{\mathsf{w}-1}(X), t_0(\omicron \cdot X), \ldots, t_{\mathsf{w}-1}(\omicron \cdot X))$.
+ 3. The prover commits to the transition polynomials $\mathbf{c}(X) = \mathbf{p}(t_0(X), \ldots, t_{\mathsf{w}-1}(X), t_0(\omicron \cdot X), \ldots, t_{\mathsf{w}-1}(\omicron \cdot X))$.
  4. The verifier checks that $\mathbf{c}(X)$ and $\boldsymbol{t}(X)$ are correctly related by:
    - choosing a random point $z$ drawn uniformly from the field excluding the element 0,
    - querying the values of $\boldsymbol{t}(X)$ in $z$ and $\omicron \cdot z$,
    - evaluating the transition verification polynomials $\mathbf{p}(X_0, \ldots, X_{\mathsf{w}-1}, Y_0, \ldots, Y_{\mathsf{w}-1})$ in $(X_0, \ldots, X_{\mathsf{w}-1}, Y_0, \ldots, Y_{\mathsf{w}-1}) = (t_0(z), \ldots, t_{\mathsf{w}-1}(z), t_0(\omicron  \cdot z), \ldots, t_{\mathsf{w}-1}(\omicron  \cdot z))$, and
    - querying the values of $\mathbf{c}(X)$ in $z$,
    - checking that the values obtained in the previous two steps match.
- 5. The verifier checks that the transition polynomials $\mathbf{c}(X)$ evaluate to zero in $\lbrace \omicron^i \vert i \in \lbrace 0, \ldots, T-1 \rbrace \rbrace$.
+ 5. The verifier checks that the transition polynomials $\mathbf{c}(X)$ evaluate to zero in $\lbrace \omicron^i \vert i \in \lbrace 0, \ldots, T-2 \rbrace \rbrace$.
 
-In fact, the commitment of the transition polynomials can be omitted. Instead, the verifier uses the evaluation of $\boldsymbol{t}(X)$ in $z$ and $\omicron \cdot z$ to compute the value of $\mathbf{c}(X)$ in the one point needed to verify that $\mathbf{c}(X)$ evaluates to 0 in $\lbrace  \omicron^i \vert i \in \lbrace 0, \ldots, T-1 \rbrace \rbrace$.
+In fact, the commitment of the transition polynomials can be omitted. Instead, the verifier uses the evaluation of $\boldsymbol{t}(X)$ in $z$ and $\omicron \cdot z$ to compute the value of $\mathbf{c}(X)$ in the one point needed to verify that $\mathbf{c}(X)$ evaluates to 0 in $\lbrace  \omicron^i \vert i \in \lbrace 0, \ldots, T-2 \rbrace \rbrace$.
 
 There is another layer of redundancy, but it is only apparent after the evaluation checks are unrolled. The FRI compiler simulates an evaluation check by a) subtracting the y-coordinate, b) dividing out the zerofier, which is the minimal polynomial that vanishes at the x-coordinate, and c) proving that the resulting quotient has a bounded degree. This procedure happens twice for the STARK polynomials -- first: applied to the trace polynomials to show satisfaction of the boundary constraints, and second: applied to the transition polynomials to show that the transition constraints are satisfied. We call the resulting lists of quotient polynomials the *boundary quotients* and the *transition quotients* respectively.
 
