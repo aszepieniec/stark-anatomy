@@ -256,7 +256,7 @@ The transition constraint polynomial is obtained by moving all terms to the left
         return air
 ```
 
-The boundary constraints are a lot simpler. At the beginning, the first state element is the unknown secret and the second state element is zero because the sponge construction defines it so. At the end (after all $N$ rounds or $T$ cycles), the first state element is the one element of known hash digest $[h]$, and the second state element is unconstrained. Note that this second state element must be kept secret to be secure -- otherwise the attacker and invert the permutation. This description gives rise to the following set $\mathcal{B}$ of triples $(c, r, e) \in \lbrace 0, \ldots, T \rbrace \times \lbrace 0, \ldots, \mathsf{w}-1 \rbrace \times \mathbb{F}$:
+The boundary constraints are a lot simpler. At the beginning, the first state element is the unknown secret and the second state element is zero because the sponge construction defines it so. At the end (after all $N$ rounds or $T$ cycles), the first state element is the one element of known hash digest $[h]$, and the second state element is unconstrained. Note that this second state element must be kept secret to be secure -- otherwise the attacker can invert the permutation. This description gives rise to the following set $\mathcal{B}$ of triples $(c, r, e) \in \lbrace 0, \ldots, T \rbrace \times \lbrace 0, \ldots, \mathsf{w}-1 \rbrace \times \mathbb{F}$:
  - $(0, 1, 0)$
  - $(T, 0, h)$.
 
