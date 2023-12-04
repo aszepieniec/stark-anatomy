@@ -416,7 +416,7 @@ This code defines a *provably secure*[^1], *post-quantum* signature scheme that 
 
 There might be a few optimizations available that can reduce the proof's size, such as merging common paths when opening a batch of Merkle leafs. However, these optimizations distract from the purpose of this tutorial, which is to highlight and explain the mathematics involved.
 
-In terms of speed, a lot of the poor performance is due to using python instead of a language that is closer to the hardware such as C or rust. Python was chosen for the same reason -- to highlight and explain the maths. But the biggest performance gain in terms of speed is going to come from switching to faster algorithms for key operations. This is the topic of the next and last part of the tutorial.
+In terms of speed, a lot of the poor performance is due to using python instead of a language that is closer to the hardware such as C or Rust. Python was chosen for the same reason -- to highlight and explain the maths. But the biggest performance gain in terms of speed is going to come from switching to faster algorithms for key operations. This is the topic of the next and last part of the tutorial.
 
 [0](index) - [1](overview) - [2](basic-tools) - [3](fri) - [4](stark) - **5** - [6](faster)
 
