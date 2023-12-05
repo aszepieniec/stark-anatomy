@@ -9,7 +9,7 @@ In a regular polynomial commitment scheme, a prover commits to a polynomial $f(X
  - $\mathsf{open}$, which produces a proof that $f(z) = y$ for some $z$ and for the polynomial $f(X)$ that matches with the given commitment;
  - $\mathsf{verify}$, which verifies the proof produced by $\mathsf{open}$.
 
-The FRI scheme has a different interface but a later section shows how it can simulate the standard polynomial commitment scheme interface without much overhead. FRI is a protocol between a prover and a verifier, which establishes that a given codeword belongs to a polynomial of low degree -- low meaning at most $\rho$ times the length of the codeword. Without losing much generality[^1], the prover knows this codeword explicitly, whereas the verifier knows only its Merkle root and leafs of his choosing, assuming the successful validation of the authentication paths that establish the leafs' membership to the Merkle tree.
+The FRI scheme has a different interface but a later section shows how it can simulate the standard polynomial commitment scheme interface without much overhead. FRI is a protocol between a prover and a verifier, which establishes that a given codeword belongs to a polynomial of low degree -- low meaning at most $\rho$ times the length of the codeword. Without losing much generality[^1], the prover knows this codeword explicitly, whereas the verifier knows only its Merkle root and leaves of his choosing, assuming the successful validation of the authentication paths that establish the leaves' membership to the Merkle tree.
 
 ## Split-and-Fold
 
@@ -137,9 +137,9 @@ Note that the method to compute the number of rounds terminates the protocol ear
 
 ### Prove
 
-The FRI protocol consists of two phases, called *commit* and *query*. In the commit phase, the prover sends Merkle roots of codewords to the verifier, and the verifier supplies random field elements as input to the split-and-fold procedure. In the query phase, the verifier selects indices of leafs, which the prover then opens, so that the verifier can check the colinearity requirement.
+The FRI protocol consists of two phases, called *commit* and *query*. In the commit phase, the prover sends Merkle roots of codewords to the verifier, and the verifier supplies random field elements as input to the split-and-fold procedure. In the query phase, the verifier selects indices of leaves, which the prover then opens, so that the verifier can check the colinearity requirement.
 
-It is important to keep track of the set of indices of leafs of the initial codeword that the verifier wants to inspect. This is the point where the FRI protocol links into the Polynomial IOP that comes before it. Specifically, the larger protocol that uses FRI as a subroutine needs to verify that the leafs of the initial Merkle opened by the FRI protocol actually correspond to the codeword that the FRI protocol is supposedly about.
+It is important to keep track of the set of indices of leaves of the initial codeword that the verifier wants to inspect. This is the point where the FRI protocol links into the Polynomial IOP that comes before it. Specifically, the larger protocol that uses FRI as a subroutine needs to verify that the leaves of the initial Merkle opened by the FRI protocol actually correspond to the codeword that the FRI protocol is supposedly about.
 
 ```python
     def prove( self, codeword, proof_stream ):
@@ -220,7 +220,7 @@ The prover needs to record the indices of the first round.
         a_indices = [index for index in c_indices]
         b_indices = [index + len(current_codeword)//2 for index in c_indices]
 
-        # reveal leafs
+        # reveal leaves
         for s in range(self.num_colinearity_tests):
             proof_stream.push((current_codeword[a_indices[s]], current_codeword[b_indices[s]], next_codeword[c_indices[s]]))
 
@@ -266,7 +266,7 @@ The verifier runs through the same checklist as the prover but runs the dual ste
  - reads the Merkle roots from the proof stream and reproduces the random scalars $\alpha$ with Fiat-Shamir;
  - reads the last codewords from the proof stream and checks that it matches with a low degree polynomial as well as the last Merkle root to be sent;
  - reproduces the master list of random indices with Fiat-Shamir, and infers the remaining indices for the colinearity checks;
- - reads the Merkle leafs and their authentication paths from the proof stream, and verifies their authenticity against the indices;
+ - reads the Merkle leaves and their authentication paths from the proof stream, and verifies their authenticity against the indices;
  - runs the colinearity checks for every pair of consecutive codewords.
 
  ```python
@@ -379,7 +379,7 @@ FRI establishes that a given Merkle root decommits to (the evaluations of) a pol
 Let $f(X)$ be a polynomial of degree at most $d$. Let $g(X)$ be another polynomial defined as $$g(X) = f(X) + X^{2^k - d - 1} \cdot f(X) \enspace ,$$
 where $2^k > d+1$. Then $g(X)$ has degree less than $2^k$ only if $f(X)$ has degree at most $d$. So the prover who uses FRI to establish that $g(X)$ has degree less than $2^k$ automatically establishes that $f(X)$ has degree at most $d$.
  
-In order to link the Merkle root for $g(X)$ to the Merkle root for $f(X)$, the verifier supplies a bunch (about $\lambda$) of random indices $i$ and the prover responds with the leafs at those indices and their authentication paths. The verifier then verifies that for every such point $x_i$ being the $i$th point of the evaluation domain, $g(x_i) = (1+x_i^{2^k - d - 1}) \cdot f(x_i)$. Alternatively, the first codeword in FRI can be omitted altogether; in this case the verifier relates the second FRI codeword $g^\star(X)$ to $f(X)$ by eliminating the values of $g(X)$ using the same formula.
+In order to link the Merkle root for $g(X)$ to the Merkle root for $f(X)$, the verifier supplies a bunch (about $\lambda$) of random indices $i$ and the prover responds with the leaves at those indices and their authentication paths. The verifier then verifies that for every such point $x_i$ being the $i$th point of the evaluation domain, $g(x_i) = (1+x_i^{2^k - d - 1}) \cdot f(x_i)$. Alternatively, the first codeword in FRI can be omitted altogether; in this case the verifier relates the second FRI codeword $g^\star(X)$ to $f(X)$ by eliminating the values of $g(X)$ using the same formula.
 
 **Two:** dividing out the zerofier. The verifier asks for the value of a committed polynomial $f(X)$ in a given point $z$. The prover responds: $f(z) = y$. Can he authenticate this response? Once again, the answer is yes!
 
