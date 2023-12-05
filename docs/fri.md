@@ -4,7 +4,7 @@ FRI is a protocol that establishes that a committed polynomial has a bounded deg
 
 Since the codewords represent low-degree polynomials, and since the codewords are hidden behind Merkle trees in any real-world deployment, it is arguably more natural to present FRI from the point of view of a polynomial commitment scheme, with some caveats. There is scientific merit in separating the type of codewords from the IOP, and those two from the Merkle tree that simulates the oracles. However, from an accessibility point of view, it is beneficial to consider them as three components of one basic primitive that relates to polynomial commitment schemes. For the remainder of this tutorial, we will use the term FRI in this sense.
 
-In a regular polynomial commitment scheme, a prover commits to a polynomial $f(X)$ that is later opens in a given point $z$ such that it cannot equivocate between two different values of $f(z)$. The scheme consists of three algorithms:
+In a regular polynomial commitment scheme, a prover commits to a polynomial $f(X)$ that is later opened in a given point $z$ such that it cannot equivocate between two different values of $f(z)$. The scheme consists of three algorithms:
  - $\mathsf{commit}$, which computes a binding commitment from the polynomial;
  - $\mathsf{open}$, which produces a proof that $f(z) = y$ for some $z$ and for the polynomial $f(X)$ that matches with the given commitment;
  - $\mathsf{verify}$, which verifies the proof produced by $\mathsf{open}$.
