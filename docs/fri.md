@@ -141,6 +141,7 @@ The FRI protocol consists of two phases, called *commit* and *query*. In the com
 
 It is important to keep track of the set of indices of leaves of the initial codeword that the verifier wants to inspect. This is the point where the FRI protocol links into the Polynomial IOP that comes before it. Specifically, the larger protocol that uses FRI as a subroutine needs to verify that the leaves of the initial Merkle opened by the FRI protocol actually correspond to the codeword that the FRI protocol is supposedly about.
 
+
 ```python
     def prove( self, codeword, proof_stream ):
         assert(self.domain_length == len(codeword)), "initial codeword length does not match length of initial codeword"
@@ -389,11 +390,11 @@ This is useful for FRI because the codeword for $f(X)$ corresponds to a low degr
 
 This process can be repeated any number of times. Suppose the verifier asks for the values of $f(X)$ in $z_0, \ldots, z_{n-1}$. The prover responds with $y_0, \ldots, y_n$, supposedly the values of $f(X)$ in these points. Let $p(X)$ be the polynomial of minimal degree that interpolates between $(z_0, y_0), \ldots, (z_{n-1}, y_{n-1})$. Then $f(X) - p(X)$ has zeros at $X \in \lbrace z_0, \ldots, z_{n-1}\rbrace$, and so $\prod_{i=0}^{n-1} X - z_i$ divides $f(X) - p(X)$. The verifier who authenticates a Merkle leaf of the tree associated with $f(X)$ can compute the matching value of $\frac{f(X) - p(X)}{\prod_{i=0}^{n-1} X-z_i}$. FRI will establish that this codeword corresponds to a polynomial of degree at most $d-n$ if and only if the prover was honest about all the values of $f(X)$.
 
-So where's the code implementing this logic? Other Polynomial IOPs do rely on the verifier asking for the values of committed polynomials in arbitrary points, but it turns out that the STARK Polynomial IOP does not. Nevertheless, it does implicitly rely on much of the same logic as was described here.
+So where's the code implementing this logic? Other Polynomial IOPs do rely on the verifier asking for the values of committed polynomials in arbitrary points, but it turns out that the STARK IOP does not. Nevertheless, it does implicitly rely on much of the same logic as was described here.
 
 ## Compiling a Polynomial IOP
 
-The previous section explains how to use FRI to establish that committed polynomials a) satisfy arbitrary degree bounds; and b) satisfy point-value relations. In any non-trivial Polynomial IOP, STARKs included, there will be many polynomials for which these constraints are being claimed to hold. Since FRI is a comparatively expensive protocol, it pays to *batch all invocations into one*.
+The previous section explains how to use FRI to establish that committed polynomials a) satisfy arbitrary degree bounds; and b) satisfy point-value relations. In any non-trivial IOP, STARKs included, there will be many polynomials for which these constraints are being claimed to hold. Since FRI is a comparatively expensive protocol, it pays to *batch all invocations into one*.
 
 Suppose the prover wants to establish that the Merkle root commitments for $f_0(X), \ldots, f_{n-1}(X)$ represent polynomials of degrees bounded by $d_0, \ldots, d_{n-1}$. To establish this using one FRI claim, the prover and verifier first calculate a *weighted nonlinear sum*:
 $$ g(X) = \sum_{i=0}^{n-1} \alpha_i \cdot f_i(X) + \beta_i \cdot X^{2^k-d_i-1} \cdot f_i(X) \enspace .$$

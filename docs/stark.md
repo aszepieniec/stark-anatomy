@@ -1,6 +1,6 @@
-# Anatomy of a STARK, Part 4: The STARK Polynomial IOP
+# Anatomy of a STARK, Part 4: The STARK IOP
 
-This part of the tutorial deals with the information-theoretic backbone of the STARK proof system, which you might call the STARK Polynomial IOP. Recall that the compilation pipeline of SNARKs involves intermediate stages, the first two of which are the *arithmetic constraint system* and the *Polynomial IOP*. This tutorial does describe the properties of the arithmetic constraint system. However, a discussion about the *arithmetization* step, which transforms the initial computation into an arithmetic constraint system, is out of scope. The *interpolation* step, which transforms this arithmetic constraint system into a Polynomial IOP, is discussed at length. The final Polynomial IOP can be compiled into a concrete proof system using the FRI-based compiler described in [part 3](fri).
+This part of the tutorial deals with the information-theoretic backbone of the STARK proof system, which you might call the STARK IOP. Recall that the compilation pipeline of SNARKs involves intermediate stages, the first two of which are the *arithmetic constraint system* and the *IOP*. This tutorial does describe the properties of the arithmetic constraint system. However, a discussion about the *arithmetization* step, which transforms the initial computation into an arithmetic constraint system, is out of scope. The *interpolation* step, which transforms this arithmetic constraint system into an IOP, is discussed at length. The final IOP can be compiled into a concrete proof system using the FRI-based compiler described in [part 3](fri).
 
 ## Arithmetic Intermediate Representation (AIR)
 
@@ -40,7 +40,7 @@ Not all lists of $\mathsf{w}$ field elements represent valid states. For instanc
 
 ## Interpolation
 
-The arithmetic constraint system described above already represents the computational integrity claim as a bunch of polynomials; each such polynomial corresponds to a constraint. Transforming this constraint system into a Polynomial IOP requires extending this representation in terms of polynomials to the witness and extending the notion of *valid* witnesses to *witness polynomials*. Specifically, we need to represent the conditions for true computational integrity claims in terms of identities of polynomials.
+The arithmetic constraint system described above already represents the computational integrity claim as a bunch of polynomials; each such polynomial corresponds to a constraint. Transforming this constraint system into an IOP requires extending this representation in terms of polynomials to the witness and extending the notion of *valid* witnesses to *witness polynomials*. Specifically, we need to represent the conditions for true computational integrity claims in terms of identities of polynomials.
 
 Let $D$ be a list of points referred to from here on out as the *trace evaluation domain*. Typically, $D$ is set to the span of a generator $\omicron$ of a subgroup of order $2^k \geq T+1$. So for the time being set $D = \lbrace \omicron^i \vert i \in \mathbb{Z}\rbrace$. The Greek letter $\omicron$ ("omicron") indicates that the trace evaluation domain is smaller than the FRI evaluation domain by a factor exactly equal to the expansion factor[^1].
 
@@ -52,7 +52,7 @@ Translating the conditions for true computational integrity claims to the trace 
 
 The last expression looks complicated. However, observe that the left hand side of the equation corresponds to the univariate polynomial $p_j(t_0(X), \ldots, t_{\mathsf{w}-1}(X), t_0(\omicron \cdot X), \ldots, t_{\mathsf{w}-1}(\omicron \cdot X))$. The entire expression simply says that all $r$ of these *transition polynomials* evaluate to 0 in $\lbrace  \omicron^i \vert i \in \mathbb{Z}_T\rbrace$.
 
-This observation gives rise to the following high-level Polynomial IOP:
+This observation gives rise to the following high-level protocol:
  1. The prover commits to the trace polynomials $\boldsymbol{t}(X)$.
  2. The verifier checks that $t_w(X)$ evaluates to $e$ in $\omicron^i$ for all $(i, w, e) \in \mathcal{B}$.
  3. The prover commits to the transition polynomials $\mathbf{c}(X) = \mathbf{p}(t_0(X), \ldots, t_{\mathsf{w}-1}(X), t_0(\omicron \cdot X), \ldots, t_{\mathsf{w}-1}(\omicron \cdot X))$.
@@ -68,7 +68,7 @@ In fact, the commitment of the transition polynomials can be omitted. Instead, t
 
 There is another layer of redundancy, but it is only apparent after the evaluation checks are unrolled. The FRI compiler simulates an evaluation check by a) subtracting the y-coordinate, b) dividing out the zerofier, which is the minimal polynomial that vanishes at the x-coordinate, and c) proving that the resulting quotient has a bounded degree. This procedure happens twice for the STARK polynomials -- first: applied to the trace polynomials to show satisfaction of the boundary constraints, and second: applied to the transition polynomials to show that the transition constraints are satisfied. We call the resulting lists of quotient polynomials the *boundary quotients* and the *transition quotients* respectively.
 
-The redundancy comes from the fact that the trace polynomials relate to both quotients. It can therefore be eliminated by merging the equations they are involved in. The next diagram illustrates this elimination in the context of the STARK Polynomial IOP workflow. The green box indicates that the polynomials are committed to through the familiar evaluation and Merkle root procedure and are provided as input to FRI.
+The redundancy comes from the fact that the trace polynomials relate to both quotients. It can therefore be eliminated by merging the equations they are involved in. The next diagram illustrates this elimination in the context of the STARK IOP workflow. The green box indicates that the polynomials are committed to through the familiar evaluation and Merkle root procedure and are provided as input to FRI.
 
 ![Overview of the STARK workflow](graphics/stark-workflow.svg)
 

@@ -300,7 +300,7 @@ The solution is to pad the trace until its length is the next power of 2. Clearl
 
 ### Preprocessing
 
-Where a standard Polynomial IOP consists of two parties, the prover and the verifier, a *Preprocessing Polynomial IOP* consists if three: a prover, a verifier, and an *indexer*. (The indexer is sometimes also called the *preprocessor* or the *helper*.)
+Where a standard IOP consists of two parties, the prover and the verifier, a *Preprocessing IOP* consists if three: a prover, a verifier, and an *indexer*. (The indexer is sometimes also called the *preprocessor* or the *helper*.)
 
 The role of the indexer is to perform computations that help the verifier (not to mention prover) but that are too expensive for the verifier to perform directly. The catch is that the indexer does not receive the same input as the verifier does. The indexer's input (the *index*) is information about the computation that can be computed ahead of time, before specific data is known. For example, the index could be the number of cycles that the computation is supposed to take, along with the transition constraints. The specific information about the computation, or *instance*, would be the boundary constraints. The verifier's input is the instance as well as the indexer's output (which itself may include the index). The point is that from the verifier's point of view, the indexer's output is trusted.
 
