@@ -137,7 +137,7 @@ Note that the method to compute the number of rounds terminates the protocol ear
 
 ### Prove
 
-The FRI protocol consists of two phases, called *commit* and *query*. In the commit phase, the prover sends Merkle roots of codewords to the verifier, and the verifier supplies random field elements as input to the split-and-fold procedure. In the query phase, the verifier selects indices of leaves, which the prover then opens, so that the verifier can check the colinearity requirement.
+The FRI protocol consists of two phases, called *commit* and *query*. In the commit phase, the prover sends Merkle roots of codewords to the verifier, and the verifier supplies random field elements as input to the split-and-fold procedure. In the query phase, the verifier selects indices of leafs, which the prover then opens, so that the verifier can check the colinearity requirement.
 
 It is important to keep track of the set of indices of leaves of the initial codeword that the verifier wants to inspect. This is the point where the FRI protocol links into the Polynomial IOP that comes before it. Specifically, the larger protocol that uses FRI as a subroutine needs to verify that the leaves of the initial Merkle opened by the FRI protocol actually correspond to the codeword that the FRI protocol is supposedly about.
 
