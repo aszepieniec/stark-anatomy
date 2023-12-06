@@ -267,7 +267,7 @@ The verifier runs through the same checklist as the prover but runs the dual ste
  - reads the Merkle roots from the proof stream and reproduces the random scalars $\alpha$ with Fiat-Shamir;
  - reads the last codewords from the proof stream and checks that it matches with a low degree polynomial as well as the last Merkle root to be sent;
  - reproduces the master list of random indices with Fiat-Shamir, and infers the remaining indices for the colinearity checks;
- - reads the Merkle leaves and their authentication paths from the proof stream, and verifies their authenticity against the indices;
+ - reads the Merkle leafs and their authentication paths from the proof stream, and verifies their authenticity against the indices;
  - runs the colinearity checks for every pair of consecutive codewords.
 
  ```python
