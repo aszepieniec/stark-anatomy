@@ -9,7 +9,7 @@ In a regular polynomial commitment scheme, a prover commits to a polynomial $f(X
  - $\mathsf{open}$, which produces a proof that $f(z) = y$ for some $z$ and for the polynomial $f(X)$ that matches with the given commitment;
  - $\mathsf{verify}$, which verifies the proof produced by $\mathsf{open}$.
 
-The FRI scheme has a different interface but a later section shows how it can simulate the standard polynomial commitment scheme interface without much overhead. FRI is a protocol between a prover and a verifier, which establishes that a given codeword belongs to a polynomial of low degree -- low meaning at most $\rho$ times the length of the codeword. Without losing much generality[^1], the prover knows this codeword explicitly, whereas the verifier knows only its Merkle root and leaves of his choosing, assuming the successful validation of the authentication paths that establish the leaves' membership to the Merkle tree.
+The FRI scheme has a different interface but a later section shows how it can simulate the standard polynomial commitment scheme interface without much overhead. FRI is a protocol between a prover and a verifier, which establishes that a given codeword belongs to a polynomial of low degree -- low meaning at most $\rho$ times the length of the codeword. Without losing much generality[^1], the prover knows this codeword explicitly, whereas the verifier knows only its Merkle root and leafs of his choosing, assuming the successful validation of the authentication paths that establish the leafs' membership to the Merkle tree.
 
 ## Split-and-Fold
 
