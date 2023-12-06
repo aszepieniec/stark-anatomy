@@ -221,7 +221,7 @@ The prover needs to record the indices of the first round.
         a_indices = [index for index in c_indices]
         b_indices = [index + len(current_codeword)//2 for index in c_indices]
 
-        # reveal leaves
+        # reveal leafs
         for s in range(self.num_colinearity_tests):
             proof_stream.push((current_codeword[a_indices[s]], current_codeword[b_indices[s]], next_codeword[c_indices[s]]))
 
