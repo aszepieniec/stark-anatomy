@@ -288,7 +288,7 @@ For STARKs, we are already using finite fields that come with subgroups of order
 $$ \frac{X^{2^k-1} - 1}{X - \omicron^{-1}} $$
 in all points $X$ except for $X = \omicron^{-1}$, where the rational expression is undefined.
 
-The verifier obviously does not perform the division because it turns a dense polynomial into a sparse one. Instead, the verifier evaluates the numerator sparsely and divides it by the value of the denominator. This works as long as the verifier does not need to evaluate the zerofier in $\omicron^{-1}$, which is precisely what the coset-trick of FRI guarantees.
+The verifier obviously does not perform the division because it turns a sparse polynomial into a dense one. Instead, the verifier evaluates the numerator sparsely and divides it by the value of the denominator. This works as long as the verifier does not need to evaluate the zerofier in $\omicron^{-1}$, which is precisely what the coset-trick of FRI guarantees.
 
 To apply this strategy, the STARK trace length must be a power of 2. If the trace is far from a power of two, say by a difference of $d$, then the verifier needs to evaluate a zerofier that has $d-1$ factors in the denominator. In other words, *the trace length must be a power of two in order for the verifier to be fast*.
 
