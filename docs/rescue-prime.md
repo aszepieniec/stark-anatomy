@@ -256,7 +256,7 @@ The transition constraint polynomial is obtained by moving all terms to the left
         return air
 ```
 
-The boundary constraints are a lot simpler. At the beginning, the first state element is the unknown secret and the second state element is zero because the sponge construction defines it so. At the end (after all $N$ rounds or $T$ cycles), the first state element is the one element of known hash digest $[h]$, and the second state element is unconstrained. Note that this second state element must be kept secret to be secure -- otherwise the attacker and invert the permutation. This description gives rise to the following set $\mathcal{B}$ of triples $(c, r, e) \in \lbrace 0, \ldots, T \rbrace \times \lbrace 0, \ldots, \mathsf{w}-1 \rbrace \times \mathbb{F}$:
+The boundary constraints are a lot simpler. At the beginning, the first state element is the unknown secret and the second state element is zero because the sponge construction defines it so. At the end (after all $N$ rounds or $T$ cycles), the first state element is the one element of known hash digest $[h]$, and the second state element is unconstrained. Note that this second state element must be kept secret to be secure -- otherwise the attacker can invert the permutation. This description gives rise to the following set $\mathcal{B}$ of triples $(c, r, e) \in \lbrace 0, \ldots, T \rbrace \times \lbrace 0, \ldots, \mathsf{w}-1 \rbrace \times \mathbb{F}$:
  - $(0, 1, 0)$
  - $(T, 0, h)$.
 
@@ -416,7 +416,7 @@ This code defines a *provably secure*[^1], *post-quantum* signature scheme that 
 
 There might be a few optimizations available that can reduce the proof's size, such as merging common paths when opening a batch of Merkle leafs. However, these optimizations distract from the purpose of this tutorial, which is to highlight and explain the mathematics involved.
 
-In terms of speed, a lot of the poor performance is due to using python instead of a language that is closer to the hardware such as C or rust. Python was chosen for the same reason -- to highlight and explain the maths. But the biggest performance gain in terms of speed is going to come from switching to faster algorithms for key operations. This is the topic of the next and last part of the tutorial.
+In terms of speed, a lot of the poor performance is due to using python instead of a language that is closer to the hardware such as C or Rust. Python was chosen for the same reason -- to highlight and explain the maths. But the biggest performance gain in terms of speed is going to come from switching to faster algorithms for key operations. This is the topic of the next and last part of the tutorial.
 
 [0](index) - [1](overview) - [2](basic-tools) - [3](fri) - [4](stark) - **5** - [6](faster)
 
