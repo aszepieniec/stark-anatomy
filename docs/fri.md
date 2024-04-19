@@ -47,7 +47,7 @@ are involved in the derivation of $\lbrace f^\star(\omega^{2i})\rbrace_{i=0}^{N/
 
 At this point it is possible to describe the mechanics for one round of the FRI protocol. The prover commits to $f(X)$ by sending the Merkle root of its codeword to the verifier. The verifier responds with the random challenge $\alpha$. The prover computes $f^\star(X)$ and commits to it by sending the Merkle root of $\lbrace f^\star(\omega^{2i})\rbrace_{i=0}^{N/2-1}$ to the verifier.
 
-The verifier now has two commitments to polynomials and his task is to verify that their correct relation holds. Specifically, the verifier should reject the proof if $f^\star(X) \neq 2^{-1} \cdot \left( (1 + \alpha X^{-1}) \cdot f(X) + (1 - \alpha X^{-1} ) \cdot f(-X) \right)$. (Ignore the case where $X=0$.) To do this, the verifier randomly samples an index $i \xleftarrow{\$} \lbrace 0, \ldots, N/2-1\rbrace$, which defines 3 points:
+The verifier now has two commitments to polynomials and his task is to verify that their correct relation holds. Specifically, the verifier should reject the proof if $f^\star(X^2) \neq 2^{-1} \cdot \left( (1 + \alpha X^{-1}) \cdot f(X) + (1 - \alpha X^{-1} ) \cdot f(-X) \right)$. (Ignore the case where $X=0$.) To do this, the verifier randomly samples an index $i \xleftarrow{\$} \lbrace 0, \ldots, N/2-1\rbrace$, which defines 3 points:
  - $A: (\omega^i, f(\omega^i))$,
  - $B: (\omega^{N/2+i}, f(\omega^{N/2+i}))$,
  - $C: (\alpha, f^\star(\omega^{2i}))$.
