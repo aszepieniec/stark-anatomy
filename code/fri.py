@@ -25,7 +25,7 @@ class Fri:
         while codeword_length > self.expansion_factor and 4*self.num_colinearity_tests < codeword_length:
             codeword_length /= 2
             num_rounds += 1
-        return num_rounds
+        return num_rounds - 1 # the decrement maintains the original behavior
 
     def sample_index( byte_array, size ):
         acc = 0
@@ -61,7 +61,7 @@ class Fri:
         codewords = []
 
         # for each round
-        for r in range(self.num_rounds()):
+        for r in range(self.num_rounds() + 1):
             N = len(codeword)
 
             # make sure omega has the right order
@@ -72,7 +72,7 @@ class Fri:
             proof_stream.push(root)
 
             # prepare next round, but only if necessary
-            if r == self.num_rounds() - 1:
+            if r == self.num_rounds():
                 break
 
             # get challenge
@@ -136,7 +136,7 @@ class Fri:
         # extract all roots and alphas
         roots = []
         alphas = []
-        for r in range(self.num_rounds()):
+        for r in range(self.num_rounds() + 1):
             roots += [proof_stream.pull()]
             alphas += [self.field.sample(proof_stream.verifier_fiat_shamir())]
 
@@ -152,7 +152,7 @@ class Fri:
         degree = (len(last_codeword) // self.expansion_factor) - 1
         last_omega = omega
         last_offset = offset
-        for r in range(self.num_rounds()-1):
+        for r in range(self.num_rounds()):
             last_omega = last_omega^2
             last_offset = last_offset^2
 
@@ -174,10 +174,10 @@ class Fri:
             return False
 
         # get indices
-        top_level_indices = self.sample_indices(proof_stream.verifier_fiat_shamir(), self.domain_length >> 1, self.domain_length >> (self.num_rounds()-1), self.num_colinearity_tests)
+        top_level_indices = self.sample_indices(proof_stream.verifier_fiat_shamir(), self.domain_length >> 1, self.domain_length >> self.num_rounds(), self.num_colinearity_tests)
 
         # for every round, check consistency of subsequent layers
-        for r in range(0, self.num_rounds()-1):
+        for r in range(0, self.num_rounds()):
 
             # fold c indices
             c_indices = [index % (self.domain_length >> (r+1)) for index in top_level_indices]
