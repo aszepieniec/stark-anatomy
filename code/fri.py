@@ -119,7 +119,7 @@ class Fri:
         codewords = self.commit(codeword, proof_stream)
 
         # get indices
-        top_level_indices = self.sample_indices(proof_stream.prover_fiat_shamir(), len(codewords[0])/2, len(codewords[-1]), self.num_colinearity_tests)
+        top_level_indices = self.sample_indices(proof_stream.prover_fiat_shamir(), len(codewords[0])//2, len(codewords[-1]), self.num_colinearity_tests)
         indices = [index for index in top_level_indices]
 
         # query phase
