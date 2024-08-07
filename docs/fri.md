@@ -96,7 +96,7 @@ How many colinearity checks are needed for a target security level of $\lambda$ 
 The [FRI paper](https://eccc.weizmann.ac.il/report/2017/134/revision/1/download/), the [DEEP-FRI follow-up](https://sites.math.rutgers.edu/~sk1233/deep-fri.pdf), and the [follow-up to the follow-up](https://eprint.iacr.org/2020/654), present a sequence of more refined argument relying crucially on the code rate $\rho$. I do not pretend to understand these proofs and will content myself with merely reciting the rule of thumb used in the [EthSTARK documentation](https://eprint.iacr.org/2021/582) for conjectural security[^4]:
  - The hash function used for building Merkle trees needs to have at least $2\lambda$ output bits.
  - The field needs to have at least $2^\lambda$ elements. (Note that this refers to the field used for FRI. In particular, you can switch to an extension field if the base field is not large enough.)
- - You get $\log_2 \rho^{-1}$ bits of security for every colinearity check, so setting the number of colinearity checks to $s = \lceil \lambda / \log_2 \rho^{-1} \rceil$ achieves $\lambda$ bits of security.
+ - You get $|\log_2 \rho^{-1}|$ bits of security for every colinearity check, so setting the number of colinearity checks to $s = \lceil \lambda / |\log_2 \rho^{-1}| \rceil$ achieves $\lambda$ bits of security.
 
 ### Coset-FRI
 
