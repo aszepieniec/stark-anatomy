@@ -12,6 +12,10 @@ Outline:
 
 Visit the Github Pages website here: https://aszepieniec.github.io/stark-anatomy/
 
+## Follow-up
+- Implementation of a ZK-STARK VM for the esoteric and very simple programming language Brainfuck: [https://github.com/aszepieniec/stark-brainfuck](https://github.com/aszepieniec/stark-brainfuck)
+- A feature-complete, efficient, and useful ZK-STARK VM utilizing techniques from this tutorial and from the stark-brainfuck tutorial: [https://github.com/TritonVM/triton-vm](https://github.com/TritonVM/triton-vm)
+
 ## Running locally (the website, not the tutorial)
 
  1. Install ruby
