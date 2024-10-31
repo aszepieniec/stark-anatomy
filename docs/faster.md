@@ -15,7 +15,7 @@ $$ f(\omega^i) = \sum_{j=0}^{2^{k-1}-1} \omega^{i(2j)}f_{2j} + \sum_{j=0}^{2^{k-
 where $f_E(X)$ and $f_O(X)$ are the polynomials whose coefficients are the even coefficients, and odd coefficients respectively, of $f(X)$.
 
 In other words, the evaluation of $f(X)$ at $\omega^i$ can be described in terms of the evaluations of $f_E(X)$ and $f_O(X)$ at $\omega^{2i}$. The same is true for a batch of points $\lbrace\omega^{ij}\rbrace_ {j=0}^{2^k-1}$, in which case the values of $f_E(X)$ and $f_O(X)$ on a domain of only half the size are needed: $\lbrace(\omega^{ij})^2\rbrace_ {j=0}^{2^k-1} = \lbrace(\omega^{2i})^j\rbrace_ {j=0}^{2^{k-1}-1}$. Note that tasks of batch-evaluating $f_E(X)$ and $f_O(X)$ are independent tasks of half the size. This screams divide and conquer! Specifically, the following strategy suggests itself:
- - split coefficient vector into even and odd parts;
+ - split the coefficient vector into even and odd parts;
  - evaluate $f_E(X)$ on $\lbrace(\omega^{2i})^j\rbrace_{j=0}^{2^{k-1}-1}$ by recursion;
  - evaluate $f_O(X)$ on $\lbrace(\omega^{2i})^j\rbrace_{j=0}^{2^{k-1}-1}$ by recursion;
  - merge the evaluation vectors using the formula $f(\omega^i) = f_E(\omega^{2i}) + \omega^i \cdot f_O(\omega^{2i})$.
@@ -51,7 +51,7 @@ $$ \sum_{i=0}^{2^k-1} f(\omega^i) \omega^{-il} = \sum_{i=0}^{2^k-1} \left( \sum_
 
 Whenever $l-j \neq 0$, the sum $\sum_{i=0}^{2^k-1} \omega^{i(l+j)}$ vanishes. To see this, recall that $\omega^{2^{k-1} + i} = -\omega^i$ for all $i$, so every term in this sum has an equal and opposite term that cancels it. So in the formula above, the only coefficient $f_j$ that is multiplied by a nonzero sum is $f_{l}$, and in fact this sum is $\sum_{i=0}^{2^k-1}1 = 2^k$. So in summary, the $l$th coefficient of the double Fourier transform of $\mathbf{f}$ is $2^k \cdot f_{l}$, which is the same as the $l$th coefficient of $\mathbf{f}$ but scaled by a factor $2^k$.
 
-What was derived was an inverse fast Fourier transform. Specifically, this inverse is the same as the regular fast Fourier transform, except
+What was derived was an inverse fast Fourier transform. Specifically, this inverse is the same as the regular fast Fourier transform, except:
  - it uses $\omega^{-1}$ instead of $\omega$; and
  - it needs to undo the scaling factor $2^k$ on every coefficient.
 
@@ -141,8 +141,8 @@ Another task benefiting from fast multiplication (not to mention fast zerofier c
  - divide the domain into two halves, left and right;
  - compute the zerofier for each half;
  - reduce the polynomial modulo left zerofier and modulo right zerofier;
- - batch-evaluate left remainder in left domain half and right remainder in right domain;
- - concatenate vectors of evaluation.
+ - batch-evaluate the left remainder in the left domain half and the right remainder in the right domain;
+ - concatenate the vectors of evaluation.
 
 Note that the zerofiers, which are calculated by another divide-and-conquer algorithm, are used in the opposite order to how they are produced. A slightly more complex algorithm makes use of memoization for a performance boost.
 
@@ -220,15 +220,15 @@ def fast_coset_evaluate( polynomial, offset, generator, order ):
 Fast evaluation on a coset allows us to answer a pesky problem that arises when adapting the fast multiplication procedure to divide instead of multiply. Where fast multiplication used element-wise multiplication on codewords, fast division uses element-wise division on codewords, where the codewords are obtained by applying the NTT to the polynomials' coefficient vectors. The problem is this: what happens when the divisor codeword is zero in a given location? If the numerator codeword is not zero in that location, then the division is unclean and has a nonzero remainder. In this case the entire operation can be flagged as erroneous. However, there can still be clean division if the numerator is also zero in the given location. The naïve fast division algorithm fails because of a zero-divided-by-zero error, even though the underlying polynomials generate a clean division. This is exactly the problem that occurs when attempting to use NTTs to divide out the zerofiers. We got around this problem in the previous part of the tutorial by using polynomial long division instead, but this solution has a *quadratic* running time. We want quasilinear!
 
 The solution is to perform the element-wise division on codewords arising from evaluation on a coset of the group over which the NTT is defined. Specifically, the procedure involves five steps:
- - scale
- - NTT
- - element-wise divide
- - inverse NTT
- - unscale
+ - scale,
+ - NTT,
+ - element-wise divide,
+ - inverse NTT, and
+ - unscale.
 
-This solution only works if the denominator polynomials does not have any zeros on the coset. However, in some cases (like dividing out zerofiers), the denominator is *known* not to have zeros on a partcular coset.
+This solution only works if the denominator polynomials do not have any zeros on the coset. However, in some cases (like dividing out zerofiers), the denominator is *known* not to have zeros on a partcular coset.
 
-The python code has a lot of boilerplate to deal with special circumstances, but in the end it boils down to those five steps.
+The Python code has a lot of boilerplate to deal with special circumstances, but in the end it boils down to those five steps.
 
 ```python
 def fast_coset_divide( lhs, rhs, offset, primitive_root, root_order ): # clean division only!
@@ -276,7 +276,7 @@ def fast_coset_divide( lhs, rhs, offset, primitive_root, root_order ): # clean d
 
 ## Fast Zerofier Evaluation
 
-The algorithms described above chiefly apply to the prover, whose complexity drops from $O(T^2)$ to $O(T \log T)$. Scalability for the prover is achieved. The verifier's bottleneck is the evaluation of the transition zerofier, which is in general a dense polynomial of degree $T$. As a result, roughly $T$ coefficients will be possibly nonzero, and since the verifier must touch all of them to compute the polynomial's value, his running time will be on the same order of magnitude. For scalable verifiers, we need a running time of at most $\tilde{O}(\log T)$. There are two strategies to achieve this: sparse zerofiers based on group theory, and preprocessed dense zerofiers.
+The algorithms described above chiefly apply to the prover, whose complexity drops from $O(T^2)$ to $O(T \log T)$. Scalability for the prover is achieved. The verifier's bottleneck is the evaluation of the transition zerofier, which is in general a dense polynomial of degree $T$. As a result, roughly $T$ coefficients will be possibly nonzero, and since the verifier must touch all of them to compute the polynomial's value, his running time will be on the same order of magnitude. For scalable verifiers, we need a running time of at most $\tilde{O}(\log T)$. There are two strategies to achieve this: (1) sparse zerofiers based on group theory and (2) preprocessed dense zerofiers.
 
 ## Sparse Zerofiers with Group Theory
 
@@ -296,7 +296,7 @@ The solution is to pad the trace until its length is the next power of 2. Clearl
  - If the randomizers are appended after padding the trace, then the randomized trace does not fit into the power-of-two subgroup. In this case the interpolant must be computed such that:
    - over the power-of-two subgroup it evaluates to the execution trace; and
    - over a distinct domain it evaluates to the uniformly random randomizers.
- - If the randomizers are appended before padding, then the transition constraints must by compatible with this operation, or else the composition polynomials will not evaluate to zero in the entire power-of-two subgroup. This option requires changing the AIR.
+ - If the randomizers are appended before padding, then the transition constraints must be compatible with this operation, or else the composition polynomials will not evaluate to zero in the entire power-of-two subgroup. This option requires changing the AIR.
 
 ### Preprocessing
 
@@ -310,7 +310,7 @@ The formal definition of STARKs does not capture proof systems with preprocessin
 
 ### Preprocessed Dense Zerofiers
 
-Concretely, the indexer's output to the verifier will be a commitment to the zerofier $Z(X) = \prod_{i=0}^{T-1} (X-\omicron^i)$ via the familiar Merkle root of Reed-Solomon codeword construction. Whenever the verifier needs the value of this zerofier in a point, the prover provides him with this leaf along with an authentication path. Note that the verifier does not need evaluate the zerofier in points outside the FRI domain. As a result, there is no need to prove that the zerofier has a low degree; it comes straight from the trusted indexer.
+Concretely, the indexer's output to the verifier will be a commitment to the zerofier $Z(X) = \prod_{i=0}^{T-1} (X-\omicron^i)$ via the familiar Merkle root of Reed-Solomon codeword construction. Whenever the verifier needs the value of this zerofier in a point, the prover provides them with this leaf along with an authentication path. Note that the verifier does not need to evaluate the zerofier in points outside the FRI domain. As a result, there is no need to prove that the zerofier has a low degree; it comes straight from the trusted indexer.
 
 This description highlights the main drawback of using preprocessing to achieve scalability: the proof is larger because it includes more Merkle authentication paths. Another drawback is the slightly stronger security model: the verifier needs to trust the indexer's output. Even though the preprocessing is transparent here, re-running the indexer in order to justify this trust might be prohibitively expensive. The code supporting this tutorial achieves scalability through preprocessing as opposed to group theory.
 
@@ -320,7 +320,7 @@ The solution described above works perfectly fine if the execution time $T$ is k
 
 Preprocessing still holds a solution, but at the cost of a slightly more expensive verifier. The indexer commits to each member of a family of zerofiers $\{Z_ {2^k}(X)\}_ k$ where $Z_{2^k}(X) = \prod_{i=0}^{2^k-1} (X - \omicron^i)$. Let $t = \lfloor \log_2 T \rfloor$ such that $Z_{2^t}(X)$ belongs to this family.
 
-The prover wishes to show that a certain transition polynomial $p(X)$ evaluates to zero on $\{\omicron^i\}_ {i=0}^{T-1}$. Without preprocessing, he would commit to and prove the bounded degree of a quotient polynomial $q(X) = p(X) / Z_{T-1}(X)$, where $Z_{T-1}(X) = \prod_{i=0}^{T-1} (X - \omicron^i)$. With preprocessing, he must commit to and prove the bounded degree of two quotient polynomials:
+The prover wishes to show that a certain transition polynomial $p(X)$ evaluates to zero on $\{\omicron^i\}_ {i=0}^{T-1}$. Without preprocessing, they would commit to and prove the bounded degree of a quotient polynomial $q(X) = p(X) / Z_{T-1}(X)$, where $Z_{T-1}(X) = \prod_{i=0}^{T-1} (X - \omicron^i)$. With preprocessing, they must commit to and prove the bounded degree of two quotient polynomials:
  1. $q_l(X) = \frac{p(X) }{ Z_{2^t}(X)}$ and
  2. $q_r(X) = \frac{p(X) }{\omicron^{T-1-2^t} \cdot Z_{2^t}(\omicron^{2^t-T+1} \cdot X)}$.
 
@@ -365,7 +365,7 @@ The prover can use fast coset division to divide out the transition zerofier, an
         transition_quotients = [fast_coset_divide(tp, transition_zerofier, self.generator, self.omicron, self.omicron_domain_length) for tp in transition_polynomials]
 ```
 
-The verifier needs to perform this division in a number of locations, which means that he needs the value of the verifier in those locations. Therefore, the prover must provide them, which authentication paths.
+The verifier needs to perform this division in a number of locations, which means that they need the value of the verifier in those locations. Therefore, the prover must provide them with authentication paths.
 
 ```python
 # class FastStark:
@@ -379,7 +379,7 @@ The verifier needs to perform this division in a number of locations, which mean
             proof_stream.push(path)
 ```
 
-The verifier, in turn, needs to read these values and their authentication paths from the proof stream, before verifying the authentication paths and storing the zerofier values in a structure for later use. Note that these authentication paths are verified against the Merkle root, which is the new input to the verifier.
+The verifier, in turn, needs to read these values and their authentication paths from the proof stream before verifying the authentication paths and storing the zerofier values in a structure for later use. Note that these authentication paths are verified against the Merkle root, which is the new input to the verifier.
 
 ```python
 # class FastStark:
@@ -396,7 +396,7 @@ The verifier, in turn, needs to read these values and their authentication paths
                 return False
 ```
 
-Then finally, when the nonlinear combination is computed, can these values be read from memory and used.
+Finally, when the nonlinear combination is computed, these values can be read from memory and used.
 
 ```python
 # class FastStark:
@@ -406,7 +406,7 @@ Then finally, when the nonlinear combination is computed, can these values be re
                 quotient = tcv / transition_zerofier[current_index]
 ```
 
-At this point what is left is switching to fast polynomial arithmetic outside of the context of preprocessing. The first opportunity is interpolating the trace.
+At this point, what remains is to switch to fast polynomial arithmetic outside the context of preprocessing. The first opportunity is interpolating the trace.
 
 ```python
 # class FastStark:
@@ -416,7 +416,7 @@ At this point what is left is switching to fast polynomial arithmetic outside of
             trace_polynomials = trace_polynomials + [fast_interpolate(trace_domain, single_trace, self.omicron, self.omicron_domain_length)]
 ```
 
-Next: when committing to the boundary quotients, use fast coset evaluation. Same goes for the randomizer polynomial as well as the combination polynomial.
+Next, when committing to the boundary quotients, use fast coset evaluation. Same goes for the randomizer polynomial and the combination polynomial.
 
 ```python
 # class FastStark:
@@ -469,7 +469,7 @@ After modifying the Rescue-Prime signature scheme to use the new, `FastStark` cl
  - signing time: **72 seconds**
  - verification time: **8 seconds**
 
-How's that for an improvement? The proof is larger because there are many more Merkle paths associated with zerofier leafs, but in exchange verifying is an order of magnitude faster. Of course there is no shortage of further improvements, but those are beyond the scope of this tutorial and left as exercises to the reader.
+How's that for an improvement? The proof is larger because there are many more Merkle paths associated with zerofier leafs, but in exchange for verification that is an order of magnitude faster. Of course there is no shortage of further improvements, but those are beyond the scope of this tutorial and left as exercises to the reader.
 
 
 [0](index) - [1](overview) - [2](basic-tools) - [3](fri) - [4](stark) - [5](rescue-prime) - **6**
