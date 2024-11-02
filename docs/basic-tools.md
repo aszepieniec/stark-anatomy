@@ -334,7 +334,7 @@ def test_colinearity( points ):
 
 Before moving on to the next section, it is worth pausing to note that all ingredients are in place for *finite extension fields*, or simply *extension fields*. A finite field is simply a set equipped with addition and multiplication operators that behave according to high school algebra rules, *e.g.* every nonzero element has an inverse, or no two nonzero elements multiplied give zero. There are two ways to obtain them:
  1. Start with the set of integers, and reduce the result of any addition or multiplication modulo by a given prime number $p$.
- 2. Start with the set of polynomials over a finite field, and reduce the result of any addition or multiplication modulo by a given *irreducible polynomial* $p(X)$. A polynomial is *irreducible* when it cannot be decomposed as the product of two smaller polynomials, analogously to prime numbers.
+ 2. Start with the set of polynomials over a finite field, and reduce the result of any addition or multiplication modulo a given *irreducible polynomial* $p(X)$. A polynomial is *irreducible* when it cannot be decomposed as the product of two smaller polynomials, analogously to prime numbers.
 
  The point is that it is possible to do the arithmetization in a smaller field than cryptographic compilation step, as long as the latter step uses an extension field of that of the former. Specifically and for example, [EthSTARK](https://github.com/starkware-libs/ethSTARK) operates over the finite field defined by a 62-bit prime, but the FRI step operates over a quadratic extension field thereof in order to target a higher security level.
 
