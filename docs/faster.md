@@ -310,7 +310,7 @@ The formal definition of STARKs does not capture proof systems with preprocessin
 
 ### Preprocessed Dense Zerofiers
 
-Concretely, the indexer's output to the verifier will be a commitment to the zerofier $Z(X) = \prod_{i=0}^{T-1} (X-\omicron^i)$ via the familiar Merkle root of Reed-Solomon codeword construction. Whenever the verifier needs the value of this zerofier in a point, the prover provides them with this leaf along with an authentication path. Note that the verifier does not need to evaluate the zerofier in points outside the FRI domain. As a result, there is no need to prove that the zerofier has a low degree; it comes straight from the trusted indexer.
+Concretely, the indexer's output to the verifier will be a commitment to the zerofier $Z(X) = \prod_{i=0}^{T-1} (X-\omicron^i)$ via the familiar Merkle root of Reed-Solomon codeword construction. Whenever the verifier needs the value of this zerofier in a point, the prover supplies this leaf along with an authentication path. Note that the verifier does not need to evaluate the zerofier in points outside the FRI domain. As a result, there is no need to prove that the zerofier has a low degree; it comes straight from the trusted indexer.
 
 This description highlights the main drawback of using preprocessing to achieve scalability: the proof is larger because it includes more Merkle authentication paths. Another drawback is the slightly stronger security model: the verifier needs to trust the indexer's output. Even though the preprocessing is transparent here, re-running the indexer in order to justify this trust might be prohibitively expensive. The code supporting this tutorial achieves scalability through preprocessing as opposed to group theory.
 
