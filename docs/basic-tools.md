@@ -524,7 +524,7 @@ class ProofStream:
 
 ## Merkle Tree
 
-A [Merkle tree](https://en.wikipedia.org/wiki/Merkle_tree) is a vector commitment scheme built from a collision-resistant hash function[^4]. Specifically, it allows the user to commit to an array of $2^N$ items such that
+A [Merkle tree](https://en.wikipedia.org/wiki/Merkle_tree) is a vector commitment scheme built from a collision-resistant hash function[^4]. Specifically, it allows the user to commit to an array of $2^N$ items such that:
  - The commitment is a single hash digest and this commitment is *binding* -- it represents the array in a way that prevents the user from changing it without first breaking the hash function;
  - For any index $i \in \lbrace0, \ldots, 2^N-1\rbrace$, the value in location $i$ of the array represented by the commitment can be proven with $N$ more hash digests.
 
