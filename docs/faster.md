@@ -320,7 +320,7 @@ The solution described above works perfectly fine if the execution time $T$ is k
 
 Preprocessing still holds a solution, but at the cost of a slightly more expensive verifier. The indexer commits to each member of a family of zerofiers $\{Z_ {2^k}(X)\}_ k$ where $Z_{2^k}(X) = \prod_{i=0}^{2^k-1} (X - \omicron^i)$. Let $t = \lfloor \log_2 T \rfloor$ such that $Z_{2^t}(X)$ belongs to this family.
 
-The prover wishes to show that a certain transition polynomial $p(X)$ evaluates to zero on $\{\omicron^i\}_ {i=0}^{T-1}$. Without preprocessing, they would commit to and prove the bounded degree of a quotient polynomial $q(X) = p(X) / Z_{T-1}(X)$, where $Z_{T-1}(X) = \prod_{i=0}^{T-1} (X - \omicron^i)$. With preprocessing, they must commit to and prove the bounded degree of two quotient polynomials:
+The prover wishes to show that a certain transition polynomial $p(X)$ evaluates to zero on $\{\omicron^i\}_ {i=0}^{T-1}$. Without preprocessing, he would commit to and prove the bounded degree of a quotient polynomial $q(X) = p(X) / Z_{T-1}(X)$, where $Z_{T-1}(X) = \prod_{i=0}^{T-1} (X - \omicron^i)$. With preprocessing, he must commit to and prove the bounded degree of two quotient polynomials:
  1. $q_l(X) = \frac{p(X) }{ Z_{2^t}(X)}$ and
  2. $q_r(X) = \frac{p(X) }{\omicron^{T-1-2^t} \cdot Z_{2^t}(\omicron^{2^t-T+1} \cdot X)}$.
 
