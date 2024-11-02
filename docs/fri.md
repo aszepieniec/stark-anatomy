@@ -262,7 +262,7 @@ In the above snippet, the sampling of indices is hidden away behind the argument
 
 ### Verify
 
-The verifier follows a complementary checklist to the prover’s, executing steps that correspond to each phase of the prover's process. Specifically, the verifier:
+The verifier follows a complementary checklist to the prover's, executing steps that correspond to each phase of the prover's process. Specifically, the verifier:
  - Reads the Merkle roots from the proof stream and reproduces the random scalars $\alpha$ with Fiat-Shamir;
  - Reads the last codewords from the proof stream and checks that it matches with a low degree polynomial as well as the last Merkle root to be sent;
  - Reproduces the master list of random indices with Fiat-Shamir, and infers the remaining indices for the colinearity checks;
