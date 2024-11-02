@@ -4,7 +4,7 @@ This part of the tutorial puts the tools developed in the previous parts togethe
 
 ## Rescue-Prime
 
-[Rescue-Prime](https://eprint.iacr.org/2020/1143.pdf) is an arithmetization-oriented hash function, meaning that it has a compact description in terms of AIR. It is a sponge function constructed from the Rescue-XLIX permutation $f_{\mathrm{R}^{\mathrm{XLIX}}} : \mathbb{F}^m \rightarrow \mathbb{F}^m$, consists of several almost-identical rounds. Every round consists of six steps:
+[Rescue-Prime](https://eprint.iacr.org/2020/1143.pdf) is an arithmetization-oriented hash function, meaning that it has a compact description in terms of AIR. It is a sponge function constructed from the Rescue-XLIX permutation $f_{\mathrm{R}^{\mathrm{XLIX}}} : \mathbb{F}^m \rightarrow \mathbb{F}^m$, consisting of several almost-identical rounds. Every round consists of six steps:
  1. Forward S-box. Every element of the state is raised to the power $\alpha$, where $\alpha$ is the smallest invertible power.
  2. MDS. The vector of state elements is multiplied by a matrix with special properties.
  3. Round constants. Pre-defined constants are added to every element of the state.
@@ -24,13 +24,13 @@ For the present STARK proof the following parameters are used:
  - prime field of $p = 407 \cdot 2^{119} + 1$ elements
  - $\alpha = 3$ and $\alpha^{-1} = 180331931428153586757283157844700080811$
  - $m = 2$
- - $r = 1$.
+ - $r = 1$
 
 Furthermore, the input to the hash computation will be a single field element. So in particular, there will be only one round of absorbing and one application of the permutation.
 
 ## Implementation
 
-The Rescue-Prime [paper](https://eprint.iacr.org/2020/1143.pdf) provides nearly complete reference implementation. However, the code here is tailored to this one application.
+The Rescue-Prime [paper](https://eprint.iacr.org/2020/1143.pdf) provides a nearly complete reference implementation. However, the code here is tailored to this one application.
 
 ```python
 class RescuePrime:
@@ -193,14 +193,15 @@ class RescuePrime:
 
 ### Rescue-Prime AIR
 
-The transition constraints for a single round of the Rescue-XLIX permutation are obtained expressing the state values in the middle of the round in terms of the state values at the beginning, and again in terms of the state values at the end, and then equating both expressions. Specifically, let $\boldsymbol{s}_ {i}$ denote the state values at the beginning of round $i$, let $\boldsymbol{c}_ {2i}$ and $\boldsymbol{c}_{2i+1}$ be round constants, let $M$ be the MDS matrix, and let superscript denote element-wise powering. Then the transition of a single round is captured by the equation
+The transition constraints for a single round of the Rescue-XLIX permutation are obtained by expressing the state values in the middle of the round in terms of the state values at the beginning, and again in terms of the state values at the end, and then equating both expressions. Specifically, let $\boldsymbol{s}_ {i}$ denote the state values at the beginning of round $i$, let $\boldsymbol{c}_ {2i}$ and $\boldsymbol{c}_{2i+1}$ be round constants, let $M$ be the MDS matrix, and let superscript denote element-wise powering. Then the transition of a single round is captured by the equation:
 
-$$ M (\boldsymbol{s}_i^\alpha) + \boldsymbol{c}_{2i} = \left(M^{-1} (\boldsymbol{s}_{i+1} - \boldsymbol{c}_{2i+1})\right)^\alpha \enspace .$$
+$$ M (\boldsymbol{s}_i^\alpha) + \boldsymbol{c}_{2i} = \left(M^{-1} (\boldsymbol{s}_{i+1} - \boldsymbol{c}_{2i+1})\right)^\alpha \enspace $$
 
-To be used in a STARK, transition constraints cannot depend on the round. In other words, what is needed is a single equation that describes all rounds, not just the $i$th round. Let $\boldsymbol{X}$ denote the vector of variables representing the current state (beginning of the round), and $\boldsymbol{Y}$ denote the vector of variables represnting the next state (at the end of the round). Furthermore, let $\mathbf{f}_ {\boldsymbol{c}_ {2i}}(W)$ denote the vector of $m$ polynomials that take the value $\boldsymbol{c}_ {2i}$ on $\omicron^i$, and analogously for $\mathbf{f}_ {\boldsymbol{c}_{2i+1}}(W)$. Suppose without loss of generality that the execution trace will be interpolated on the domain $\lbrace \omicron^i \vert 0 \leq i \leq T\rbrace$ for some $T$. Then the above family of arithmetic transition constraints gives rise to the following equation capturing the same transition conditions.
+To be used in a STARK, transition constraints cannot depend on the round. In other words, what is needed is a single equation that describes all rounds, not just the $i$th round. Let $\boldsymbol{X}$ denote the vector of variables representing the current state (beginning of the round), and $\boldsymbol{Y}$ denote the vector of variables represnting the next state (at the end of the round). Furthermore, let $\mathbf{f}_ {\boldsymbol{c}_ {2i}}(W)$ denote the vector of $m$ polynomials that take the value $\boldsymbol{c}_ {2i}$ on $\omicron^i$, and analogously for $\mathbf{f}_ {\boldsymbol{c}_{2i+1}}(W)$. Suppose without loss of generality that the execution trace will be interpolated on the domain $\lbrace \omicron^i \vert 0 \leq i \leq T\rbrace$ for some $T$. Then the above family of arithmetic transition constraints gives rise to the following equation capturing the same transition conditions:
+
 $$ M(\boldsymbol{X}^\alpha) + \mathbf{f}_ {\boldsymbol{c}_ {2i}}(W) = \left(M^{-1}(\boldsymbol{Y} - \mathbf{f}_ {\boldsymbol{c}_{2i+1}}(W))\right)^\alpha $$
 
-The transition constraint polynomial is obtained by moving all terms to the left hand side and dropping the equation to zero. Note that there are $2m+1$ variables, corresponding to $m = \mathsf{w}$ registers.
+The transition constraint polynomial is obtained by moving all terms to the left-hand side and dropping the equation to zero. Note that there are $2m+1$ variables, corresponding to $m = \mathsf{w}$ registers.
 
 ```python
     def round_constants_polynomials( self, omicron ):
@@ -256,7 +257,7 @@ The transition constraint polynomial is obtained by moving all terms to the left
         return air
 ```
 
-The boundary constraints are a lot simpler. At the beginning, the first state element is the unknown secret and the second state element is zero because the sponge construction defines it so. At the end (after all $N$ rounds or $T$ cycles), the first state element is the one element of known hash digest $[h]$, and the second state element is unconstrained. Note that this second state element must be kept secret to be secure -- otherwise the attacker can invert the permutation. This description gives rise to the following set $\mathcal{B}$ of triples $(c, r, e) \in \lbrace 0, \ldots, T \rbrace \times \lbrace 0, \ldots, \mathsf{w}-1 \rbrace \times \mathbb{F}$:
+The boundary constraints are a lot simpler. At the beginning, the first state element is the unknown secret and the second state element is zero because the sponge construction defines it as such. At the end (after all $N$ rounds or $T$ cycles), the first state element is the one element of known hash digest $[h]$, and the second state element is unconstrained. Note that this second state element must be kept secret to be secure -- otherwise the attacker can invert the permutation. This description gives rise to the following set $\mathcal{B}$ of triples $(c, r, e) \in \lbrace 0, \ldots, T \rbrace \times \lbrace 0, \ldots, \mathsf{w}-1 \rbrace \times \mathbb{F}$:
  - $(0, 1, 0)$
  - $(T, 0, h)$.
 
@@ -416,7 +417,7 @@ This code defines a *provably secure*[^1], *post-quantum* signature scheme that 
 
 There might be a few optimizations available that can reduce the proof's size, such as merging common paths when opening a batch of Merkle leafs. However, these optimizations distract from the purpose of this tutorial, which is to highlight and explain the mathematics involved.
 
-In terms of speed, a lot of the poor performance is due to using python instead of a language that is closer to the hardware such as C or Rust. Python was chosen for the same reason -- to highlight and explain the maths. But the biggest performance gain in terms of speed is going to come from switching to faster algorithms for key operations. This is the topic of the next and last part of the tutorial.
+In terms of speed, a lot of the poor performance is due to using Python instead of a language that is closer to the hardware such as C or Rust. Python was chosen for the same reason -- to highlight and explain the maths. But the biggest performance gain in terms of speed is going to come from switching to faster algorithms for key operations. This is the topic of the next and last part of the tutorial.
 
 [0](index) - [1](overview) - [2](basic-tools) - [3](fri) - [4](stark) - **5** - [6](faster)
 

@@ -2,9 +2,9 @@
 
 ## Finite Field Arithmetic
 
-[Finite field](https://en.wikipedia.org/wiki/Finite_field)s are ubiquitous throughout cryptography because they are natively compatible with computers. For instance, they cannot generate overflow or underflow errors, and their elements have a finite representation in terms of bits.
+[Finite fields](https://en.wikipedia.org/wiki/Finite_field) are ubiquitous throughout cryptography because they are natively compatible with computers. For instance, they cannot generate overflow or underflow errors, and their elements have a finite representation in terms of bits.
 
-The easiest way to build a finite field is to select a prime number $p$, use the elements $\mathbb{F}_p \stackrel{\triangle}{=} \lbrace 0, 1, \ldots, p-1\rbrace$, and define the usual addition and multiplication operations in terms of their counterparts for the integers, followed by reduction modulo $p$. Subtraction is equivalent to addition of the left hand side to the negation of the right hand side, and negation represents multiplication by $-1 \equiv p-1 \mod p$. Similarly, division is equivalent to multiplication of the left hand side by the multiplicative inverse of the right hand side. This inverse can be found using the [extended Euclidean algorithm](https://en.wikipedia.org/wiki/Extended_Euclidean_algorithm), which on input two integers $x$ and $y$, returns their greatest common divisor $g$ along with matching Bezout coefficients $a, b$ such that $ax + by = g$. Indeed, whenever $\gcd(x,p) = 1$ the inverse of $x \in \mathbb{F}_p$ is $a$ because $ax + bp \equiv 1 \mod p$. Powers of field elements can be computed with the [square-and-multiply](https://en.wikipedia.org/wiki/Exponentiation_by_squaring) algorithm, which iterates over the bits in the expansion of the exponent, squares an accumulator variable in each iteration, and additionally multiplies it by the base element if the bit is set.
+The easiest way to build a finite field is to select a prime number $p$, use the elements $\mathbb{F}_p \stackrel{\triangle}{=} \lbrace 0, 1, \ldots, p-1\rbrace$, and define the usual addition and multiplication operations in terms of their counterparts for the integers, followed by reduction modulo $p$. Subtraction is equivalent to addition of the left-hand side to the negation of the right-hand side, and negation represents multiplication by $-1 \equiv p-1 \mod p$. Similarly, division is equivalent to multiplication of the left-hand side by the multiplicative inverse of the right-hand side. This inverse can be found using the [extended Euclidean algorithm](https://en.wikipedia.org/wiki/Extended_Euclidean_algorithm), which on input two integers $x$ and $y$, returns their greatest common divisor $g$ along with matching [Bézout coefficients](https://en.wikipedia.org/wiki/B%C3%A9zout's_identity) $a, b$ such that $ax + by = g$. Indeed, whenever $\gcd(x,p) = 1$ the inverse of $x \in \mathbb{F}_p$ is $a$ because $ax + bp \equiv 1 \mod p$. Powers of field elements can be computed with the [square-and-multiply](https://en.wikipedia.org/wiki/Exponentiation_by_squaring) algorithm, which iterates over the bits in the expansion of the exponent, squares an accumulator variable in each iteration, and additionally multiplies it by the base element if the bit is set.
 
 For the purpose of building STARKs we need finite fields with a particular structure[^1]: it needs to contain a substructure of order $2^k$ for some sufficiently large $k$. We consider prime fields whose defining modulus has the form $p = f \cdot 2^k + 1$, where $f$ is some cofactor that makes the number prime. In this case, the group $\mathbb{F}_p \backslash \lbrace 0\rbrace, \times$ has a subgroup of order $2^k$. For all intents and purposes, one can identify this subgroup with $2^k$ evenly spaced points on the complex unit circle.
 
@@ -24,7 +24,7 @@ def xgcd( x, y ):
     return old_s, old_t, old_r # a, b, g
 ```
 
-It makes sense to separate the logic concerning the field from the logic concerning the field elements. To this end, the field element contains a field object as a proper field; this field object implements the arithmetic. Furthermore, python supports operator overloading, so we can repurpose natural arithmetic operators to do field arithmetic instead.
+It makes sense to separate the logic concerning the field from the logic concerning the field elements. To this end, the field element contains a field object as a proper field; this field object implements the arithmetic. Furthermore, Python supports operator overloading, so we can repurpose natural arithmetic operators to do field arithmetic instead.
 
 ```python
 class FieldElement:
@@ -110,7 +110,7 @@ class Field:
         return FieldElement(left.value * a % self.p, self)
 ```
 
-Implementing fields generically is nice. However, in this tutorial we will not use any other field than the one with $1+407 \cdot 2^{119}$ elements. This field has a sufficiently large subgroup of power-of-two order.
+Implementing fields generically is nice. However, in this tutorial we will not use any field other than the one with $1+407 \cdot 2^{119}$ elements. This field has a sufficiently large subgroup of power-of-two order.
 
 ```python
     def main():
@@ -257,7 +257,7 @@ This always get a little tricky when implementing division of polynomials. The i
         return rem
 ```
 
-In terms of basic arithmetic operations, it is worth including a powering map, although mostly for notational easy rather than performance.
+In terms of basic arithmetic operations, it is worth including a powering map, although mostly for notational ease rather than performance.
 
 ```python
     def __xor__( self, exponent ):
@@ -273,7 +273,7 @@ In terms of basic arithmetic operations, it is worth including a powering map, a
         return acc
 ```
 
-A polynomial is quite pointless if it does not admit the computation of its value in a given arbitrary point. For STARKs we need someting more general -- polynomial evaluation on a *domain* of values, rather in a single point. Performance is not a concern at this point so the following implementation follows a straightforward iterative method. Conversely, STARKs also require polynomial interpolation where the x-coordinates are another known range of values. Once again, performance is not an immediate issue so for the time being standard [Lagrange interpolation](https://en.wikipedia.org/wiki/Lagrange_polynomial) suffices.
+A polynomial is quite pointless if it does not admit the computation of its value in a given arbitrary point. For STARKs we need someting more general -- polynomial evaluation on a *domain* of values, rather than a single point. Performance is not a concern at this point so the following implementation follows a straightforward iterative method. Conversely, STARKs also require polynomial interpolation where the x-coordinates are another known range of values. Once again, performance is not an immediate issue so for the time being standard [Lagrange interpolation](https://en.wikipedia.org/wiki/Lagrange_polynomial) suffices.
 
 ```python
     def evaluate( self, point ):
@@ -344,9 +344,9 @@ Before moving on to the next section, it is worth pausing to note that all ingre
 
 *Multivariate polynomials* generalize univariate polynomials to many indeterminates -- not just $X$, but $X, Y, Z, \ldots$. Where univariate polynomials are useful for reducing big claims about large vectors to small claims about scalar values in random points, multivariate polynomials are useful for articulating the arithmetic constraints that an integral computation satisfies.
 
-For example, consider the [arithmetic-geometric mean](https://en.wikipedia.org/wiki/Arithmetic%E2%80%93geometric_mean), which is defined as the limit of either the first or second coordinate (which are equal in the limit) of the sequence $(a, b) \mapsto \left( \frac{a+b}{2}, \sqrt{a \cdot b} \right)$, for a giving starting point $(a_0, b_0)$. In order to prove the integrity of several iterations of this process[^3], what is needed is a set of multivariate polynomials that capture the constraint of the correct application of a single iteration relates the current state, $X_0, X_1$ to the next state, $Y_0, Y_1$. In this phrase, the word *capture* means that the polynomial evaluates to zero if the computation is integral. These polynomials might be $m_0(X_0, X_1, Y_0, Y_1) = Y_0 - \frac{X_0 + X_1}{2}$ and $m_1(X_0, X_1, Y_0, Y_1) = Y_1^2 - X_0 \cdot X_1$. (Note that the natural choice $m_1(X_0, X_1, Y_0, Y_1) = Y_1 - \sqrt{X_0 \cdot X_1}$ is not in fact a polynomial, but has the same zeros.)
+For example, consider the [arithmetic-geometric mean](https://en.wikipedia.org/wiki/Arithmetic%E2%80%93geometric_mean), which is defined as the limit of either the first or second coordinate (which are equal in the limit) of the sequence $(a, b) \mapsto \left( \frac{a+b}{2}, \sqrt{a \cdot b} \right)$, for a given starting point $(a_0, b_0)$. In order to prove the integrity of several iterations of this process[^3], what is needed is a set of multivariate polynomials that capture the constraint of the correct application of a single iteration that relates the current state, $X_0, X_1$ to the next state, $Y_0, Y_1$. In this phrase, the word *capture* means that the polynomial evaluates to zero if the computation is integral. These polynomials might be $m_0(X_0, X_1, Y_0, Y_1) = Y_0 - \frac{X_0 + X_1}{2}$ and $m_1(X_0, X_1, Y_0, Y_1) = Y_1^2 - X_0 \cdot X_1$. (Note that the natural choice $m_1(X_0, X_1, Y_0, Y_1) = Y_1 - \sqrt{X_0 \cdot X_1}$ is not in fact a polynomial, but has the same zeros.)
 
-Where the natural structure for implementing univariate polynomials is a list of coefficients, the natural structure for multivariate polynomials is a dictionary mapping exponent vectors to coefficients. Whenever this dictionary contains zero coefficients, these should be ignored. As usual, the first step is to overload the standard arithmetic operators, basic constructors, and standard functionalities.
+Where the natural structure for implementing univariate polynomials is a list of coefficients, the natural structure for multivariate polynomials is a dictionary mapping exponent vectors to coefficients. Whenever this dictionary contains zero coefficients, they should be ignored. As usual, the first step is to overload the standard arithmetic operators, basic constructors, and standard functionalities.
 
 ```python
 class MPolynomial:
@@ -474,7 +474,7 @@ In an interactive public coin protocol, the verifier's messages are pure randomn
 
 ![Interactive proof, before Fiat-Shamir transform](graphics/interactive-proof.svg)
 
-It turns out that for generating security against malicious provers, generating the verifier's messages randomly as the interactive protocol stipulates, is overkill. It is sufficient that the verifier's messages be difficult to predict by the prover. Hash functions are deterministic but still satisfy this property of outputs being difficult to predict. So intuitively, the protocol remains secure if the verifier's authentic randomness is replaced a hash function's pseudorandom output. It is necessary to restrict the prover's control over what input goes into the hash function, because otherwise he can grind until he finds a suitable output. It suffices to set the input to the transcript of the protocol up until the point where the verifier's message is needed.
+It turns out that for generating security against malicious provers, generating the verifier's messages randomly as the interactive protocol stipulates, is overkill. It is sufficient that the verifier's messages be difficult to predict by the prover. Hash functions are deterministic but still satisfy this property of outputs being difficult to predict. So intuitively, the protocol remains secure if the verifier's authentic randomness is replaced by a hash function's pseudorandom output. It is necessary to restrict the prover's control over what input goes into the hash function, because otherwise he can grind until he finds a suitable output. It suffices to set the input to the transcript of the protocol up until the point where the verifier's message is needed.
 
 This is exactly the intuition behind the Fiat-Shamir transform: replace the verifier's random messages by the hash of the transcript of the protocol up until those points. The *Fiat-Shamir heuristic* states that this transform retains security. In an idealized model of the hash function called the *random oracle model*, this security is provable.
 
@@ -524,9 +524,9 @@ class ProofStream:
 
 ## Merkle Tree
 
-A [Merkle tree](https://en.wikipedia.org/wiki/Merkle_tree) is a vector commitment scheme built from a collision-resistant hash function[^4]. Specifically, it allows the user to commit to an array of $2^N$ items such that
- - the commitment is a single hash digest and this commitment is *binding* -- it represents the array in a way that prevents the user from changing it without first breaking the hash function;
- - for any index $i \in \lbrace0, \ldots, 2^N-1\rbrace$, the value in location $i$ of the array represented by the commitment can be proven with $N$ more hash digests.
+A [Merkle tree](https://en.wikipedia.org/wiki/Merkle_tree) is a vector commitment scheme built from a collision-resistant hash function[^4]. Specifically, it allows the user to commit to an array of $2^N$ items such that:
+ - The commitment is a single hash digest and this commitment is *binding* -- it represents the array in a way that prevents the user from changing it without first breaking the hash function;
+ - For any index $i \in \lbrace0, \ldots, 2^N-1\rbrace$, the value in location $i$ of the array represented by the commitment can be proven with $N$ more hash digests.
 
 Specifically, every leaf of the binary tree represents the hash of a data element. Every non-leaf node represents the hash of the concatenation of its two children. The root of the tree is the commitment. A membership proof consists of all siblings of nodes on a path from the indicated leaf to the root. This list of siblings is called an *authentication path*, and provides the verifier with $N$ complete preimages to the hash function at every step of the path, leading to a final test in the root node.
 

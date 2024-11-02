@@ -4,12 +4,12 @@ FRI is a protocol that establishes that a committed polynomial has a bounded deg
 
 Since the codewords represent low-degree polynomials, and since the codewords are hidden behind Merkle trees in any real-world deployment, it is arguably more natural to present FRI from the point of view of a polynomial commitment scheme, with some caveats. There is scientific merit in separating the type of codewords from the IOP, and those two from the Merkle tree that simulates the oracles. However, from an accessibility point of view, it is beneficial to consider them as three components of one basic primitive that relates to polynomial commitment schemes. For the remainder of this tutorial, we will use the term FRI in this sense.
 
-In a regular polynomial commitment scheme, a prover commits to a polynomial $f(X)$ that is later opened in a given point $z$ such that it cannot equivocate between two different values of $f(z)$. The scheme consists of three algorithms:
+In a regular polynomial commitment scheme, a prover commits to a polynomial $f(X)$ that is later opened at a given point $z$ such that it cannot equivocate between two different values of $f(z)$. The scheme consists of three algorithms:
  - $\mathsf{commit}$, which computes a binding commitment from the polynomial;
  - $\mathsf{open}$, which produces a proof that $f(z) = y$ for some $z$ and for the polynomial $f(X)$ that matches with the given commitment;
  - $\mathsf{verify}$, which verifies the proof produced by $\mathsf{open}$.
 
-The FRI scheme has a different interface but a later section shows how it can simulate the standard polynomial commitment scheme interface without much overhead. FRI is a protocol between a prover and a verifier, which establishes that a given codeword belongs to a polynomial of low degree -- low meaning at most $\rho$ times the length of the codeword. Without losing much generality[^1], the prover knows this codeword explicitly, whereas the verifier knows only its Merkle root and leafs of his choosing, assuming the successful validation of the authentication paths that establish the leafs' membership to the Merkle tree.
+The FRI scheme has a different interface, but a later section shows how it can simulate the standard polynomial commitment scheme interface without much overhead. FRI is a protocol between a prover and a verifier, which establishes that a given codeword belongs to a polynomial of low degree -- low meaning at most $\rho$ times the length of the codeword. Without losing much generality[^1], the prover knows this codeword explicitly, whereas the verifier knows only its Merkle root and leafs of his choosing, assuming the successful validation of the authentication paths that establish the leafs' membership to the Merkle tree.
 
 ## Split-and-Fold
 
@@ -65,7 +65,7 @@ This description covers one round, at the end of which the prover and verifier a
 
 ![FRI overview](graphics/fri-overview.svg)
 
-In production systems the length of the codeword is often reduced not by a factor 2 but a small power of 2. This optimization reduces the proof size and might even generate running time improvements. However, this tutorial optimizes for simplicity and any further discussion about higher folding factors is out of scope.
+In production systems, the length of the codeword is often reduced not by a factor 2, but a small power of 2. This optimization reduces the proof size and might even generate running time improvements. However, this tutorial optimizes for simplicity and any further discussion about higher folding factors is out of scope.
 
 ### Index Folding
 
@@ -139,8 +139,7 @@ Note that the method to compute the number of rounds terminates the protocol ear
 
 The FRI protocol consists of two phases, called *commit* and *query*. In the commit phase, the prover sends Merkle roots of codewords to the verifier, and the verifier supplies random field elements as input to the split-and-fold procedure. In the query phase, the verifier selects indices of leafs, which the prover then opens, so that the verifier can check the colinearity requirement.
 
-It is important to keep track of the set of indices of leaves of the initial codeword that the verifier wants to inspect. This is the point where the FRI protocol links into the Polynomial IOP that comes before it. Specifically, the larger protocol that uses FRI as a subroutine needs to verify that the leafs of the initial Merkle opened by the FRI protocol actually correspond to the codeword that the FRI protocol is supposedly about.
-
+It is important to keep track of the set of indices of leafs of the initial codeword that the verifier wants to inspect. This is the point where the FRI protocol links into the Polynomial IOP that comes before it. Specifically, the larger protocol that uses FRI as a subroutine needs to verify that the leafs of the initial Merkle tree opened by the FRI protocol actually correspond to the codeword that the FRI protocol is supposedly about.
 
 ```python
     def prove( self, codeword, proof_stream ):
@@ -234,7 +233,7 @@ The prover needs to record the indices of the first round.
         return a_indices + b_indices
 ```
 
-In the above snippet, the sampling of indices is hidden away behind the argument `c_indices`. The wrapper function `prove` samples invokes the function `sample_indices` to sample the set of master indices. This method takes a seed, a list size, and a desired number, and generates that number of uniformly pseudorandom indices in the given interval. The actual logic is tricky. It involves repeatedly sampling a single index by calling `blake2b` on the seed appended with an increasing counter. The function keeps track of indices that are fully folded, *i.e.*, indicate locations in the last codeword. Sampled indices that generate a collision through folding are rejected.
+In the above snippet, the sampling of indices is hidden away behind the argument `c_indices`. The wrapper function `prove` invokes the function `sample_indices` to sample the set of master indices. This method takes a seed, a list size, and a desired number, and generates that number of uniformly pseudorandom indices in the given interval. The actual logic is tricky. It involves repeatedly sampling a single index by calling `blake2b` on the seed appended with an increasing counter. The function keeps track of indices that are fully folded, *i.e.*, indicate locations in the last codeword. Sampled indices that generate a collision through folding are rejected.
 
 ```python
     def sample_index( byte_array, size ):
@@ -263,12 +262,12 @@ In the above snippet, the sampling of indices is hidden away behind the argument
 
 ### Verify
 
-The verifier runs through the same checklist as the prover but runs the dual steps to his. Specifically, the verifier:
- - reads the Merkle roots from the proof stream and reproduces the random scalars $\alpha$ with Fiat-Shamir;
- - reads the last codewords from the proof stream and checks that it matches with a low degree polynomial as well as the last Merkle root to be sent;
- - reproduces the master list of random indices with Fiat-Shamir, and infers the remaining indices for the colinearity checks;
- - reads the Merkle leafs and their authentication paths from the proof stream, and verifies their authenticity against the indices;
- - runs the colinearity checks for every pair of consecutive codewords.
+The verifier follows a complementary checklist to the prover's, executing steps that correspond to each phase of the prover's process. Specifically, the verifier:
+ - Reads the Merkle roots from the proof stream and reproduces the random scalars $\alpha$ with Fiat-Shamir;
+ - Reads the last codewords from the proof stream and checks that it matches with a low degree polynomial as well as the last Merkle root to be sent;
+ - Reproduces the master list of random indices with Fiat-Shamir, and infers the remaining indices for the colinearity checks;
+ - Reads the Merkle leafs and their authentication paths from the proof stream, and verifies their authenticity against the indices;
+ - Runs the colinearity checks for every pair of consecutive codewords.
 
  ```python
     def verify( self, proof_stream, polynomial_values ):
@@ -400,7 +399,7 @@ Suppose the prover wants to establish that the Merkle root commitments for $f_0(
 $$ g(X) = \sum_{i=0}^{n-1} \alpha_i \cdot f_i(X) + \beta_i \cdot X^{2^k-d_i-1} \cdot f_i(X) \enspace .$$
 The coefficients $\alpha_i$ and $\beta_i$ are drawn at random and supplied by the verifier. FRI is used once to establish that $g(X)$ has degree less than $2^k \geq \max_i d_i$.
 
-The first Merkle root of the FRI protocol decommits to the codeword associated with $g(X)$. To relate this codeword to the right hand side of the above formula, the verifier can verify the random nonlinear combination in a bunch (say, $\lambda$) of randomly points $x_i$ belonging to the evaluation domain. Alternatively, this Merkle root can be omitted entirely. In this case the verifier directly relates the second FRI codeword associated with $g^\star(X)$ to the random nonlinear combination in the indicated points.
+The first Merkle root of the FRI protocol decommits to the codeword associated with $g(X)$. To relate this codeword to the right-hand side of the above formula, the verifier can verify the random nonlinear combination in a bunch (say, $\lambda$) of random points $x_i$ belonging to the evaluation domain. Alternatively, this Merkle root can be omitted entirely. In this case, the verifier directly relates the second FRI codeword associated with $g^\star(X)$ to the random nonlinear combination in the indicated points.
 
 The intuition why this random nonlinear combination trick is secure is as follows. If all the polynomials $f_i(X)$ satisfy their proper degree bounds, then clearly $g(X)$ has degree less than $2^k$ and the FRI protocol succeeds. However, if any one $f_i(X)$ has degree larger than $d_i$, then with overwhelming probability over the randomly chosen $\alpha_i$ and $\beta_i$, the degree of $g(X)$ will be larger than or equal to $2^k$. As a result, FRI will fail.
 
