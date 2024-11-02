@@ -365,7 +365,7 @@ The prover can use fast coset division to divide out the transition zerofier, an
         transition_quotients = [fast_coset_divide(tp, transition_zerofier, self.generator, self.omicron, self.omicron_domain_length) for tp in transition_polynomials]
 ```
 
-The verifier needs to perform this division in a number of locations, which means that they need the value of the verifier in those locations. Therefore, the prover must provide them with authentication paths.
+The verifier needs to perform this division in a number of locations, which means that he need the value of the verifier in those locations. Therefore, the prover must provide them with authentication paths.
 
 ```python
 # class FastStark:
