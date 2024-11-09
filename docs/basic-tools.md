@@ -273,7 +273,7 @@ In terms of basic arithmetic operations, it is worth including a powering map, a
         return acc
 ```
 
-A polynomial is quite pointless if it does not admit the computation of its value in a given arbitrary point. For STARKs we need someting more general -- polynomial evaluation on a *domain* of values, rather than a single point. Performance is not a concern at this point so the following implementation follows a straightforward iterative method. Conversely, STARKs also require polynomial interpolation where the x-coordinates are another known range of values. Once again, performance is not an immediate issue so for the time being standard [Lagrange interpolation](https://en.wikipedia.org/wiki/Lagrange_polynomial) suffices.
+A polynomial is quite pointless if it does not admit the computation of its value in a given arbitrary point. For STARKs we need something more general -- polynomial evaluation on a *domain* of values, rather than a single point. Performance is not a concern at this point so the following implementation follows a straightforward iterative method. Conversely, STARKs also require polynomial interpolation where the x-coordinates are another known range of values. Once again, performance is not an immediate issue so for the time being standard [Lagrange interpolation](https://en.wikipedia.org/wiki/Lagrange_polynomial) suffices.
 
 ```python
     def evaluate( self, point ):
@@ -576,7 +576,7 @@ class Merkle:
                 return Merkle.verify_(root, index >> 1, path[1:], Merkle.H(path[0] + leaf).digest())
 ```
 
-This functional implementation overlooks one important aspect: the data objects are rarely hash digests. So in order to use these functions in combination with real-world data, the real-world data elements must be hashed first. This hashing for preprocessing is part of the Merkle tree logic, so the Merkle tree module needs to be extended to accomodate this.
+This functional implementation overlooks one important aspect: the data objects are rarely hash digests. So in order to use these functions in combination with real-world data, the real-world data elements must be hashed first. This hashing for preprocessing is part of the Merkle tree logic, so the Merkle tree module needs to be extended to accommodate this.
 
 ```python
     def commit( data_array ):

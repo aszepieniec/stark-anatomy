@@ -33,7 +33,7 @@ In this tutorial I attempt to explain how many of the pieces work together. This
 
 It should be noted early on that there are a variety of sources for learning about STARKs. Here is an incomplete list.
  - The scientific papers on [FRI](https://eccc.weizmann.ac.il/report/2017/134/revision/1/download/), [STARK](https://eprint.iacr.org/2018/046.pdf), [DEEP-FRI](https://eprint.iacr.org/2019/336.pdf), and the latest [soundness analysis for FRI](https://eccc.weizmann.ac.il/report/2020/083/)
- - A multi-part tutorial by Vitalik Buterin (parts [I](https://vitalik.ca/general/2017/11/09/starks_part_1.html)/[II](https://vitalik.ca/general/2017/11/22/starks_part_2.html)/[3](https://vitalik.ca/general/2018/07/21/starks_part_3.html))
+ - A multi-part tutorial by Vitalik Buterin (parts [I](https://vitalik.eth.limo/general/2017/11/09/starks_part_1.html)/[II](https://vitalik.eth.limo/general/2017/11/22/starks_part_2.html)/[3](https://vitalik.eth.limo/general/2018/07/21/starks_part_3.html))
  - A series of blog posts by StarkWare (parts [1](https://medium.com/starkware/stark-math-the-journey-begins-51bd2b063c71), [2](https://medium.com/starkware/arithmetization-i-15c046390862), [3](https://medium.com/starkware/arithmetization-ii-403c3b3f4355), [4](https://medium.com/starkware/low-degree-testing-f7614f5172db), [5](https://medium.com/starkware/a-framework-for-efficient-starks-19608ba06fbe))
  - The [STARK @ Home](https://www.youtube.com/playlist?list=PLcIyXLwiPilUFGw7r2uyWerOkbx4GFMXq) webcasts by StarkWare
  - The [STARK 101](https://starkware.co/developers-community/stark101-onlinecourse/) online course by StarkWare

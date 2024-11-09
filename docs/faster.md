@@ -226,7 +226,7 @@ The solution is to perform the element-wise division on codewords arising from e
  - inverse NTT, and
  - unscale.
 
-This solution only works if the denominator polynomials do not have any zeros on the coset. However, in some cases (like dividing out zerofiers), the denominator is *known* not to have zeros on a partcular coset.
+This solution only works if the denominator polynomials do not have any zeros on the coset. However, in some cases (like dividing out zerofiers), the denominator is *known* not to have zeros on a particular coset.
 
 The Python code has a lot of boilerplate to deal with special circumstances, but in the end it boils down to those five steps.
 
