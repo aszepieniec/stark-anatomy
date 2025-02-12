@@ -20,7 +20,7 @@ enforce the correct values of some or all registers at the first cycle, last cyc
 
 The *computational integrity claim* consists of the state transition function and the boundary conditions. The *witness* to this claim is the algebraic execution trace. The claim is *true* if there is a witness $W \in \mathbb{F}_p^{T \times \mathsf{w}}$ such that:
  - For every cycle, the state evolves correctly: $\forall i \in \lbrace 0, \ldots, T-2 \rbrace \, . \, f(W_{[i,:]}) = W_{[i+1,:]}$.
- - All boundary conditions are satisfied: $\forall (i, w, e) \in \mathcal{B} \, . \, W_{[i,w]} = e$.
+ - All boundary conditions are satisfied: $\exists (i, w, e) \in \mathcal{B} \, . \, W_{[i,w]} = e$.
 
 The state transition function hides a lot of complexity. For the purpose of STARKs, it needs to be describable as low degree polynomials that are *independent of the cycle*. However, this list of polynomials does not need to compute the next state from the current one; it merely needs to distinguish correct evolutions from incorrect ones. Specifically, the function 
 
