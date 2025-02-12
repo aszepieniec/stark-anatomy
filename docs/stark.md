@@ -30,10 +30,12 @@ is represented by a list of polynomials $\mathbf{p}(X_0, \ldots, X_{\mathsf{w}-1
  - $\forall i \in \lbrace 0, \ldots, T - 2 \rbrace \, . \, \forall j \in \lbrace 0, \ldots, r-1\rbrace \, . \, p_j(W_{[i,0]}, \ldots, W_{[i, \mathsf{w}-1]}, W_{[i+1,0]}, \ldots, W_{[i+1, \mathsf{w}-1]}) = 0$.
 
 This representation admits *non-determinism*, which has the capacity to reduce high degree state transition *computation* polynomials with low degree state transition *verification* polynomials. For example: the state transition function $f : \mathbb{F}_p \rightarrow \mathbb{F}_p$ given by
-$$ x \mapsto \left\lbrace  \begin{array}{l}
-x^{-1} & \Leftarrow x \neq 0 \\
-0 & \Leftarrow x = 0 
-\end{array} \right. $$
+$$
+x \mapsto \begin{cases}
+x^{-1} & \text{if } x \neq 0, \\
+0 & \text{otherwise, if } x = 0 
+\end{cases}
+$$
 can be represented as a computation polynomial $f(x) = x^{p-2}$ or as a pair of verification polynomials $\mathbf{p}(x,y) = (x(xy-1), y(xy-1))$. The degree drops from $p-2$ to 3.
 
 Not all lists of $\mathsf{w}$ field elements represent valid states. For instance, some registers may be constrained to bits and thus take only values from $\lbrace 0, 1\rbrace$. The state transition function is what guarantees that the next state is well-formed if the current state is. When translating to verification polynomials, these *consistency constraints* are polynomials in the first half of variables only ($X_0, \ldots, X_{\mathsf{w}-1}$) because they apply to every single row in the AET, as opposed to every consecutive pair of rows. For the sake of simplicity, this tutorial will ignore consistency constraints and pretend as though every $\mathsf{w}$-tuple of field elements represents a valid state.
