@@ -3,12 +3,12 @@
 This series of articles is a six part tutorial explaining the mechanics of the STARK proof system. It is directed towards a technically-inclined audience with knowledge of basic maths and programming.
 
  - Part 0: Introduction
- - [Part 1: STARK Overview](overview)
- - [Part 2: Basic Tools](basic-tools)
- - [Part 3: FRI](fri)
- - [Part 4: The STARK Polynomial IOP](stark)
- - [Part 5: A Rescue-Prime STARK](rescue-prime)
- - [Part 6: Speeding Things Up](faster)
+ - [Part 1: STARK Overview](overview.md)
+ - [Part 2: Basic Tools](basic-tools.md)
+ - [Part 3: FRI](fri.md)
+ - [Part 4: The STARK Polynomial IOP](stark.md)
+ - [Part 5: A Rescue-Prime STARK](rescue-prime.md)
+ - [Part 6: Speeding Things Up](faster.md)
 
 ## What Are STARKs?
 
@@ -64,12 +64,12 @@ This tutorial does re-hash the background material when it is needed. However, t
 
 ## Roadmap
 
- - [Part 1: STARK Overview](overview) paints a high-level picture of the concepts and workflow.
- - [Part 2: Basic Tools](basic-tools) introduces the basic mathematical and cryptographic tools from which the proof system will be built.
- - [Part 3: FRI](fri) covers the low degree test, which is the cryptographic heart of the proof system.
- - [Part 4: The STARK IOP](stark) explains the information-theoretical that generates an abstract proof system from arbitrary computational claims.
- - [Part 5: A Rescue-Prime STARK](rescue-prime) puts the tools together and builds a transparent zero-knowledge proof system for a simple computation.
- - [Part 6: Speeding Things Up](faster) introduces algorithms and techniques to make the whole thing faster, effectively putting the "S" into the STARK.
+ - [Part 1: STARK Overview](overview.md) paints a high-level picture of the concepts and workflow.
+ - [Part 2: Basic Tools](basic-tools.md) introduces the basic mathematical and cryptographic tools from which the proof system will be built.
+ - [Part 3: FRI](fri.md) covers the low degree test, which is the cryptographic heart of the proof system.
+ - [Part 4: The STARK IOP](stark.md) explains the information-theoretical that generates an abstract proof system from arbitrary computational claims.
+ - [Part 5: A Rescue-Prime STARK](rescue-prime.md) puts the tools together and builds a transparent zero-knowledge proof system for a simple computation.
+ - [Part 6: Speeding Things Up](faster.md) introduces algorithms and techniques to make the whole thing faster, effectively putting the "S" into the STARK.
 
 ## Supporting Python Code
 
@@ -90,7 +90,7 @@ This tutorial is hosted in several locations. If you're hosting an identical cop
  - [GitHub Pages](https://aszepieniec.github.io/stark-anatomy/)
  - [Neptune Project Website](https://neptune.cash/learn/stark-anatomy/)
 
-**0** - [1](overview) - [2](basic-tools) - [3](fri) - [4](stark) - [5](rescue-prime) - [6](faster)
+**0** - [1](overview.md) - [2](basic-tools.md) - [3](fri.md) - [4](stark.md) - [5](rescue-prime.md) - [6](faster.md)
 
 [^1]: In the literature, this idealization is known as the quantum random oracle model.
 [^2]: A Reed-Solomon codeword is the vector of evaluations of a low degree polynomial on a given domain of points. Different codewords belong to the same code when their defining polynomials are different but the evaluation domain is the same.
