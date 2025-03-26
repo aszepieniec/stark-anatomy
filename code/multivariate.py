@@ -1,5 +1,6 @@
 from univariate import *
 
+
 class MPolynomial:
     def __init__( self, dictionary ):
         # Multivariate polynomials are represented as dictionaries with exponent vectors
@@ -86,6 +87,7 @@ class MPolynomial:
     # Returns the multivariate polynomials representing each indeterminates linear function
     # with a leading coefficient of one. For three indeterminates, returns:
     # [f(x,y,z) = x, f(x,y,z) = y, f(x,y,z) = z]
+    @staticmethod
     def variables( num_variables, field ):
         variables = []
         for i in range(num_variables):
@@ -111,6 +113,7 @@ class MPolynomial:
             acc = acc + prod
         return acc
 
+    @staticmethod
     def lift( polynomial, variable_index ):
         if polynomial.is_zero():
             return MPolynomial({})

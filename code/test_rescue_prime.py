@@ -1,9 +1,11 @@
-from rescue_prime import *
 import os
+
+from rescue_prime import *
+
 
 def test_rescue_prime( ):
     rp = RescuePrime()
-    
+
     # test vectors
     assert(rp.hash(FieldElement(1, rp.field)) == FieldElement(244180265933090377212304188905974087294, rp.field)), "rescue prime test vector 1 failed"
     assert(rp.hash(FieldElement(57322816861100832358702415967512842988, rp.field)) == FieldElement(89633745865384635541695204788332415101, rp.field)), "rescue prime test vector 2 failed"
@@ -36,7 +38,7 @@ def test_trace( ):
             assert(False)
 
     # test transition constraints
-    omicron = rp.field.primitive_kth_root(1 << 119)
+    omicron = rp.field.primitive_nth_root(1 << 119)
     transition_constraints = rp.transition_constraints(omicron)
     first_step_constants, second_step_constants = rp.round_constants_polynomials(omicron)
     for o in range(len(trace)-1):
@@ -67,7 +69,7 @@ def test_trace( ):
 
         # perturb
         trace[cycle_index][register_index] = trace[cycle_index][register_index] + value_
-    
+
         error_got_noticed = False
 
         # test boundary constraints
@@ -100,4 +102,3 @@ def test_trace( ):
         trace[cycle_index][register_index] = trace[cycle_index][register_index] - value_
 
     print("Rescue-Prime trace tests pass \\o/")
-

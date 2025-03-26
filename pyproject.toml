@@ -1,0 +1,31 @@
+[project]
+name = "stark-anatomy"
+version = "0.1.0"
+description = "STARK tutorial with supporting code in python"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = []
+
+[tool.isort]
+profile = "black"
+
+[tool.autoflake]
+in_place = true
+remove_unused_variables = true
+remove_all_unused_imports = true
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[dependency-groups]
+dev = [
+  "hypothesis>=6.127.8",
+  "ipykernel>=6.29.5",
+  "pytest>=8.3.5",
+  "pytest-cov>=6.0.0",
+  "pytest-xdist>=3.6.1",
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["code"]

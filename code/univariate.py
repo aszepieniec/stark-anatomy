@@ -1,5 +1,6 @@
 from algebra import *
 
+
 class Polynomial:
     def __init__( self, coefficients ):
         self.coefficients = [c for c in coefficients]
@@ -77,6 +78,7 @@ class Polynomial:
     def leading_coefficient( self ):
         return self.coefficients[self.degree()]
 
+    @staticmethod
     def divide( numerator, denominator ):
         if denominator.degree() == -1:
             return None
@@ -104,6 +106,7 @@ class Polynomial:
                 return False
         return True
 
+    @staticmethod
     def interpolate_domain( domain, values ):
         assert(len(domain) == len(values)), "number of elements in domain does not match number of values -- cannot interpolate"
         assert(len(domain) > 0), "cannot interpolate between zero points"
@@ -119,6 +122,7 @@ class Polynomial:
             acc = acc + prod
         return acc
 
+    @staticmethod
     def zerofier_domain( domain ):
         field = domain[0].field
         x = Polynomial([field.zero(), field.one()])
@@ -153,9 +157,9 @@ class Polynomial:
     def scale( self, factor ):
         return Polynomial([(factor^i) * self.coefficients[i] for i in range(len(self.coefficients))])
 
-def test_colinearity( points ):
-    domain = [p[0] for p in points]
-    values = [p[1] for p in points]
-    polynomial = Polynomial.interpolate_domain(domain, values)
-    return polynomial.degree() == 1
-
+    @staticmethod
+    def is_colinear(points) -> bool:
+        domain = [p[0] for p in points]
+        values = [p[1] for p in points]
+        polynomial = Polynomial.interpolate_domain(domain, values)
+        return polynomial.degree() == 1

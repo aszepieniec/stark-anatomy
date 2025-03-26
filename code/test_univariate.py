@@ -1,5 +1,7 @@
-from univariate import *
 import os
+
+from univariate import *
+
 
 def test_distributivity():
     field = Field.main()
@@ -54,9 +56,9 @@ def test_interpolate():
     one = field.one()
     two = FieldElement(2, field)
     five = FieldElement(5, field)
-    
+
     values = [five, two, two, one, five, zero]
-    domain = [FieldElement(i, field) for i in range(1, 6)]
+    domain = [FieldElement(i, field) for i in range(6)]
 
     poly = Polynomial.interpolate_domain(domain, values)
 
@@ -95,4 +97,3 @@ def test_zerofier( ):
         assert(zerofier.evaluate(random) != field.zero()), "zerofier evaluates to zero where it should not"
 
     print("univariate zerofier test success \\o/")
-
