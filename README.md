@@ -15,6 +15,16 @@ Visit the Github Pages website here: https://aszepieniec.github.io/stark-anatomy
 ## Follow-up
 Be sure to check out the [next tutorial](https://github.com/aszepieniec/stark-brainfuck) where we implement a STARK engine for a VM running Brainfuck. And our "real", functional, practical ZK-STARK VM, [Triton VM](https://triton-vm.org/).
 
+## Running locally (the tutorial)
+
+The project uses [uv](https://docs.astral.sh/uv/) for managing python build and dependencies.
+
+To run the tests, just do
+
+```bash
+uv run pytest
+```
+
 ## Running locally (the website, not the tutorial)
 
  1. Install ruby
@@ -59,4 +69,3 @@ Jekyll, the site engine used by Github Pages, will load this header automaticall
 Note that Kramdown interprets every underscore (`_`) that is followed by a non-whitespace character, as starting an emphasised piece of text. This interpretation interfereces with subscript in LaTeX formulae, which also uses underscores. The workaround is to re-write the LaTeX formulas by introducing a space after every underscore. Also, consider replacing:
  - `\{` by `\lbrace` and `\}` by `\rbrace`,
  - `|` by `\vert`.
-
