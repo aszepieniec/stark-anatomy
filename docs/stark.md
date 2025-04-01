@@ -91,7 +91,7 @@ Prover:
  - Compress the $r$ transition constraints into one master constraint that is the weighted sum.
  - Symbolically evaluate the master constraint in the trace polynomials, thus generating the transition polynomial.
  - Divide out the transition zerofier to get the transition quotient.
- - Commit to the transition zerofier.
+ - Commit to the transition quotient.
  - Run FRI on all the committed polynomials: the boundary quotients, the transition quotients, and the transition zerofier.
  - Supply the Merkle leafs and authentication paths that are requested by the verifier.
 
