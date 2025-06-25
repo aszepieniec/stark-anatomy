@@ -1,10 +1,14 @@
+import os
+
+import pytest
 from algebra import *
-from univariate import *
-from multivariate import *
-from rescue_prime import *
 from fri import *
 from ip import *
+from multivariate import *
+from rescue_prime import *
 from stark import *
+from univariate import *
+
 
 def test_stark( ):
     field = Field.main()
@@ -56,5 +60,5 @@ def test_stark( ):
 
     trace[cycle][register] = trace[cycle][register] + error
 
-    proof = stark.prove(trace, air, boundary) # should fail
-
+    with pytest.raises(AssertionError):
+        proof = stark.prove(trace, air, boundary) # should fail

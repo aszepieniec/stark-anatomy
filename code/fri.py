@@ -1,12 +1,13 @@
-from algebra import *
-from merkle import *
-from ip import *
-from ntt import *
-from binascii import hexlify, unhexlify
 import math
+from binascii import hexlify, unhexlify
 from hashlib import blake2b
 
+from algebra import *
+from ip import *
+from merkle import *
+from ntt import *
 from univariate import *
+
 
 class Fri:
     def __init__( self, offset, omega, initial_domain_length, expansion_factor, num_colinearity_tests ):
@@ -199,12 +200,12 @@ class Fri:
                 # record top-layer values for later verification
                 if r == 0:
                     polynomial_values += [(a_indices[s], ay), (b_indices[s], by)]
-                
+
                 # colinearity check
                 ax = offset * (omega^a_indices[s])
                 bx = offset * (omega^b_indices[s])
                 cx = alphas[r]
-                if test_colinearity([(ax, ay), (bx, by), (cx, cy)]) == False:
+                if Polynomial.is_colinear([(ax, ay), (bx, by), (cx, cy)]) == False:
                     print("colinearity check failure")
                     return False
 
@@ -229,4 +230,3 @@ class Fri:
 
         # all checks passed
         return True
-
